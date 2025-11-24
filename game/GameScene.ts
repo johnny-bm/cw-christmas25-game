@@ -55,6 +55,7 @@ export class GameScene extends Phaser.Scene {
   private ground!: Phaser.Physics.Arcade.StaticGroup;
   private obstacles!: Phaser.GameObjects.Group;
   private floatingObstacles!: Phaser.GameObjects.Group;
+  private projectileObstacles!: Phaser.GameObjects.Group;
   private collectibles!: Phaser.GameObjects.Group;
   private collectibleImageKeys: string[] = [];
   private deadline!: Phaser.GameObjects.Rectangle;
@@ -98,6 +99,7 @@ export class GameScene extends Phaser.Scene {
   private distanceTimer: number = 0;
   private obstacleTimer: number = 1000;
   private floatingObstacleTimer: number = 2000;
+  private projectileObstacleTimer: number = 3000;
   private collectibleTimer: number = 2000;
   private specialCollectibleTimer: number = 5000;
   private messageTimer: number = 0; // Cooldown timer for messages
@@ -297,6 +299,7 @@ export class GameScene extends Phaser.Scene {
     // Initialize groups
     this.obstacles = this.add.group();
     this.floatingObstacles = this.add.group();
+    this.projectileObstacles = this.add.group();
     this.collectibles = this.add.group();
 
     // Input setup
@@ -532,6 +535,76 @@ export class GameScene extends Phaser.Scene {
     this.floatingObstacleTimer = Phaser.Math.Between(minInterval, maxInterval);
   }
 
+  spawnProjectileObstacle() {
+    const { width, height } = this.scale;
+    const baseSpeed = width / 1920;
+    
+    // Always spawn from the right side of the screen (off-screen to the right)
+    const startX = width + 50; // Right edge + 50 pixels
+    
+    // Calculate where projectile should be when it reaches player's x position
+    const playerX = this.player.x;
+    const distanceToPlayer = startX - playerX;
+    
+    // Vary the height - some low (need to jump), some high (need to stay low)
+    const projectileType = Phaser.Math.Between(0, 1); // 0 = low, 1 = high
+    
+    let startY: number;
+    let targetYAtPlayer: number; // Height when projectile reaches player
+    
+    // Get player's actual height for precise targeting
+    const playerHeight = this.player.height || height * 0.08;
+    
+    if (projectileType === 0) {
+      // Low projectile - at ground level where player stands, player needs to jump
+      startY = this.groundY - height * 0.03; // Start slightly above ground
+      targetYAtPlayer = this.groundY - playerHeight * 0.3; // At player's lower body when reaching (hittable if on ground)
+    } else {
+      // High projectile - at jump height, player needs to stay low/duck
+      const jumpHeight = height * 0.15; // Estimate max jump height
+      startY = this.groundY - jumpHeight * 0.35; // Start at mid-jump height
+      targetYAtPlayer = this.groundY - jumpHeight * 0.3; // At jump height when reaching player (hittable if jumping)
+    }
+    
+    // Calculate flight time to reach player's x position
+    const horizontalSpeed = 400 * baseSpeed; // Speed from right to left
+    const timeToPlayer = distanceToPlayer / horizontalSpeed;
+    
+    // Use minimal gravity for a flatter, more visible trajectory
+    // The arc should be small - projectile mostly goes straight with slight downward curve
+    const gravity = 150 * baseSpeed; // Very small gravity for almost-flat trajectory
+    // Calculate initial vertical velocity to reach target height at player position
+    const vy = (targetYAtPlayer - startY - 0.5 * gravity * timeToPlayer * timeToPlayer) / timeToPlayer;
+    
+    // Create projectile obstacle
+    const projectileSize = width * 0.02; // 2% of screen width
+    const projectile = this.add.rectangle(
+      startX,
+      startY,
+      projectileSize,
+      projectileSize,
+      0xff4444 // Red color to distinguish from regular obstacles
+    );
+    projectile.setDepth(10);
+    this.projectileObstacles.add(projectile);
+    
+    // Store initial position and trajectory for parabolic calculation
+    // IMPORTANT: velocityX must be NEGATIVE to move from right to left
+    projectile.setData('startX', startX);
+    projectile.setData('startY', startY);
+    projectile.setData('elapsedTime', 0);
+    projectile.setData('gravity', gravity);
+    // Set velocity: NEGATIVE = moves LEFT (from right to left)
+    // Positive would move RIGHT (left to right), which is wrong
+    projectile.setData('velocityX', -Math.abs(horizontalSpeed)); // Ensure negative for leftward movement
+    projectile.setData('velocityY', vy);
+    
+    // Set timer for next spawn
+    const minInterval = 2000;
+    const maxInterval = 5000;
+    this.projectileObstacleTimer = Phaser.Math.Between(minInterval, maxInterval);
+  }
+
   spawnCollectible() {
     const { width, height } = this.scale;
     
@@ -755,6 +828,43 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
+    // Check projectile obstacles
+    this.projectileObstacles.children.iterate((child) => {
+      const projectile = child as Phaser.GameObjects.Rectangle;
+      if (!projectile || !projectile.active) return false;
+      
+      const projectileBounds = projectile.getBounds();
+      
+      if (Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, projectileBounds)) {
+        if (this.sprintMode) {
+          this.createCollisionEffect(projectile.x, projectile.y);
+          projectile.destroy();
+          this.projectileObstacles.remove(projectile);
+        } else {
+          this.energy -= 15; // Projectiles do more damage
+          this.combo = 0;
+          this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
+          this.cameras.main.shake(200, 0.008); // Stronger shake for projectiles
+          this.createCollisionEffect(projectile.x, projectile.y);
+          // Play stumble sound
+          if (this.stumbleSound && !this.isMuted) {
+            try {
+              this.stumbleSound.play();
+            } catch (error) {
+              console.warn('⚠️ Failed to play stumble sound:', error);
+            }
+          }
+          projectile.destroy();
+          this.projectileObstacles.remove(projectile);
+          
+          if (this.energy <= 0) {
+            this.energy = 0;
+            this.endGame();
+          }
+        }
+      }
+    });
+
     // Check collectibles
     this.collectibles.children.iterate((child) => {
       const collectible = child as Phaser.GameObjects.Image;
@@ -844,12 +954,13 @@ export class GameScene extends Phaser.Scene {
       fontFamily: '"Urbanist", sans-serif',
       fontSize: baseFontSize,
       color: textColor,
-      align: 'left',
+      align: 'center',
       stroke: strokeColor,
       strokeThickness: isSpecial ? 2 : 1,
-      resolution: 2
+      resolution: 4, // Higher resolution for better text quality
+      fontStyle: 'bold'
     });
-    messageText.setOrigin(0, 0.5);
+    messageText.setOrigin(0.5, 0.5); // Center the text
     messageText.setDepth(1001);
 
     // Responsive padding - smaller on mobile
@@ -858,7 +969,7 @@ export class GameScene extends Phaser.Scene {
       : (isSpecial ? 10 : 8); // Normal padding on desktop
     const messageBg = this.add.rectangle(0, 0, messageText.width + (padding * 2), messageText.height + (padding * 2), bgColor);
     messageBg.setStrokeStyle(isSpecial ? 2 : 1, 0xffffff);
-    messageBg.setOrigin(0, 0.5);
+    messageBg.setOrigin(0.5, 0.5); // Center the background
     messageBg.setDepth(1000);
     
     // Create container first
@@ -867,7 +978,7 @@ export class GameScene extends Phaser.Scene {
     // Add subtle glow effect for special messages
     if (isSpecial) {
       const glow = this.add.rectangle(0, 0, messageText.width + (padding * 2) + 6, messageText.height + (padding * 2) + 6, 0xffff00, 0.3);
-      glow.setOrigin(0, 0.5);
+      glow.setOrigin(0.5, 0.5); // Center the glow
       glow.setDepth(999);
       glow.setBlendMode(Phaser.BlendModes.ADD);
       
@@ -973,7 +1084,15 @@ export class GameScene extends Phaser.Scene {
     // Increase speed over time - more noticeable acceleration
     // Scale max speed relative to screen width
     const maxSpeed = 600 * baseSpeed;
-    this.gameSpeed = Math.min(maxSpeed, this.gameSpeed + delta * 0.05 * baseSpeed);
+    // Increase speed more aggressively - 6x faster acceleration (0.3 instead of 0.05)
+    // This makes speed increase from 300 to 600 in about 10 seconds (much more noticeable)
+    // Speed accumulates over time: starts at 300, increases by 0.3 per millisecond
+    this.gameSpeed = Math.min(maxSpeed, this.gameSpeed + delta * 0.3 * baseSpeed);
+    // Distance-based minimum speed: ensures speed increases as you progress
+    // Every 15 meters adds +8 speed (capped at +180) - provides a speed floor based on distance
+    const distanceMinSpeed = (300 + Math.min(180, Math.floor(this.distance / 15) * 8)) * baseSpeed;
+    // Use the higher of time-accumulated speed or distance-based minimum
+    this.gameSpeed = Math.max(this.gameSpeed, Math.min(maxSpeed, distanceMinSpeed));
 
     const speedMultiplier = this.sprintMode ? 2.0 : 1.0;
     const currentSpeed = this.gameSpeed * speedMultiplier;
@@ -1020,6 +1139,39 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
+    // Move projectile obstacles with parabolic trajectory
+    this.projectileObstacles.children.iterate((child) => {
+      const projectile = child as Phaser.GameObjects.Rectangle;
+      if (!projectile || !projectile.active) return false;
+      
+      const elapsedTime = projectile.getData('elapsedTime') + deltaSeconds;
+      projectile.setData('elapsedTime', elapsedTime);
+      
+      const startX = projectile.getData('startX');
+      const startY = projectile.getData('startY');
+      const velocityX = projectile.getData('velocityX');
+      const velocityY = projectile.getData('velocityY');
+      const gravity = projectile.getData('gravity');
+      
+      // Calculate parabolic position
+      // velocityX is negative, so this moves from right to left
+      const newX = startX + velocityX * elapsedTime; // velocityX is negative = moves LEFT
+      const newY = startY + velocityY * elapsedTime + 0.5 * gravity * elapsedTime * elapsedTime;
+      
+      projectile.x = newX;
+      projectile.y = newY;
+      
+      // Rotate projectile for visual effect
+      projectile.rotation += deltaSeconds * 5;
+      
+      // Remove if off screen or past target
+      const { width, height } = this.scale;
+      if (projectile.x < -100 || projectile.x > width + 100 || projectile.y > height + 100) {
+        projectile.destroy();
+        this.projectileObstacles.remove(projectile);
+      }
+    });
+
     // Move collectibles
     this.collectibles.children.iterate((child) => {
       const collectible = child as Phaser.GameObjects.Image;
@@ -1055,6 +1207,14 @@ export class GameScene extends Phaser.Scene {
       this.floatingObstacleTimer -= delta;
       if (this.floatingObstacleTimer <= 0) {
         this.spawnFloatingObstacle();
+      }
+    }
+
+    // Spawn projectile obstacles (only after 3000m)
+    if (this.distance > 3000) {
+      this.projectileObstacleTimer -= delta;
+      if (this.projectileObstacleTimer <= 0) {
+        this.spawnProjectileObstacle();
       }
     }
 
@@ -1163,6 +1323,7 @@ export class GameScene extends Phaser.Scene {
     this.obstacles.clear(true, true);
     this.obstaclesPassed.clear();
     this.floatingObstacles.clear(true, true);
+    this.projectileObstacles.clear(true, true);
     this.collectibles.clear(true, true);
     this.specialCollectibles.forEach(obj => obj.destroy());
     this.specialCollectibles = [];
@@ -1171,6 +1332,7 @@ export class GameScene extends Phaser.Scene {
     
     this.obstacleTimer = 1000;
     this.floatingObstacleTimer = 2000;
+    this.projectileObstacleTimer = 3000;
     this.collectibleTimer = 2000;
     this.specialCollectibleTimer = 5000;
     this.energyDrainTimer = 0;
@@ -1221,6 +1383,7 @@ export class GameScene extends Phaser.Scene {
     
     this.obstacleTimer = 1000;
     this.floatingObstacleTimer = 2000;
+    this.projectileObstacleTimer = 3000;
     this.collectibleTimer = 2000;
     this.specialCollectibleTimer = 5000;
     this.energyDrainTimer = 0;
@@ -1230,6 +1393,7 @@ export class GameScene extends Phaser.Scene {
     this.obstacles.clear(true, true);
     this.obstaclesPassed.clear();
     this.floatingObstacles.clear(true, true);
+    this.projectileObstacles.clear(true, true);
     this.collectibles.clear(true, true);
     this.specialCollectibles.forEach(obj => obj.destroy());
     this.specialCollectibles = [];
