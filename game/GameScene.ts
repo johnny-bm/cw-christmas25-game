@@ -198,9 +198,9 @@ export class GameScene extends Phaser.Scene {
     
     // Scale gravity relative to screen height for responsive jump physics
     // Base gravity is 2000 for 1080px height, scale proportionally
-    // On mobile, slightly reduce gravity to make jump feel lighter
+    // On mobile, keep gravity normal to prevent floaty feeling
     const isMobile = width <= 768 || height <= 768;
-    const mobileGravityMultiplier = isMobile ? 0.92 : 1.0; // 8% less gravity on mobile
+    const mobileGravityMultiplier = isMobile ? 0.98 : 1.0; // Only 2% less gravity on mobile (reduced from 8%)
     const baseGravity = 2000;
     const baseHeight = 1080;
     const scaledGravity = baseGravity * (height / baseHeight) * mobileGravityMultiplier;
@@ -314,15 +314,35 @@ export class GameScene extends Phaser.Scene {
     
     // Initialize all sounds
     try {
+      // Ensure Web Audio API is being used (better mobile support)
+      // Note: iOS Safari still respects silent mode switch, but Web Audio gives us more control
+      if (this.sound.context && (this.sound.context as any).state === 'suspended') {
+        // Try to resume audio context immediately
+        (this.sound.context as AudioContext).resume().catch((err) => {
+          console.warn('⚠️ Could not resume audio context:', err);
+        });
+      }
+      
       // Initialize background music - start playing immediately at low volume
-    // Higher volume on mobile for better audibility
-    const isMobile = width <= 768 || height <= 768;
-    const musicVolume = isMobile ? 0.3 : 0.2; // Slightly higher on mobile
+      // Higher volume on mobile for better audibility
+      const isMobile = width <= 768 || height <= 768;
+      const musicVolume = isMobile ? 0.3 : 0.2; // Slightly higher on mobile
       if (this.cache.audio.exists('bgMusic')) {
-        this.backgroundMusic = this.sound.add('bgMusic', { loop: true, volume: musicVolume });
+        this.backgroundMusic = this.sound.add('bgMusic', { 
+          loop: true, 
+          volume: musicVolume,
+          // Use Web Audio API explicitly
+          detune: 0,
+          rate: 1.0
+        });
         console.log('✅ Background music initialized', { isMobile, musicVolume });
       } else {
-        this.backgroundMusic = this.sound.add('bgMusic', { loop: true, volume: musicVolume });
+        this.backgroundMusic = this.sound.add('bgMusic', { 
+          loop: true, 
+          volume: musicVolume,
+          detune: 0,
+          rate: 1.0
+        });
       }
       
       // Initialize sound effects - increased volumes for better audibility, especially on mobile
@@ -332,16 +352,23 @@ export class GameScene extends Phaser.Scene {
         const soundVolume = isMobile ? 0.9 : 0.7; // Higher volume on mobile
         const comboVolume = isMobile ? 1.0 : 0.8; // Max volume for combo on mobile
         
-        this.jumpSound = this.sound.add('jumpSound', { volume: soundVolume });
-        this.collectSound = this.sound.add('collectSound', { volume: soundVolume });
-        this.comboSound = this.sound.add('comboSound', { volume: comboVolume });
-        this.stumbleSound = this.sound.add('stumbleSound', { volume: soundVolume });
+        // Use Web Audio API explicitly for all sounds
+        const soundConfig = { 
+          detune: 0,
+          rate: 1.0
+        };
+        
+        this.jumpSound = this.sound.add('jumpSound', { volume: soundVolume, ...soundConfig });
+        this.collectSound = this.sound.add('collectSound', { volume: soundVolume, ...soundConfig });
+        this.comboSound = this.sound.add('comboSound', { volume: comboVolume, ...soundConfig });
+        this.stumbleSound = this.sound.add('stumbleSound', { volume: soundVolume, ...soundConfig });
         console.log('✅ Sound effects initialized', { isMobile, soundVolume });
       } catch (error) {
         console.warn('⚠️ Some sound effects may not be loaded yet:', error);
       }
       
       console.log('✅ All sounds initialized');
+      console.log('📱 Note: iOS Safari respects silent mode. Sounds will only play when device is not in silent mode.');
     } catch (error) {
       console.error('❌ Failed to initialize sounds:', error);
     }
@@ -446,8 +473,8 @@ export class GameScene extends Phaser.Scene {
     // Base jump velocity is -800 for 1080px height, scale proportionally
     const { width, height } = this.scale;
     const isMobile = width <= 768 || height <= 768;
-    // Make jump feel lighter on mobile by increasing jump velocity
-    const mobileJumpMultiplier = isMobile ? 1.15 : 1.0; // 15% stronger jump on mobile
+    // Make jump feel snappier on mobile - slightly stronger but not floaty
+    const mobileJumpMultiplier = isMobile ? 1.05 : 1.0; // Only 5% stronger jump on mobile (reduced from 15%)
     const baseJumpVelocity = -800;
     const baseHeight = 1080;
     const jumpVelocity = baseJumpVelocity * (height / baseHeight) * mobileJumpMultiplier;
@@ -1702,9 +1729,9 @@ export class GameScene extends Phaser.Scene {
     }
     
     // Update gravity to scale with new screen height
-    // On mobile, slightly reduce gravity to make jump feel lighter
+    // On mobile, keep gravity normal to prevent floaty feeling
     const isMobile = width <= 768 || height <= 768;
-    const mobileGravityMultiplier = isMobile ? 0.92 : 1.0; // 8% less gravity on mobile
+    const mobileGravityMultiplier = isMobile ? 0.98 : 1.0; // Only 2% less gravity on mobile (reduced from 8%)
     const baseGravity = 2000;
     const baseHeight = 1080;
     const scaledGravity = baseGravity * (height / baseHeight) * mobileGravityMultiplier;

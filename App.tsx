@@ -248,7 +248,7 @@ export default function App() {
   console.log('📱 Mobile:', isMobile, 'Portrait:', isPortrait, 'Show blocker:', showPortraitBlocker);
 
   return (
-    <div className="w-full h-[100dvh] bg-white overflow-hidden relative">
+    <div className="w-full h-[100dvh] bg-white overflow-hidden relative" style={{ margin: 0, padding: 0 }}>
       {/* Portrait orientation blocker - blocks everything on mobile portrait */}
       {showPortraitBlocker && (
         <div className="absolute inset-0 z-[9999] bg-black flex flex-col items-center justify-center px-4">

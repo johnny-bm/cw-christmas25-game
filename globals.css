@@ -138,6 +138,8 @@
     position: fixed;
     width: 100%;
     height: 100%;
+    margin: 0;
+    padding: 0;
     -webkit-overflow-scrolling: touch;
     touch-action: none;
     overscroll-behavior: none;
@@ -149,7 +151,18 @@
     position: fixed;
     width: 100%;
     height: 100%;
+    margin: 0;
+    padding: 0;
     overscroll-behavior: none;
+  }
+  
+  /* Ensure canvas fills container completely */
+  canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0;
+    padding: 0;
   }
   
   /* Safe area insets for notched devices */

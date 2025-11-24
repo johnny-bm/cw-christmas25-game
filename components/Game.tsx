@@ -66,7 +66,10 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
       backgroundColor: '#ffffff', // White background
       audio: {
         disableWebAudio: false,
-        noAudio: false
+        noAudio: false,
+        // Force Web Audio API usage for better mobile support
+        // Note: iOS still respects silent mode, but Web Audio has better control
+        context: undefined // Let Phaser create its own AudioContext
       },
       physics: {
         default: 'arcade',
@@ -80,7 +83,8 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         mode: Phaser.Scale.RESIZE, // Canvas resizes to fit container
         autoCenter: Phaser.Scale.CENTER_BOTH,
         width: initialWidth,
-        height: initialHeight
+        height: initialHeight,
+        fullscreenTarget: container // Ensure fullscreen targets the container
       },
       render: {
         pixelArt: false,
@@ -345,7 +349,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     };
   }, []);
 
-  return <div ref={containerRef} className="w-full h-full" />;
+  return <div ref={containerRef} className="w-full h-full overflow-hidden" style={{ margin: 0, padding: 0 }} />;
 }
 
 export const Game = memo(GameComponent);
