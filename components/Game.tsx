@@ -54,9 +54,10 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     // Get device pixel ratio for high DPI displays
     const devicePixelRatio = window.devicePixelRatio || 1;
     
-    // Use actual window dimensions for fully responsive game
-    const initialWidth = window.innerWidth;
-    const initialHeight = window.innerHeight;
+    // Use viewport dimensions (vw/vh) for fully responsive game
+    // Use visual viewport if available (handles iOS Safari address bar), otherwise use window
+    const initialWidth = window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth;
+    const initialHeight = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
 
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.CANVAS,
@@ -198,8 +199,9 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     const handleResize = () => {
       if (gameRef.current) {
         // Use visual viewport if available (handles iOS Safari address bar)
-        const width = window.visualViewport?.width || window.innerWidth;
-        const height = window.visualViewport?.height || window.innerHeight;
+        // Fallback to window dimensions, then document client dimensions
+        const width = window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth;
+        const height = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
         gameRef.current.scale.resize(width, height);
       }
     };
@@ -349,7 +351,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     };
   }, []);
 
-  return <div ref={containerRef} className="w-full h-full overflow-hidden" style={{ margin: 0, padding: 0 }} />;
+  return <div ref={containerRef} className="w-full h-full overflow-hidden" style={{ margin: 0, padding: 0, width: '100vw', height: '100vh' }} />;
 }
 
 export const Game = memo(GameComponent);

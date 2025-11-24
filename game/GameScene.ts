@@ -316,9 +316,10 @@ export class GameScene extends Phaser.Scene {
     try {
       // Ensure Web Audio API is being used (better mobile support)
       // Note: iOS Safari still respects silent mode switch, but Web Audio gives us more control
-      if (this.sound.context && (this.sound.context as any).state === 'suspended') {
+      const audioContext = this.getAudioContext();
+      if (audioContext && audioContext.state === 'suspended') {
         // Try to resume audio context immediately
-        (this.sound.context as AudioContext).resume().catch((err) => {
+        audioContext.resume().catch((err) => {
           console.warn('⚠️ Could not resume audio context:', err);
         });
       }
@@ -392,8 +393,9 @@ export class GameScene extends Phaser.Scene {
       }
       
       // Ensure audio context is resumed (required for mobile)
-      if (this.sound.context && (this.sound.context as any).state === 'suspended') {
-        (this.sound.context as AudioContext).resume().then(() => {
+      const audioContext = this.getAudioContext();
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().then(() => {
           console.log('🔊 Audio context resumed');
         }).catch((err) => {
           console.warn('⚠️ Failed to resume audio context:', err);
@@ -439,6 +441,14 @@ export class GameScene extends Phaser.Scene {
     // The ready event will be emitted after assets are loaded
   }
   
+  // Helper function to safely get audio context
+  private getAudioContext(): AudioContext | null {
+    if ('context' in this.sound && this.sound.context) {
+      return this.sound.context as AudioContext;
+    }
+    return null;
+  }
+
   toggleMute() {
     this.isMuted = !this.isMuted;
     this.sound.mute = this.isMuted;
@@ -486,8 +496,9 @@ export class GameScene extends Phaser.Scene {
       if (this.jumpSound && !this.isMuted) {
         try {
           // Resume audio context if suspended (mobile requirement)
-          if (this.sound.context && (this.sound.context as any).state === 'suspended') {
-            (this.sound.context as AudioContext).resume();
+          const audioContext = this.getAudioContext();
+          if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
           }
           this.jumpSound.play();
         } catch (error) {
@@ -501,8 +512,9 @@ export class GameScene extends Phaser.Scene {
       if (this.jumpSound && !this.isMuted) {
         try {
           // Resume audio context if suspended (mobile requirement)
-          if (this.sound.context && (this.sound.context as any).state === 'suspended') {
-            (this.sound.context as AudioContext).resume();
+          const audioContext = this.getAudioContext();
+          if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
           }
           this.jumpSound.play();
         } catch (error) {
@@ -791,8 +803,9 @@ export class GameScene extends Phaser.Scene {
           if (this.stumbleSound && !this.isMuted) {
             try {
               // Resume audio context if suspended (mobile requirement)
-              if (this.sound.context && (this.sound.context as any).state === 'suspended') {
-                (this.sound.context as AudioContext).resume();
+              const audioContext = this.getAudioContext();
+              if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
               }
               this.stumbleSound.play();
             } catch (error) {
@@ -849,8 +862,9 @@ export class GameScene extends Phaser.Scene {
           if (this.stumbleSound && !this.isMuted) {
             try {
               // Resume audio context if suspended (mobile requirement)
-              if (this.sound.context && (this.sound.context as any).state === 'suspended') {
-                (this.sound.context as AudioContext).resume();
+              const audioContext = this.getAudioContext();
+              if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
               }
               this.stumbleSound.play();
             } catch (error) {
@@ -874,8 +888,9 @@ export class GameScene extends Phaser.Scene {
           if (this.combo === 3 || this.combo % 10 === 0) {
             try {
               // Resume audio context if suspended (mobile requirement)
-              if (this.sound.context && (this.sound.context as any).state === 'suspended') {
-                (this.sound.context as AudioContext).resume();
+              const audioContext = this.getAudioContext();
+              if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
               }
               this.comboSound.play();
             } catch (error) {
@@ -922,8 +937,9 @@ export class GameScene extends Phaser.Scene {
           if (this.stumbleSound && !this.isMuted) {
             try {
               // Resume audio context if suspended (mobile requirement)
-              if (this.sound.context && (this.sound.context as any).state === 'suspended') {
-                (this.sound.context as AudioContext).resume();
+              const audioContext = this.getAudioContext();
+              if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
               }
               this.stumbleSound.play();
             } catch (error) {
@@ -957,8 +973,9 @@ export class GameScene extends Phaser.Scene {
         if (this.collectSound && !this.isMuted) {
           try {
             // Resume audio context if suspended (mobile requirement)
-            if (this.sound.context && (this.sound.context as any).state === 'suspended') {
-              (this.sound.context as AudioContext).resume();
+            const audioContext = this.getAudioContext();
+            if (audioContext && audioContext.state === 'suspended') {
+              audioContext.resume();
             }
             this.collectSound.play();
           } catch (error) {
@@ -983,8 +1000,9 @@ export class GameScene extends Phaser.Scene {
         if (this.collectSound && !this.isMuted) {
           try {
             // Resume audio context if suspended (mobile requirement)
-            if (this.sound.context && (this.sound.context as any).state === 'suspended') {
-              (this.sound.context as AudioContext).resume();
+            const audioContext = this.getAudioContext();
+            if (audioContext && audioContext.state === 'suspended') {
+              audioContext.resume();
             }
             this.collectSound.play();
           } catch (error) {
@@ -1034,6 +1052,10 @@ export class GameScene extends Phaser.Scene {
     const textColor = isSpecial ? '#000000' : '#ffffff';
     const strokeColor = isSpecial ? '#ffffff' : '#000000';
     
+    // Match text resolution to canvas resolution for crisp rendering
+    // Use device pixel ratio (same as canvas resolution) for crisp text
+    const textResolution = Math.max(window.devicePixelRatio || 1, 2); // At least 2x for quality
+    
     const messageText = this.add.text(0, 0, message, {
       fontFamily: '"Urbanist", sans-serif',
       fontSize: baseFontSize,
@@ -1041,7 +1063,7 @@ export class GameScene extends Phaser.Scene {
       align: 'center',
       stroke: strokeColor,
       strokeThickness: isSpecial ? 2 : 1,
-      resolution: 4, // Higher resolution for better text quality
+      resolution: textResolution, // Match canvas resolution for crisp text
       fontStyle: 'bold'
     });
     messageText.setOrigin(0.5, 0.5); // Center the text
@@ -1443,8 +1465,9 @@ export class GameScene extends Phaser.Scene {
     if (this.backgroundMusic) {
       this.setMusicVolume(gameplayVolume);
       // Ensure audio context is resumed (required for mobile)
-      if (this.sound.context && (this.sound.context as any).state === 'suspended') {
-        (this.sound.context as AudioContext).resume().then(() => {
+      const audioContext = this.getAudioContext();
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().then(() => {
           console.log('🔊 Audio context resumed on game start');
         }).catch((err) => {
           console.warn('⚠️ Failed to resume audio context:', err);

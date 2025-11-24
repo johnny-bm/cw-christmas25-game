@@ -159,10 +159,12 @@
   /* Ensure canvas fills container completely */
   canvas {
     display: block;
-    width: 100% !important;
-    height: 100% !important;
+    width: 100vw !important;
+    height: 100vh !important;
     margin: 0;
     padding: 0;
+    max-width: 100vw;
+    max-height: 100vh;
   }
   
   /* Safe area insets for notched devices */
