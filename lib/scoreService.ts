@@ -1,6 +1,14 @@
-// Score service - uses Supabase when available, falls back to localStorage
+// Score service - uses Firebase when available, falls back to localStorage
 
-import { supabase, isSupabaseConfigured } from './supabase';
+import { db } from "./firebase";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+} from "firebase/firestore";
 
 export interface ScoreEntry {
   id: string;
@@ -14,96 +22,64 @@ class ScoreService {
   private readonly STORAGE_KEY = 'escapeTheDeadline_scores';
   private readonly MAX_SCORES = 10;
 
-  // Check if Supabase is configured
-  isConfigured(): boolean {
-    return isSupabaseConfigured && supabase !== null;
+  private get scoresCollection() {
+    return collection(db, "scores");
   }
 
-  // Get top scores
-  async getTopScores(limit: number = 10): Promise<ScoreEntry[]> {
+  // Firebase version of getTopScores
+  async getTopScores(limitCount: number = 10): Promise<ScoreEntry[]> {
     try {
-      // Try Supabase first
-      if (this.isConfigured()) {
-        const { data, error } = await supabase
-          .from('scores')
-          .select('*')
-          .order('distance', { ascending: false })
-          .limit(limit);
+      const q = query(
+        this.scoresCollection,
+        orderBy("distance", "desc"),
+        limit(limitCount)
+      );
+      const snapshot = await getDocs(q);
 
-        if (error) {
-          console.error('Supabase error:', error);
-          // Fall back to localStorage on error
-          return this.getLocalScores(limit);
-        }
+      const scores: ScoreEntry[] = snapshot.docs.map((doc) => {
+        const data = doc.data() as any;
+        return {
+          id: doc.id,
+          player_name: data.player_name,
+          distance: data.distance,
+          max_combo: data.max_combo,
+          created_at: data.created_at ?? new Date().toISOString(),
+        };
+      });
 
-        return data || [];
-      }
-
-      // Use localStorage if Supabase not configured
-      return this.getLocalScores(limit);
+      return scores;
     } catch (error) {
-      console.error('Error loading scores:', error);
-      return this.getLocalScores(limit);
+      console.error("Error loading scores from Firebase:", error);
+      // fall back to local storage
+      return this.getLocalScores(limitCount);
     }
   }
 
-  // Get total count of scores
-  async getTotalCount(): Promise<number> {
-    try {
-      // Try Supabase first
-      if (this.isConfigured()) {
-        const { count, error } = await supabase
-          .from('scores')
-          .select('*', { count: 'exact', head: true });
-
-        if (error) {
-          console.error('Supabase error:', error);
-          // Fall back to localStorage on error
-          return this.getLocalScoresCount();
-        }
-
-        return count || 0;
-      }
-
-      // Use localStorage if Supabase not configured
-      return this.getLocalScoresCount();
-    } catch (error) {
-      console.error('Error getting total count:', error);
-      return this.getLocalScoresCount();
-    }
-  }
-
-  // Save a new score
+  // Firebase version of saveScore
   async saveScore(playerName: string, distance: number, maxCombo?: number): Promise<ScoreEntry> {
+    const newScore: ScoreEntry = {
+      id: Date.now().toString(),
+      player_name: playerName,
+      distance,
+      max_combo: maxCombo,
+      created_at: new Date().toISOString(),
+    };
+
     try {
-      const newScore: ScoreEntry = {
-        id: Date.now().toString(),
+      const docRef = await addDoc(this.scoresCollection, {
         player_name: playerName,
-        distance: distance,
-        max_combo: maxCombo,
-        created_at: new Date().toISOString()
-      };
+        distance,
+        max_combo: maxCombo ?? 0,
+        created_at: newScore.created_at,
+      });
 
-      // Try Supabase first
-      if (this.isConfigured()) {
-        const { data, error } = await supabase
-          .from('scores')
-          .insert({
-            player_name: playerName,
-            distance: distance,
-            max_combo: maxCombo || 0
-          })
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Supabase error:', error);
-          // Fall back to localStorage on error
-          return this.saveLocalScore(playerName, distance, maxCombo);
-        }
-
-        return data;
-      }
+      return { ...newScore, id: docRef.id };
+    } catch (error) {
+      console.error("Error saving score to Firebase:", error);
+      // fall back to local storage
+      return this.saveLocalScore(playerName, distance, maxCombo);
+    }
+  }
 
       // Use localStorage if Supabase not configured
       return this.saveLocalScore(playerName, distance, maxCombo);
