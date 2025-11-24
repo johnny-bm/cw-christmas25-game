@@ -61,28 +61,6 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10 flex flex-col">
-      {/* Mute/Unmute Button - Top Left - Clickable with safe area and touch feedback */}
-      <button
-        onClick={handleToggleMute}
-        className="absolute z-20 pointer-events-auto bg-black/80 border-2 border-white hover:bg-black/90 active:scale-95 transition-all duration-150 touch-target rounded"
-        style={{
-          top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
-          left: 'max(0.5rem, env(safe-area-inset-left, 0.5rem))',
-          padding: 'clamp(0.75rem, 2vw, 1rem)',
-          minWidth: '44px',
-          minHeight: '44px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-        aria-label={isMuted ? 'Unmute' : 'Mute'}
-      >
-        {isMuted ? (
-          <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-        ) : (
-          <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-        )}
-      </button>
       {/* Distance Counter - Top Center, no box - Smaller on mobile landscape - Safe area support */}
       <div 
         className="absolute max-md:landscape:top-1 sm:top-6 md:top-8 left-1/2 -translate-x-1/2"
@@ -119,19 +97,43 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Energy Bar - Top Right Only - Simplified single bar - Compact on mobile landscape */}
-        <div className="bg-black/80 border-2 border-white px-1.5 py-1 max-md:landscape:px-1 max-md:landscape:py-0.5 sm:px-3 sm:py-2 min-w-[80px] max-md:landscape:min-w-[70px] sm:min-w-[140px] rounded">
-          <div className="flex items-center gap-1 sm:gap-2 text-white text-[8px] max-md:landscape:text-[7px] sm:text-xs mb-0.5 sm:mb-1">
-            <Trophy className="w-2 h-2 max-md:landscape:w-1.5 max-md:landscape:h-1.5 sm:w-3 sm:h-3 md:w-4 md:h-4" />
-            <span>ENERGY</span>
-            <span className="ml-auto" style={{ fontFamily: '"Urbanist", sans-serif' }}>{Math.round(energy)}%</span>
+        {/* Energy Bar and Mute Button - Top Right - Simplified single bar - Compact on mobile landscape */}
+        <div className="flex items-start gap-1 sm:gap-2">
+          {/* Energy Bar */}
+          <div className="bg-black/80 border-2 border-white px-1.5 py-1 max-md:landscape:px-1 max-md:landscape:py-0.5 sm:px-3 sm:py-2 min-w-[80px] max-md:landscape:min-w-[70px] sm:min-w-[140px] rounded">
+            <div className="flex items-center gap-1 sm:gap-2 text-white text-[8px] max-md:landscape:text-[7px] sm:text-xs mb-0.5 sm:mb-1">
+              <Trophy className="w-2 h-2 max-md:landscape:w-1.5 max-md:landscape:h-1.5 sm:w-3 sm:h-3 md:w-4 md:h-4" />
+              <span>ENERGY</span>
+              <span className="ml-auto" style={{ fontFamily: '"Urbanist", sans-serif' }}>{Math.round(energy)}%</span>
+            </div>
+            <div className="w-full h-1.5 max-md:landscape:h-1 sm:h-2.5 bg-gray-800 border border-white rounded">
+              <div 
+                className="h-full bg-white transition-all duration-200"
+                style={{ width: `${energy}%` }}
+              />
+            </div>
           </div>
-          <div className="w-full h-1.5 max-md:landscape:h-1 sm:h-2.5 bg-gray-800 border border-white rounded">
-            <div 
-              className="h-full bg-white transition-all duration-200"
-              style={{ width: `${energy}%` }}
-            />
-          </div>
+          
+          {/* Mute/Unmute Button - Next to Energy Bar */}
+          <button
+            onClick={handleToggleMute}
+            className="pointer-events-auto bg-black/80 border-2 border-white hover:bg-black/90 active:scale-95 transition-all duration-150 touch-target rounded"
+            style={{
+              padding: 'clamp(0.75rem, 2vw, 1rem)',
+              minWidth: '44px',
+              minHeight: '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            aria-label={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted ? (
+              <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            ) : (
+              <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            )}
+          </button>
         </div>
       </div>
 

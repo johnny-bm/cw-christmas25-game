@@ -1,4 +1,4 @@
-import { Trophy, Navigation } from 'lucide-react';
+import { Trophy, Navigation, Volume2, VolumeX } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { scoreService } from '../lib/scoreService';
 import { Leaderboard } from './Leaderboard';
@@ -20,6 +20,10 @@ export function GameOver({ distance, bestDistance, maxCombo, onRestart }: GameOv
   const [isSaving, setIsSaving] = useState(false);
   const [scoreSaved, setScoreSaved] = useState(false);
   const [isTopScore, setIsTopScore] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => {
+    // Check localStorage for saved mute state
+    return localStorage.getItem('escapeTheDeadline_muted') === 'true';
+  });
 
   useEffect(() => {
     // Check if this is a top score
@@ -36,6 +40,32 @@ export function GameOver({ distance, bestDistance, maxCombo, onRestart }: GameOv
       clearTimeout(timer3);
     };
   }, [distance]); // Add distance as dependency
+
+  useEffect(() => {
+    // Sync with Phaser game mute state
+    const checkMuteState = () => {
+      if (typeof (window as any).__getGameMuteState === 'function') {
+        const muted = (window as any).__getGameMuteState();
+        setIsMuted(muted);
+      }
+    };
+    
+    checkMuteState();
+    const interval = setInterval(checkMuteState, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleToggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (typeof (window as any).__toggleGameMute === 'function') {
+      const newMutedState = (window as any).__toggleGameMute();
+      setIsMuted(newMutedState);
+      console.log('🔊 Mute button clicked, new state:', newMutedState);
+    } else {
+      console.warn('⚠️ __toggleGameMute function not available');
+    }
+  };
 
   const checkTopScore = async () => {
     console.log('🏆 Checking if score is top 10:', distance);
@@ -64,6 +94,29 @@ export function GameOver({ distance, bestDistance, maxCombo, onRestart }: GameOv
 
   return (
     <div className="w-full h-full bg-white overflow-y-auto animate-in fade-in duration-500 relative">
+      {/* Mute/Unmute Button - Top Right */}
+      <button
+        onClick={handleToggleMute}
+        className="absolute z-20 pointer-events-auto bg-black/80 border-2 border-white hover:bg-black/90 active:scale-95 transition-all duration-150 touch-target rounded"
+        style={{
+          top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
+          right: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
+          padding: 'clamp(0.75rem, 2vw, 1rem)',
+          minWidth: '44px',
+          minHeight: '44px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+        aria-label={isMuted ? 'Unmute' : 'Mute'}
+      >
+        {isMuted ? (
+          <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        ) : (
+          <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        )}
+      </button>
+
       {/* Subtle background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{ 

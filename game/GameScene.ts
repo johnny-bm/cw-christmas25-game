@@ -493,7 +493,11 @@ export class GameScene extends Phaser.Scene {
     
     // Scale collectible positions and sizes relative to screen
     const baseSpeed = width / 1920;
-    const collectibleSize = height * 0.008; // ~0.8% of screen height (much smaller collectibles)
+    // Use smaller percentage and cap max size for desktop screens
+    // Base size is 0.4% of screen height, but cap at ~12px equivalent for larger screens
+    const baseCollectibleSize = height * 0.004; // ~0.4% of screen height (smaller on all screens)
+    const maxCollectibleSize = 12; // Cap at 12px equivalent size
+    const collectibleSize = Math.min(baseCollectibleSize, maxCollectibleSize);
     const heights = [
       this.groundY - height * 0.028,  // ~2.8% from ground
       this.groundY - height * 0.074,  // ~7.4% from ground
@@ -536,7 +540,11 @@ export class GameScene extends Phaser.Scene {
     
     // Scale special collectible positions and sizes relative to screen
     const baseSpeed = width / 1920;
-    const collectibleRadius = height * 0.014; // ~1.4% of screen height
+    // Use smaller percentage and cap max size for desktop screens
+    // Base radius is 0.7% of screen height, but cap at ~18px for larger screens
+    const baseCollectibleRadius = height * 0.007; // ~0.7% of screen height (smaller on all screens)
+    const maxCollectibleRadius = 18; // Cap at 18px radius
+    const collectibleRadius = Math.min(baseCollectibleRadius, maxCollectibleRadius);
     const heights = [
       this.groundY - height * 0.028,  // ~2.8% from ground
       this.groundY - height * 0.074,  // ~7.4% from ground

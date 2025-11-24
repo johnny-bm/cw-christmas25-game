@@ -1,5 +1,5 @@
-import { Zap } from 'lucide-react';
-import { useEffect } from 'react';
+import { Zap, Volume2, VolumeX } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Leaderboard } from './Leaderboard';
 import { formatNumber } from '../lib/formatNumber';
 
@@ -10,6 +10,11 @@ interface StartScreenProps {
 }
 
 export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0 }: StartScreenProps) {
+  const [isMuted, setIsMuted] = useState(() => {
+    // Check localStorage for saved mute state
+    return localStorage.getItem('escapeTheDeadline_muted') === 'true';
+  });
+
   useEffect(() => {
     console.log('✅ StartScreen RENDERED - Refresh count:', leaderboardRefresh);
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -23,8 +28,57 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0 }: S
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [onStart, leaderboardRefresh]);
 
+  useEffect(() => {
+    // Sync with Phaser game mute state
+    const checkMuteState = () => {
+      if (typeof (window as any).__getGameMuteState === 'function') {
+        const muted = (window as any).__getGameMuteState();
+        setIsMuted(muted);
+      }
+    };
+    
+    checkMuteState();
+    const interval = setInterval(checkMuteState, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleToggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (typeof (window as any).__toggleGameMute === 'function') {
+      const newMutedState = (window as any).__toggleGameMute();
+      setIsMuted(newMutedState);
+      console.log('🔊 Mute button clicked, new state:', newMutedState);
+    } else {
+      console.warn('⚠️ __toggleGameMute function not available');
+    }
+  };
+
   return (
-    <div className="w-full h-full flex items-center justify-center bg-white overflow-hidden">
+    <div className="w-full h-full flex items-center justify-center bg-white overflow-hidden relative">
+      {/* Mute/Unmute Button - Top Right */}
+      <button
+        onClick={handleToggleMute}
+        className="absolute z-20 pointer-events-auto bg-black/80 border-2 border-white hover:bg-black/90 active:scale-95 transition-all duration-150 touch-target rounded"
+        style={{
+          top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
+          right: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
+          padding: 'clamp(0.75rem, 2vw, 1rem)',
+          minWidth: '44px',
+          minHeight: '44px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+        aria-label={isMuted ? 'Unmute' : 'Mute'}
+      >
+        {isMuted ? (
+          <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        ) : (
+          <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        )}
+      </button>
+
       {/* Desktop/Tablet Portrait: Vertical Layout */}
       <div className="max-md:landscape:hidden text-center space-y-2 sm:space-y-4 md:space-y-6 px-3 py-3 sm:px-4 sm:py-4 w-full max-w-4xl overflow-y-auto max-h-full">
         <div className="space-y-1 sm:space-y-2 md:space-y-3">
