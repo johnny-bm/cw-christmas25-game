@@ -198,11 +198,14 @@ export class GameScene extends Phaser.Scene {
     
     // Scale gravity relative to screen height for responsive jump physics
     // Base gravity is 2000 for 1080px height, scale proportionally
+    // On mobile, slightly reduce gravity to make jump feel lighter
+    const isMobile = width <= 768 || height <= 768;
+    const mobileGravityMultiplier = isMobile ? 0.92 : 1.0; // 8% less gravity on mobile
     const baseGravity = 2000;
     const baseHeight = 1080;
-    const scaledGravity = baseGravity * (height / baseHeight);
+    const scaledGravity = baseGravity * (height / baseHeight) * mobileGravityMultiplier;
     this.physics.world.gravity.y = scaledGravity;
-    console.log('📐 Scaled gravity:', scaledGravity, 'for height:', height);
+    console.log('📐 Scaled gravity:', scaledGravity, 'for height:', height, 'mobile:', isMobile);
 
     // White game background
     const bg = this.add.rectangle(width / 2, height / 2, width, height, 0xffffff);
@@ -312,20 +315,28 @@ export class GameScene extends Phaser.Scene {
     // Initialize all sounds
     try {
       // Initialize background music - start playing immediately at low volume
+    // Higher volume on mobile for better audibility
+    const isMobile = width <= 768 || height <= 768;
+    const musicVolume = isMobile ? 0.3 : 0.2; // Slightly higher on mobile
       if (this.cache.audio.exists('bgMusic')) {
-        this.backgroundMusic = this.sound.add('bgMusic', { loop: true, volume: 0.2 }); // Low volume for start screen
-        console.log('✅ Background music initialized');
+        this.backgroundMusic = this.sound.add('bgMusic', { loop: true, volume: musicVolume });
+        console.log('✅ Background music initialized', { isMobile, musicVolume });
       } else {
-        this.backgroundMusic = this.sound.add('bgMusic', { loop: true, volume: 0.2 });
+        this.backgroundMusic = this.sound.add('bgMusic', { loop: true, volume: musicVolume });
       }
       
-      // Initialize sound effects - increased volumes for better audibility
+      // Initialize sound effects - increased volumes for better audibility, especially on mobile
       try {
-        this.jumpSound = this.sound.add('jumpSound', { volume: 0.7 });
-        this.collectSound = this.sound.add('collectSound', { volume: 0.7 });
-        this.comboSound = this.sound.add('comboSound', { volume: 0.8 });
-        this.stumbleSound = this.sound.add('stumbleSound', { volume: 0.7 });
-        console.log('✅ Sound effects initialized');
+        // Detect mobile for higher volume
+        const isMobile = width <= 768 || height <= 768;
+        const soundVolume = isMobile ? 0.9 : 0.7; // Higher volume on mobile
+        const comboVolume = isMobile ? 1.0 : 0.8; // Max volume for combo on mobile
+        
+        this.jumpSound = this.sound.add('jumpSound', { volume: soundVolume });
+        this.collectSound = this.sound.add('collectSound', { volume: soundVolume });
+        this.comboSound = this.sound.add('comboSound', { volume: comboVolume });
+        this.stumbleSound = this.sound.add('stumbleSound', { volume: soundVolume });
+        console.log('✅ Sound effects initialized', { isMobile, soundVolume });
       } catch (error) {
         console.warn('⚠️ Some sound effects may not be loaded yet:', error);
       }
@@ -353,6 +364,15 @@ export class GameScene extends Phaser.Scene {
         console.log('🔓 Audio unlocked');
       }
       
+      // Ensure audio context is resumed (required for mobile)
+      if (this.sound.context && (this.sound.context as any).state === 'suspended') {
+        (this.sound.context as AudioContext).resume().then(() => {
+          console.log('🔊 Audio context resumed');
+        }).catch((err) => {
+          console.warn('⚠️ Failed to resume audio context:', err);
+        });
+      }
+      
       // Start music after unlock
       if (this.backgroundMusic && !this.backgroundMusic.isPlaying && !this.isMuted) {
         try {
@@ -374,12 +394,14 @@ export class GameScene extends Phaser.Scene {
         document.removeEventListener('click', unlockAudio);
         document.removeEventListener('touchstart', unlockAudio);
         document.removeEventListener('touchend', unlockAudio);
-        this.input.once('pointerdown', unlockAndStartAudio);
+        document.removeEventListener('pointerdown', unlockAudio);
       };
       
+      // Use more aggressive mobile audio unlocking
       document.addEventListener('click', unlockAudio, { once: true });
       document.addEventListener('touchstart', unlockAudio, { once: true, passive: false });
       document.addEventListener('touchend', unlockAudio, { once: true });
+      document.addEventListener('pointerdown', unlockAudio, { once: true });
       this.input.once('pointerdown', unlockAndStartAudio);
     } else {
       // Audio already unlocked, start music
@@ -422,17 +444,24 @@ export class GameScene extends Phaser.Scene {
     
     // Scale jump velocity relative to screen height for responsive jump physics
     // Base jump velocity is -800 for 1080px height, scale proportionally
-    const { height } = this.scale;
+    const { width, height } = this.scale;
+    const isMobile = width <= 768 || height <= 768;
+    // Make jump feel lighter on mobile by increasing jump velocity
+    const mobileJumpMultiplier = isMobile ? 1.15 : 1.0; // 15% stronger jump on mobile
     const baseJumpVelocity = -800;
     const baseHeight = 1080;
-    const jumpVelocity = baseJumpVelocity * (height / baseHeight);
+    const jumpVelocity = baseJumpVelocity * (height / baseHeight) * mobileJumpMultiplier;
     
     if (onGround) {
       this.player.setVelocityY(jumpVelocity);
       this.jumpsRemaining = 1;
-      // Play jump sound
+      // Play jump sound - ensure audio context is active
       if (this.jumpSound && !this.isMuted) {
         try {
+          // Resume audio context if suspended (mobile requirement)
+          if (this.sound.context && (this.sound.context as any).state === 'suspended') {
+            (this.sound.context as AudioContext).resume();
+          }
           this.jumpSound.play();
         } catch (error) {
           console.warn('⚠️ Failed to play jump sound:', error);
@@ -441,9 +470,13 @@ export class GameScene extends Phaser.Scene {
     } else if (this.jumpsRemaining > 0) {
       this.player.setVelocityY(jumpVelocity);
       this.jumpsRemaining = 0;
-      // Play jump sound
+      // Play jump sound - ensure audio context is active
       if (this.jumpSound && !this.isMuted) {
         try {
+          // Resume audio context if suspended (mobile requirement)
+          if (this.sound.context && (this.sound.context as any).state === 'suspended') {
+            (this.sound.context as AudioContext).resume();
+          }
           this.jumpSound.play();
         } catch (error) {
           console.warn('⚠️ Failed to play jump sound:', error);
@@ -727,9 +760,13 @@ export class GameScene extends Phaser.Scene {
           this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
           this.cameras.main.shake(150, 0.005);
           this.createCollisionEffect(obstacle.x, obstacle.y);
-          // Play stumble sound
+          // Play stumble sound - ensure audio context is active
           if (this.stumbleSound && !this.isMuted) {
             try {
+              // Resume audio context if suspended (mobile requirement)
+              if (this.sound.context && (this.sound.context as any).state === 'suspended') {
+                (this.sound.context as AudioContext).resume();
+              }
               this.stumbleSound.play();
             } catch (error) {
               console.warn('⚠️ Failed to play stumble sound:', error);
@@ -781,9 +818,13 @@ export class GameScene extends Phaser.Scene {
           this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
           this.cameras.main.shake(150, 0.005);
           this.createCollisionEffect(obstacle.x, obstacle.y);
-          // Play stumble sound
+          // Play stumble sound - ensure audio context is active
           if (this.stumbleSound && !this.isMuted) {
             try {
+              // Resume audio context if suspended (mobile requirement)
+              if (this.sound.context && (this.sound.context as any).state === 'suspended') {
+                (this.sound.context as AudioContext).resume();
+              }
               this.stumbleSound.play();
             } catch (error) {
               console.warn('⚠️ Failed to play stumble sound:', error);
@@ -801,10 +842,14 @@ export class GameScene extends Phaser.Scene {
         this.obstaclesPassed.add(obstacle);
         this.combo += 1;
         
-        // Play combo sound for milestones
+        // Play combo sound for milestones - ensure audio context is active
         if (this.comboSound && !this.isMuted) {
           if (this.combo === 3 || this.combo % 10 === 0) {
             try {
+              // Resume audio context if suspended (mobile requirement)
+              if (this.sound.context && (this.sound.context as any).state === 'suspended') {
+                (this.sound.context as AudioContext).resume();
+              }
               this.comboSound.play();
             } catch (error) {
               console.warn('⚠️ Failed to play combo sound:', error);
@@ -846,9 +891,13 @@ export class GameScene extends Phaser.Scene {
           this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
           this.cameras.main.shake(200, 0.008); // Stronger shake for projectiles
           this.createCollisionEffect(projectile.x, projectile.y);
-          // Play stumble sound
+          // Play stumble sound - ensure audio context is active
           if (this.stumbleSound && !this.isMuted) {
             try {
+              // Resume audio context if suspended (mobile requirement)
+              if (this.sound.context && (this.sound.context as any).state === 'suspended') {
+                (this.sound.context as AudioContext).resume();
+              }
               this.stumbleSound.play();
             } catch (error) {
               console.warn('⚠️ Failed to play stumble sound:', error);
@@ -877,9 +926,13 @@ export class GameScene extends Phaser.Scene {
         this.showMessage(Phaser.Math.RND.pick(COLLECT_MESSAGES));
         // Use a default color for the effect (yellow/gold)
         this.createCollectEffect(collectible.x, collectible.y, 0xffff00);
-        // Play collect sound
+        // Play collect sound - ensure audio context is active
         if (this.collectSound && !this.isMuted) {
           try {
+            // Resume audio context if suspended (mobile requirement)
+            if (this.sound.context && (this.sound.context as any).state === 'suspended') {
+              (this.sound.context as AudioContext).resume();
+            }
             this.collectSound.play();
           } catch (error) {
             console.warn('⚠️ Failed to play collect sound:', error);
@@ -899,9 +952,13 @@ export class GameScene extends Phaser.Scene {
         this.energy = Math.min(100, this.energy + 20);
         this.showMessage(Phaser.Math.RND.pick(SPECIAL_COLLECT_MESSAGES));
         this.createSpecialCollectEffect(collectible.x, collectible.y);
-        // Play collect sound
+        // Play collect sound - ensure audio context is active
         if (this.collectSound && !this.isMuted) {
           try {
+            // Resume audio context if suspended (mobile requirement)
+            if (this.sound.context && (this.sound.context as any).state === 'suspended') {
+              (this.sound.context as AudioContext).resume();
+            }
             this.collectSound.play();
           } catch (error) {
             console.warn('⚠️ Failed to play collect sound:', error);
@@ -1070,10 +1127,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     const deltaSeconds = delta / 1000;
-    const { width: canvasWidth } = this.scale;
+    const { width: canvasWidth, height: canvasHeight } = this.scale;
     
-    // Scale base speed relative to screen width
-    const baseSpeed = canvasWidth / 1920;
+    // Detect mobile - use speed multiplier for mobile devices
+    const isMobile = canvasWidth <= 768 || canvasHeight <= 768;
+    const mobileSpeedMultiplier = isMobile ? 1.5 : 1.0; // 50% faster on mobile
+    
+    // Scale base speed relative to screen width, then apply mobile multiplier
+    const baseSpeed = (canvasWidth / 1920) * mobileSpeedMultiplier;
 
     // Check if on ground
     const onGround = this.player.body.touching.down;
@@ -1082,7 +1143,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Increase speed over time - more noticeable acceleration
-    // Scale max speed relative to screen width
+    // Scale max speed relative to screen width (already includes mobile multiplier)
     const maxSpeed = 600 * baseSpeed;
     // Increase speed more aggressively - 6x faster acceleration (0.3 instead of 0.05)
     // This makes speed increase from 300 to 600 in about 10 seconds (much more noticeable)
@@ -1348,8 +1409,20 @@ export class GameScene extends Phaser.Scene {
     this.sprintGlow.setAlpha(0);
     
     // Increase music volume for gameplay and ensure it plays
+    // Higher volume on mobile for better audibility
+    const { width, height } = this.scale;
+    const isMobile = width <= 768 || height <= 768;
+    const gameplayVolume = isMobile ? 0.7 : 0.5; // Higher volume on mobile
     if (this.backgroundMusic) {
-      this.setMusicVolume(0.5); // Normal volume during gameplay
+      this.setMusicVolume(gameplayVolume);
+      // Ensure audio context is resumed (required for mobile)
+      if (this.sound.context && (this.sound.context as any).state === 'suspended') {
+        (this.sound.context as AudioContext).resume().then(() => {
+          console.log('🔊 Audio context resumed on game start');
+        }).catch((err) => {
+          console.warn('⚠️ Failed to resume audio context:', err);
+        });
+      }
       if (!this.backgroundMusic.isPlaying && !this.isMuted) {
         try {
           this.backgroundMusic.play();
@@ -1629,9 +1702,12 @@ export class GameScene extends Phaser.Scene {
     }
     
     // Update gravity to scale with new screen height
+    // On mobile, slightly reduce gravity to make jump feel lighter
+    const isMobile = width <= 768 || height <= 768;
+    const mobileGravityMultiplier = isMobile ? 0.92 : 1.0; // 8% less gravity on mobile
     const baseGravity = 2000;
     const baseHeight = 1080;
-    const scaledGravity = baseGravity * (height / baseHeight);
+    const scaledGravity = baseGravity * (height / baseHeight) * mobileGravityMultiplier;
     this.physics.world.gravity.y = scaledGravity;
     
     // Reposition ground at new bottom (80px from bottom)
