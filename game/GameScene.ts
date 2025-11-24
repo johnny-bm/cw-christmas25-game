@@ -154,7 +154,18 @@ export class GameScene extends Phaser.Scene {
     this.load.audio('comboSound', '/Combo.wav');
     this.load.audio('stumbleSound', '/Stumble.wav');
     
+    // Track loading progress
+    this.load.on('progress', (progress: number) => {
+      console.log('📦 Loading progress:', Math.round(progress * 100) + '%');
+      this.game.events.emit('loadingProgress', progress);
+    });
+    
     // Listen for load complete
+    this.load.on('complete', () => {
+      console.log('✅ All assets loaded successfully');
+      this.game.events.emit('assetsLoaded');
+    });
+    
     this.load.on('filecomplete-audio-bgMusic', () => {
       console.log('✅ bgMusic audio file loaded successfully');
     });
@@ -163,6 +174,8 @@ export class GameScene extends Phaser.Scene {
       if (file.key === 'bgMusic') {
         console.error('❌ Failed to load bgMusic:', file.src);
       }
+      // Still emit progress even on error to continue
+      this.game.events.emit('loadingProgress', this.load.progress);
     });
   }
 
@@ -353,8 +366,8 @@ export class GameScene extends Phaser.Scene {
       }
     }
     
-    // Emit ready event to React
-    this.game.events.emit('ready');
+    // Don't emit ready here - wait for assets to be loaded
+    // The ready event will be emitted after assets are loaded
   }
   
   toggleMute() {

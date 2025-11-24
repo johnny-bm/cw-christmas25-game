@@ -11,19 +11,20 @@ interface GameProps {
   onGameOver: (score: number, maxCombo: number) => void;
   onUpdateGameData: (data: GameData) => void;
   onGameReady?: () => void;
+  onLoadingProgress?: (progress: number) => void;
   isActive: boolean;
 }
 
-function GameComponent({ onGameOver, onUpdateGameData, onGameReady, isActive }: GameProps) {
+function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingProgress, isActive }: GameProps) {
   const gameRef = useRef<Phaser.Game | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const callbacksRef = useRef({ onGameOver, onUpdateGameData, onGameReady });
+  const callbacksRef = useRef({ onGameOver, onUpdateGameData, onGameReady, onLoadingProgress });
   const isInitializingRef = useRef(false);
   
   // Update callbacks ref when they change
   useEffect(() => {
-    callbacksRef.current = { onGameOver, onUpdateGameData, onGameReady };
-  }, [onGameOver, onUpdateGameData, onGameReady]);
+    callbacksRef.current = { onGameOver, onUpdateGameData, onGameReady, onLoadingProgress };
+  }, [onGameOver, onUpdateGameData, onGameReady, onLoadingProgress]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -119,59 +120,75 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, isActive }: 
       }
     });
 
-    // Listen for ready event - check if scene exists and is ready
-    const checkReady = () => {
-      const scene = game.scene.getScene('GameScene');
-      if (scene) {
-        // Check if scene is active safely
-        try {
-          const isActive = scene.scene.isActive();
-          if (!isActive) {
-            console.log('🎮 Starting GameScene...');
-            game.scene.start('GameScene');
-            return false; // Will be ready after start
+    // Track loading progress
+    let loadingProgress = 0;
+    let assetsLoaded = false;
+
+    // Listen for loading progress
+    game.events.on('loadingProgress', (progress: number) => {
+      loadingProgress = progress;
+      console.log('📦 Loading progress:', Math.round(progress * 100) + '%');
+      if (callbacksRef.current.onLoadingProgress) {
+        callbacksRef.current.onLoadingProgress(progress);
+      }
+    });
+
+    // Listen for assets loaded event
+    game.events.once('assetsLoaded', () => {
+      console.log('✅ All assets loaded');
+      assetsLoaded = true;
+      
+      // Wait a bit for scene to be fully initialized, then emit ready
+      setTimeout(() => {
+        const scene = game.scene.getScene('GameScene');
+        if (scene && scene.scene.isActive()) {
+          console.log('🎮 Game ready - all assets loaded and scene active');
+          game.events.emit('ready');
+          if (callbacksRef.current.onGameReady) {
+            callbacksRef.current.onGameReady();
           }
-          if (isActive) {
-            console.log('🎮 Game ready - scene is active');
+        } else {
+          // Scene not active yet, start it
+          if (scene) {
+            game.scene.start('GameScene');
+          }
+          // Wait for scene to start
+          const checkScene = setInterval(() => {
+            const activeScene = game.scene.getScene('GameScene');
+            if (activeScene && activeScene.scene.isActive()) {
+              clearInterval(checkScene);
+              console.log('🎮 Game ready - scene started');
+              game.events.emit('ready');
+              if (callbacksRef.current.onGameReady) {
+                callbacksRef.current.onGameReady();
+              }
+            }
+          }, 100);
+          
+          // Fallback timeout
+          setTimeout(() => {
+            clearInterval(checkScene);
+            console.log('🎮 Game ready (timeout fallback after assets loaded)');
+            game.events.emit('ready');
             if (callbacksRef.current.onGameReady) {
               callbacksRef.current.onGameReady();
             }
-            return true;
-          }
-        } catch (e) {
-          // Scene might not be fully initialized yet
-          return false;
+          }, 2000);
         }
-      }
-      return false;
-    };
+      }, 100);
+    });
 
-    // Try immediately
-    if (!checkReady()) {
-      // Listen for the ready event
-      game.events.once('ready', () => {
-        console.log('🎮 Game ready event received');
+    // Fallback: if assets don't load within 10 seconds, assume ready
+    setTimeout(() => {
+      if (!assetsLoaded) {
+        console.warn('⚠️ Assets loading timeout - proceeding anyway');
+        assetsLoaded = true;
+        game.events.emit('ready');
         if (callbacksRef.current.onGameReady) {
           callbacksRef.current.onGameReady();
         }
-      });
-
-      // Fallback: check periodically
-      const readyInterval = setInterval(() => {
-        if (checkReady()) {
-          clearInterval(readyInterval);
-        }
-      }, 100);
-
-      // Timeout fallback
-      setTimeout(() => {
-        clearInterval(readyInterval);
-        if (callbacksRef.current.onGameReady && !checkReady()) {
-          console.log('🎮 Game ready (timeout fallback)');
-          callbacksRef.current.onGameReady();
-        }
-      }, 2000);
-    }
+      }
+    }, 10000);
 
     // Handle window resize with debouncing and visual viewport support
     const handleResize = () => {

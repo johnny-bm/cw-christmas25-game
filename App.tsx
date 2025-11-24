@@ -28,6 +28,7 @@ function isMobileDevice(): boolean {
 export default function App() {
   const [gameState, setGameState] = useState<GameState>('start');
   const [gameReady, setGameReady] = useState(false); // Track if game is loaded
+  const [loadingProgress, setLoadingProgress] = useState(0); // Track loading progress
   const [gameData, setGameData] = useState<GameData>({
     distance: 0,
     energy: 100,
@@ -54,17 +55,10 @@ export default function App() {
     
     // Detect mobile device
     setIsMobile(isMobileDevice());
-    
-    // Show start screen after a short delay even if game isn't ready
-    const timeout = setTimeout(() => {
-      setShowStartScreen(true);
-    }, 1000);
-    
-    return () => clearTimeout(timeout);
   }, []);
   
   useEffect(() => {
-    // Show start screen when game becomes ready
+    // Show start screen only when game is fully ready (all assets loaded)
     if (gameReady) {
       setShowStartScreen(true);
     }
@@ -135,6 +129,12 @@ export default function App() {
   }, []);
 
   const handleStartGame = () => {
+    // Block game start if game is not ready
+    if (!gameReady) {
+      console.log('🚫 Game start blocked: Assets not fully loaded');
+      return;
+    }
+    
     // Block game start if on mobile and in portrait mode
     if (isMobile && isPortrait) {
       console.log('🚫 Game start blocked: Mobile device in portrait mode');
@@ -275,28 +275,44 @@ export default function App() {
           onGameOver={handleGameOver}
           onUpdateGameData={handleUpdateGameData}
           onGameReady={() => setGameReady(true)}
+          onLoadingProgress={(progress) => setLoadingProgress(progress)}
           isActive={gameState === 'playing' && !showPortraitBlocker}
         />
       </div>
       
-      {/* Loading screen - only show if game not ready and start screen not shown yet */}
-      {!gameReady && !showPortraitBlocker && gameState === 'start' && !showStartScreen && (
+      {/* Loading screen - show until all assets are loaded */}
+      {!gameReady && !showPortraitBlocker && (
         <div className="absolute inset-0 z-[100] bg-black flex flex-col items-center justify-center">
-          <div className="text-white text-center px-4">
+          <div className="text-white text-center px-4 max-w-md">
             <div className="mb-6">
               <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto"></div>
             </div>
-            <p className="text-sm sm:text-base opacity-60" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+            <p className="text-base sm:text-lg mb-4" style={{ fontFamily: '"Urbanist", sans-serif' }}>
               Loading game...
+            </p>
+            {/* Progress bar */}
+            <div className="w-full max-w-xs h-2 bg-white/20 rounded-full overflow-hidden mx-auto mb-2">
+              <div 
+                className="h-full bg-white transition-all duration-300 ease-out"
+                style={{ width: `${Math.round(loadingProgress * 100)}%` }}
+              />
+            </div>
+            <p className="text-sm sm:text-base opacity-60" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+              {Math.round(loadingProgress * 100)}%
             </p>
           </div>
         </div>
       )}
       
-      {/* Start screen - show when in start state, not blocked, and either game ready or timeout passed */}
+      {/* Start screen - show when in start state, not blocked, and game is ready */}
       {gameState === 'start' && !showPortraitBlocker && showStartScreen && (
         <div className="absolute inset-0 z-50 bg-white">
-          <StartScreen onStart={handleStartGame} bestDistance={bestDistance} leaderboardRefresh={leaderboardRefresh} />
+          <StartScreen 
+            onStart={handleStartGame} 
+            bestDistance={bestDistance} 
+            leaderboardRefresh={leaderboardRefresh}
+            gameReady={gameReady}
+          />
         </div>
       )}
       

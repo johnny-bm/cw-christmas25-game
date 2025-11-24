@@ -7,9 +7,10 @@ interface StartScreenProps {
   onStart: () => void;
   bestDistance: number;
   leaderboardRefresh?: number;
+  gameReady?: boolean;
 }
 
-export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0 }: StartScreenProps) {
+export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gameReady = true }: StartScreenProps) {
   const [isMuted, setIsMuted] = useState(() => {
     // Check localStorage for saved mute state
     return localStorage.getItem('escapeTheDeadline_muted') === 'true';
@@ -94,12 +95,18 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0 }: S
           
           <button
             onClick={() => {
+              if (!gameReady) return;
               console.log('🚀 START button clicked');
               onStart();
             }}
-            className="px-6 py-2 sm:px-8 sm:py-3 md:px-10 md:py-4 bg-black text-white text-base sm:text-lg md:text-xl lg:text-2xl hover:bg-gray-800 active:bg-gray-900 transition-colors rounded"
+            disabled={!gameReady}
+            className={`px-6 py-2 sm:px-8 sm:py-3 md:px-10 md:py-4 text-base sm:text-lg md:text-xl lg:text-2xl transition-colors rounded ${
+              gameReady 
+                ? 'bg-black text-white hover:bg-gray-800 active:bg-gray-900' 
+                : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+            }`}
           >
-            LET'S RUN
+            {gameReady ? 'LET\'S RUN' : 'LOADING...'}
           </button>
           
           <p className="text-[8px] sm:text-[10px] md:text-xs text-gray-500">
@@ -130,12 +137,18 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0 }: S
             
             <button
               onClick={() => {
+                if (!gameReady) return;
                 console.log('🚀 START button clicked');
                 onStart();
               }}
-              className="px-8 py-2 bg-black text-white text-lg hover:bg-gray-800 active:bg-gray-900 transition-colors rounded"
+              disabled={!gameReady}
+              className={`px-8 py-2 text-lg transition-colors rounded ${
+                gameReady 
+                  ? 'bg-black text-white hover:bg-gray-800 active:bg-gray-900' 
+                  : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+              }`}
             >
-              LET'S RUN
+              {gameReady ? 'LET\'S RUN' : 'LOADING...'}
             </button>
             
             <p className="text-[10px] text-gray-500">

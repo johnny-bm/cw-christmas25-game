@@ -61,14 +61,14 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10 flex flex-col">
-      {/* Distance Counter - Top Center, no box - Smaller on mobile landscape - Safe area support */}
+      {/* Distance Counter - Top Center, no box - Better mobile sizing - Safe area support */}
       <div 
-        className="absolute max-md:landscape:top-1 sm:top-6 md:top-8 left-1/2 -translate-x-1/2"
+        className="absolute left-1/2 -translate-x-1/2"
         style={{
-          top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))'
+          top: 'max(0.75rem, env(safe-area-inset-top, 0.75rem) + 0.25rem)'
         }}
       >
-        <div className="text-2xl max-md:landscape:text-xl sm:text-5xl md:text-7xl text-black opacity-40" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+        <div className="text-3xl max-md:landscape:text-2xl sm:text-5xl md:text-7xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
           {formatNumber(distance)}m
         </div>
       </div>
@@ -83,14 +83,14 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           paddingBottom: '0.375rem'
         }}
       >
-        {/* Combo Counter - Only show when combo >= 2 - No box */}
+        {/* Combo Counter - Only show when combo >= 2 - No box - Better mobile sizing */}
         {combo >= 2 && (
-          <div className="px-1.5 py-1 max-md:landscape:px-1 max-md:landscape:py-0.5 sm:px-3 sm:py-2">
-            <div className="flex items-center gap-1 sm:gap-2 text-yellow-400 text-[10px] max-md:landscape:text-[8px] sm:text-sm mb-0.5">
-              <Zap className="w-2.5 h-2.5 max-md:landscape:w-2 max-md:landscape:h-2 sm:w-4 sm:h-4 md:w-5 md:h-5" />
+          <div className="px-2 py-1 max-md:landscape:px-1.5 max-md:landscape:py-0.5 sm:px-3 sm:py-2">
+            <div className="flex items-center gap-1 sm:gap-2 text-yellow-400 text-xs max-md:landscape:text-[10px] sm:text-sm mb-0.5 font-semibold">
+              <Zap className="w-3 h-3 max-md:landscape:w-2.5 max-md:landscape:h-2.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
               <span>COMBO</span>
             </div>
-            <div className="text-xl max-md:landscape:text-lg sm:text-4xl md:text-5xl text-yellow-400 animate-pulse" style={{ fontFamily: '"Urbanist", sans-serif' }}>{combo}x</div>
+            <div className="text-2xl max-md:landscape:text-xl sm:text-4xl md:text-5xl text-yellow-400 animate-pulse font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>{combo}x</div>
           </div>
         )}
 
@@ -99,14 +99,14 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
 
         {/* Energy Bar and Mute Button - Top Right - Simplified single bar - Compact on mobile landscape */}
         <div className="flex items-start gap-1 sm:gap-2">
-          {/* Energy Bar */}
-          <div className="bg-black/80 border-2 border-white px-1.5 py-1 max-md:landscape:px-1 max-md:landscape:py-0.5 sm:px-3 sm:py-2 min-w-[80px] max-md:landscape:min-w-[70px] sm:min-w-[140px] rounded">
-            <div className="flex items-center gap-1 sm:gap-2 text-white text-[8px] max-md:landscape:text-[7px] sm:text-xs mb-0.5 sm:mb-1">
-              <Trophy className="w-2 h-2 max-md:landscape:w-1.5 max-md:landscape:h-1.5 sm:w-3 sm:h-3 md:w-4 md:h-4" />
+          {/* Energy Bar - Better mobile sizing */}
+          <div className="bg-black/80 border-2 border-white px-2 py-1.5 max-md:landscape:px-1.5 max-md:landscape:py-1 sm:px-3 sm:py-2 min-w-[90px] max-md:landscape:min-w-[80px] sm:min-w-[140px] rounded">
+            <div className="flex items-center gap-1 sm:gap-2 text-white text-[9px] max-md:landscape:text-[8px] sm:text-xs mb-1 sm:mb-1 font-semibold">
+              <Trophy className="w-2.5 h-2.5 max-md:landscape:w-2 max-md:landscape:h-2 sm:w-3 sm:h-3 md:w-4 md:h-4" />
               <span>ENERGY</span>
-              <span className="ml-auto" style={{ fontFamily: '"Urbanist", sans-serif' }}>{Math.round(energy)}%</span>
+              <span className="ml-auto font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>{Math.round(energy)}%</span>
             </div>
-            <div className="w-full h-1.5 max-md:landscape:h-1 sm:h-2.5 bg-gray-800 border border-white rounded">
+            <div className="w-full h-2 max-md:landscape:h-1.5 sm:h-2.5 bg-gray-800 border border-white rounded">
               <div 
                 className="h-full bg-white transition-all duration-200"
                 style={{ width: `${energy}%` }}
@@ -140,15 +140,15 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       {/* Spacer to push deadline indicator to middle */}
       <div className="flex-1" />
 
-      {/* Deadline Distance with Arrow - Left side, higher on mobile - More compact on mobile landscape - Safe area support */}
+      {/* Deadline Distance with Arrow - Left side, better mobile sizing - Safe area support */}
       <div 
-        className="absolute max-md:landscape:left-1 sm:left-4 md:left-6 top-[35%] max-md:landscape:top-[40%] sm:top-[40%] flex items-center gap-1 sm:gap-2"
+        className="absolute left-2 sm:left-4 md:left-6 top-[35%] sm:top-[40%] flex items-center gap-1.5 sm:gap-2"
         style={{
-          left: 'max(0.375rem, env(safe-area-inset-left, 0.375rem))'
+          left: 'max(0.5rem, env(safe-area-inset-left, 0.5rem))'
         }}
       >
-        <ArrowLeft className={`w-3 h-3 max-md:landscape:w-2.5 max-md:landscape:h-2.5 sm:w-5 sm:h-5 md:w-6 md:h-6 ${getDeadlineTextColor()} transition-colors`} />
-        <div className={`text-[10px] max-md:landscape:text-[9px] sm:text-base md:text-lg ${getDeadlineTextColor()} transition-colors`} style={{ fontFamily: '"Urbanist", sans-serif' }}>
+        <ArrowLeft className={`w-4 h-4 max-md:landscape:w-3 max-md:landscape:h-3 sm:w-5 sm:h-5 md:w-6 md:h-6 ${getDeadlineTextColor()} transition-colors`} />
+        <div className={`text-xs max-md:landscape:text-[10px] sm:text-base md:text-lg font-semibold ${getDeadlineTextColor()} transition-colors`} style={{ fontFamily: '"Urbanist", sans-serif' }}>
           DEADLINE {getDeadlineDistance()}m
         </div>
       </div>
@@ -172,15 +172,15 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         </div>
       )}
 
-      {/* Mobile Jump Hint - Bottom right - Smaller on landscape - Safe area support */}
+      {/* Mobile Jump Hint - Bottom right - Better mobile sizing - Safe area support */}
       <div 
-        className="absolute max-md:landscape:bottom-0.5 sm:bottom-2 md:bottom-4 max-md:landscape:right-0.5 sm:right-2 md:right-4 md:hidden"
+        className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 md:hidden"
         style={{
-          bottom: 'max(0.25rem, env(safe-area-inset-bottom, 0.25rem))',
-          right: 'max(0.25rem, env(safe-area-inset-right, 0.25rem))'
+          bottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))',
+          right: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))'
         }}
       >
-        <div className="bg-white/20 text-white px-1.5 py-0.5 max-md:landscape:px-1 max-md:landscape:py-0.5 sm:px-3 sm:py-2 text-[8px] max-md:landscape:text-[7px] sm:text-xs border border-white/40 rounded">
+        <div className="bg-white/20 backdrop-blur-sm text-white px-3 py-1.5 max-md:landscape:px-2 max-md:landscape:py-1 sm:px-3 sm:py-2 text-xs max-md:landscape:text-[10px] sm:text-sm border border-white/40 rounded font-semibold">
           TAP TO JUMP
         </div>
       </div>
