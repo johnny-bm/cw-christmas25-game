@@ -853,8 +853,6 @@ export class GameScene extends Phaser.Scene {
     messageText.setDepth(1001);
 
     // Responsive padding - smaller on mobile
-    const { width } = this.scale;
-    const isMobile = width <= 768;
     const padding = isMobile 
       ? (isSpecial ? 6 : 5)  // Smaller padding on mobile
       : (isSpecial ? 10 : 8); // Normal padding on desktop

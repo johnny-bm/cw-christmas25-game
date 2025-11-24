@@ -92,6 +92,19 @@ class ScoreService {
     return distance > topScores[topScores.length - 1].distance;
   }
 
+  // Get total count of scores
+  async getTotalCount(): Promise<number> {
+    try {
+      // Get all scores from Firebase (without limit to count them)
+      const snapshot = await getDocs(this.scoresCollection);
+      return snapshot.size;
+    } catch (error) {
+      console.error("Error getting total count from Firebase:", error);
+      // fall back to local storage
+      return this.getLocalScoresCount();
+    }
+  }
+
   // Helper: Get scores from localStorage
   private getLocalScores(limit: number): ScoreEntry[] {
     try {
