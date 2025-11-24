@@ -343,27 +343,44 @@ export class GameScene extends Phaser.Scene {
     }
     
     // Unlock audio on first user interaction and start music
-    if (this.sound.locked) {
-      console.log('🔒 Audio is locked, will unlock on user interaction');
-      const unlockAudio = () => {
+    // Mobile browsers require user interaction to play audio
+    const unlockAndStartAudio = () => {
+      if (this.sound.locked) {
         this.sound.unlock();
         console.log('🔓 Audio unlocked');
-        // Start music after unlock
-        if (this.backgroundMusic && !this.backgroundMusic.isPlaying && !this.isMuted) {
+      }
+      
+      // Start music after unlock
+      if (this.backgroundMusic && !this.backgroundMusic.isPlaying && !this.isMuted) {
+        try {
           this.backgroundMusic.play();
-          console.log('🎵 Music started after unlock');
+          console.log('🎵 Music started');
+        } catch (error) {
+          console.warn('⚠️ Failed to play music:', error);
         }
+      }
+    };
+    
+    if (this.sound.locked) {
+      console.log('🔒 Audio is locked, will unlock on user interaction');
+      // Listen for multiple interaction types for better mobile support
+      const unlockAudio = (e: Event) => {
+        e.preventDefault();
+        unlockAndStartAudio();
+        // Remove listeners after first interaction
         document.removeEventListener('click', unlockAudio);
         document.removeEventListener('touchstart', unlockAudio);
+        document.removeEventListener('touchend', unlockAudio);
+        this.input.once('pointerdown', unlockAndStartAudio);
       };
-      document.addEventListener('click', unlockAudio);
-      document.addEventListener('touchstart', unlockAudio);
+      
+      document.addEventListener('click', unlockAudio, { once: true });
+      document.addEventListener('touchstart', unlockAudio, { once: true, passive: false });
+      document.addEventListener('touchend', unlockAudio, { once: true });
+      this.input.once('pointerdown', unlockAndStartAudio);
     } else {
       // Audio already unlocked, start music
-      if (this.backgroundMusic && !this.isMuted) {
-        this.backgroundMusic.play();
-        console.log('🎵 Music started (audio already unlocked)');
-      }
+      unlockAndStartAudio();
     }
     
     // Don't emit ready here - wait for assets to be loaded
@@ -392,6 +409,12 @@ export class GameScene extends Phaser.Scene {
   jump() {
     if (this.isGameOver || !this.isGameStarted) return;
     
+    // Ensure audio is unlocked on first jump (mobile)
+    if (this.sound.locked) {
+      this.sound.unlock();
+      console.log('🔓 Audio unlocked on jump');
+    }
+    
     const onGround = this.player.body.touching.down;
     
     // Scale jump velocity relative to screen height for responsive jump physics
@@ -406,14 +429,22 @@ export class GameScene extends Phaser.Scene {
       this.jumpsRemaining = 1;
       // Play jump sound
       if (this.jumpSound && !this.isMuted) {
-        this.jumpSound.play();
+        try {
+          this.jumpSound.play();
+        } catch (error) {
+          console.warn('⚠️ Failed to play jump sound:', error);
+        }
       }
     } else if (this.jumpsRemaining > 0) {
       this.player.setVelocityY(jumpVelocity);
       this.jumpsRemaining = 0;
       // Play jump sound
       if (this.jumpSound && !this.isMuted) {
-        this.jumpSound.play();
+        try {
+          this.jumpSound.play();
+        } catch (error) {
+          console.warn('⚠️ Failed to play jump sound:', error);
+        }
       }
     }
   }
@@ -506,10 +537,11 @@ export class GameScene extends Phaser.Scene {
     
     // Scale collectible positions and sizes relative to screen
     const baseSpeed = width / 1920;
-    // Use smaller percentage and cap max size for desktop screens
-    // Base size is 0.4% of screen height, but cap at ~12px equivalent for larger screens
-    const baseCollectibleSize = height * 0.004; // ~0.4% of screen height (smaller on all screens)
-    const maxCollectibleSize = 12; // Cap at 12px equivalent size
+    // Detect mobile - use larger size on mobile devices
+    const isMobile = width <= 768 || height <= 768;
+    // Use larger percentage on mobile, smaller on desktop
+    const baseCollectibleSize = isMobile ? height * 0.008 : height * 0.004; // 0.8% on mobile, 0.4% on desktop
+    const maxCollectibleSize = isMobile ? 24 : 12; // Larger cap on mobile (24px) vs desktop (12px)
     const collectibleSize = Math.min(baseCollectibleSize, maxCollectibleSize);
     const heights = [
       this.groundY - height * 0.028,  // ~2.8% from ground
@@ -553,10 +585,11 @@ export class GameScene extends Phaser.Scene {
     
     // Scale special collectible positions and sizes relative to screen
     const baseSpeed = width / 1920;
-    // Use smaller percentage and cap max size for desktop screens
-    // Base radius is 0.7% of screen height, but cap at ~18px for larger screens
-    const baseCollectibleRadius = height * 0.007; // ~0.7% of screen height (smaller on all screens)
-    const maxCollectibleRadius = 18; // Cap at 18px radius
+    // Detect mobile - use larger size on mobile devices
+    const isMobile = width <= 768 || height <= 768;
+    // Use larger percentage on mobile, smaller on desktop
+    const baseCollectibleRadius = isMobile ? height * 0.014 : height * 0.007; // 1.4% on mobile, 0.7% on desktop
+    const maxCollectibleRadius = isMobile ? 36 : 18; // Larger cap on mobile (36px) vs desktop (18px)
     const collectibleRadius = Math.min(baseCollectibleRadius, maxCollectibleRadius);
     const heights = [
       this.groundY - height * 0.028,  // ~2.8% from ground
@@ -623,7 +656,11 @@ export class GameScene extends Phaser.Scene {
           this.createCollisionEffect(obstacle.x, obstacle.y);
           // Play stumble sound
           if (this.stumbleSound && !this.isMuted) {
-            this.stumbleSound.play();
+            try {
+              this.stumbleSound.play();
+            } catch (error) {
+              console.warn('⚠️ Failed to play stumble sound:', error);
+            }
           }
           obstacle.destroy();
           this.obstacles.remove(obstacle);
@@ -673,7 +710,11 @@ export class GameScene extends Phaser.Scene {
           this.createCollisionEffect(obstacle.x, obstacle.y);
           // Play stumble sound
           if (this.stumbleSound && !this.isMuted) {
-            this.stumbleSound.play();
+            try {
+              this.stumbleSound.play();
+            } catch (error) {
+              console.warn('⚠️ Failed to play stumble sound:', error);
+            }
           }
           obstacle.destroy();
           this.floatingObstacles.remove(obstacle);
@@ -690,7 +731,11 @@ export class GameScene extends Phaser.Scene {
         // Play combo sound for milestones
         if (this.comboSound && !this.isMuted) {
           if (this.combo === 3 || this.combo % 10 === 0) {
-            this.comboSound.play();
+            try {
+              this.comboSound.play();
+            } catch (error) {
+              console.warn('⚠️ Failed to play combo sound:', error);
+            }
           }
         }
         
@@ -724,7 +769,11 @@ export class GameScene extends Phaser.Scene {
         this.createCollectEffect(collectible.x, collectible.y, 0xffff00);
         // Play collect sound
         if (this.collectSound && !this.isMuted) {
-          this.collectSound.play();
+          try {
+            this.collectSound.play();
+          } catch (error) {
+            console.warn('⚠️ Failed to play collect sound:', error);
+          }
         }
         collectible.destroy();
         this.collectibles.remove(collectible);
@@ -742,7 +791,11 @@ export class GameScene extends Phaser.Scene {
         this.createSpecialCollectEffect(collectible.x, collectible.y);
         // Play collect sound
         if (this.collectSound && !this.isMuted) {
-          this.collectSound.play();
+          try {
+            this.collectSound.play();
+          } catch (error) {
+            console.warn('⚠️ Failed to play collect sound:', error);
+          }
         }
         collectible.destroy();
         this.specialCollectibles.splice(i, 1);
@@ -777,8 +830,12 @@ export class GameScene extends Phaser.Scene {
     const isNegative = HIT_MESSAGES.includes(message);
     const isSpecial = isSpecialMessage;
     
-    // Smaller, more compact design
-    const baseFontSize = isSpecial ? '24px' : '18px';
+    // Responsive font size - smaller on mobile
+    const { width } = this.scale;
+    const isMobile = width <= 768;
+    const baseFontSize = isMobile 
+      ? (isSpecial ? '16px' : '12px')  // Smaller on mobile
+      : (isSpecial ? '24px' : '18px'); // Normal on desktop
     const bgColor = isNegative ? 0x666666 : (isSpecial ? 0xffaa00 : 0x000000);
     const textColor = isSpecial ? '#000000' : '#ffffff';
     const strokeColor = isSpecial ? '#ffffff' : '#000000';
@@ -795,8 +852,12 @@ export class GameScene extends Phaser.Scene {
     messageText.setOrigin(0, 0.5);
     messageText.setDepth(1001);
 
-    // Smaller padding for more compact bubbles
-    const padding = isSpecial ? 10 : 8;
+    // Responsive padding - smaller on mobile
+    const { width } = this.scale;
+    const isMobile = width <= 768;
+    const padding = isMobile 
+      ? (isSpecial ? 6 : 5)  // Smaller padding on mobile
+      : (isSpecial ? 10 : 8); // Normal padding on desktop
     const messageBg = this.add.rectangle(0, 0, messageText.width + (padding * 2), messageText.height + (padding * 2), bgColor);
     messageBg.setStrokeStyle(isSpecial ? 2 : 1, 0xffffff);
     messageBg.setOrigin(0, 0.5);
@@ -1078,6 +1139,12 @@ export class GameScene extends Phaser.Scene {
     console.log('🚀 START GAME CALLED');
     console.log('🚀 Setting isGameStarted to true');
     
+    // Ensure audio is unlocked when game starts (mobile)
+    if (this.sound.locked) {
+      this.sound.unlock();
+      console.log('🔓 Audio unlocked on game start');
+    }
+    
     this.isGameStarted = true;
     console.log('🚀 isGameStarted is now:', this.isGameStarted);
     this.isGameOver = false;
@@ -1120,9 +1187,17 @@ export class GameScene extends Phaser.Scene {
     this.sprintTimer = 0;
     this.sprintGlow.setAlpha(0);
     
-    // Increase music volume for gameplay
+    // Increase music volume for gameplay and ensure it plays
     if (this.backgroundMusic) {
       this.setMusicVolume(0.5); // Normal volume during gameplay
+      if (!this.backgroundMusic.isPlaying && !this.isMuted) {
+        try {
+          this.backgroundMusic.play();
+          console.log('🎵 Music started on game start');
+        } catch (error) {
+          console.warn('⚠️ Failed to start music on game start:', error);
+        }
+      }
     }
     
     this.updateGameData();
