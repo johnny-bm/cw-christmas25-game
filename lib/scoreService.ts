@@ -81,14 +81,6 @@ class ScoreService {
     }
   }
 
-      // Use localStorage if Supabase not configured
-      return this.saveLocalScore(playerName, distance, maxCombo);
-    } catch (error) {
-      console.error('Error saving score:', error);
-      throw error;
-    }
-  }
-
   // Check if a score makes it to the leaderboard
   async isTopScore(distance: number): Promise<boolean> {
     const topScores = await this.getTopScores(this.MAX_SCORES);
