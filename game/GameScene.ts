@@ -112,6 +112,7 @@ export class GameScene extends Phaser.Scene {
   private collectSound!: Phaser.Sound.BaseSound;
   private comboSound!: Phaser.Sound.BaseSound;
   private stumbleSound!: Phaser.Sound.BaseSound;
+  private currentMusicRate: number = 1.0; // Track current music playback rate
 
   constructor() {
     super({ key: 'GameScene' });
@@ -1159,9 +1160,20 @@ export class GameScene extends Phaser.Scene {
     console.log('💀 Game Over! Distance:', this.distance);
     this.isGameOver = true;
     
-    // Lower music volume for game over screen
+    // Lower music volume for game over screen and reset speed
     if (this.backgroundMusic) {
       this.setMusicVolume(0.2); // Low volume for game over screen
+      // Reset music speed to normal
+      try {
+        this.currentMusicRate = 1.0;
+        if ('setRate' in this.backgroundMusic) {
+          (this.backgroundMusic as any).setRate(1.0);
+        } else if ('rate' in this.backgroundMusic) {
+          (this.backgroundMusic as any).rate = 1.0;
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to reset music speed on game over:', error);
+      }
     }
     
     this.cameras.main.shake(500, 0.01);
@@ -1372,6 +1384,41 @@ export class GameScene extends Phaser.Scene {
       const pulseAlpha = 0.3 + Math.sin(time * 0.01) * 0.2;
       this.sprintGlow.setAlpha(pulseAlpha);
     }
+    
+    // Update music speed based on energy/deadline proximity
+    // Sprint mode overrides this (handled in activateSprintMode)
+    if (!this.sprintMode && this.backgroundMusic && !this.isMuted) {
+      // Calculate desired music rate based on energy
+      // Energy 100-50: normal speed (1.0)
+      // Energy 50-0: gradually slow down from 1.0 to 0.75
+      let targetRate = 1.0;
+      if (this.energy < 50) {
+        // Linear interpolation: energy 50 = 1.0, energy 0 = 0.75
+        const energyRatio = this.energy / 50; // 0 to 1 as energy goes from 0 to 50
+        targetRate = 0.75 + (energyRatio * 0.25); // 0.75 to 1.0
+      }
+      
+      // Smoothly transition to target rate (avoid abrupt changes)
+      const rateChangeSpeed = 0.02; // How fast to change rate per frame
+      if (Math.abs(this.currentMusicRate - targetRate) > 0.01) {
+        if (this.currentMusicRate > targetRate) {
+          this.currentMusicRate = Math.max(targetRate, this.currentMusicRate - rateChangeSpeed);
+        } else {
+          this.currentMusicRate = Math.min(targetRate, this.currentMusicRate + rateChangeSpeed);
+        }
+        
+        // Apply the rate change
+        try {
+          if ('setRate' in this.backgroundMusic) {
+            (this.backgroundMusic as any).setRate(this.currentMusicRate);
+          } else if ('rate' in this.backgroundMusic) {
+            (this.backgroundMusic as any).rate = this.currentMusicRate;
+          }
+        } catch (error) {
+          console.warn('⚠️ Failed to update music speed:', error);
+        }
+      }
+    }
 
     // Low energy warnings
     this.lowEnergyMessageTimer += delta;
@@ -1469,6 +1516,20 @@ export class GameScene extends Phaser.Scene {
     this.sprintTimer = 0;
     this.sprintGlow.setAlpha(0);
     
+    // Reset music speed to normal when starting new game
+    if (this.backgroundMusic && !this.isMuted) {
+      try {
+        this.currentMusicRate = 1.0;
+        if ('setRate' in this.backgroundMusic) {
+          (this.backgroundMusic as any).setRate(1.0);
+        } else if ('rate' in this.backgroundMusic) {
+          (this.backgroundMusic as any).rate = 1.0;
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to reset music speed on game start:', error);
+      }
+    }
+    
     // Increase music volume for gameplay and ensure it plays
     // Higher volume on mobile for better audibility
     const { width, height } = this.scale;
@@ -1505,9 +1566,20 @@ export class GameScene extends Phaser.Scene {
     this.isGameStarted = false;
     this.isGameOver = false;
     
-    // Lower music volume for start screen
+    // Lower music volume for start screen and reset speed
     if (this.backgroundMusic) {
       this.setMusicVolume(0.2); // Low volume for start screen
+      // Reset music speed to normal
+      try {
+        this.currentMusicRate = 1.0;
+        if ('setRate' in this.backgroundMusic) {
+          (this.backgroundMusic as any).setRate(1.0);
+        } else if ('rate' in this.backgroundMusic) {
+          (this.backgroundMusic as any).rate = 1.0;
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to reset music speed on game reset:', error);
+      }
     }
     
     this.gameSpeed = 300;
@@ -1654,6 +1726,22 @@ export class GameScene extends Phaser.Scene {
     this.energy = 100;
     this.sprintGlow.setAlpha(0.5);
     this.showMessage('💨 SPRINT MODE! UNSTOPPABLE!');
+    
+    // Speed up music during sprint mode (overrides energy-based slowdown)
+    if (this.backgroundMusic && !this.isMuted) {
+      try {
+        // Increase playback rate to 1.3x (30% faster)
+        this.currentMusicRate = 1.3;
+        if ('setRate' in this.backgroundMusic) {
+          (this.backgroundMusic as any).setRate(1.3);
+        } else if ('rate' in this.backgroundMusic) {
+          (this.backgroundMusic as any).rate = 1.3;
+        }
+        console.log('🎵 Music speed increased for sprint mode');
+      } catch (error) {
+        console.warn('⚠️ Failed to speed up music:', error);
+      }
+    }
   }
 
   updateSprintMode(delta: number) {
@@ -1662,6 +1750,22 @@ export class GameScene extends Phaser.Scene {
       if (this.sprintTimer <= 0) {
         this.sprintMode = false;
         this.sprintGlow.setAlpha(0);
+        
+        // Reset music speed back to normal (will be adjusted by energy-based slowdown if needed)
+        if (this.backgroundMusic && !this.isMuted) {
+          try {
+            // Reset playback rate tracking - will be recalculated based on energy in update loop
+            this.currentMusicRate = 1.0;
+            if ('setRate' in this.backgroundMusic) {
+              (this.backgroundMusic as any).setRate(1.0);
+            } else if ('rate' in this.backgroundMusic) {
+              (this.backgroundMusic as any).rate = 1.0;
+            }
+            console.log('🎵 Music speed reset to normal');
+          } catch (error) {
+            console.warn('⚠️ Failed to reset music speed:', error);
+          }
+        }
       }
     }
   }
