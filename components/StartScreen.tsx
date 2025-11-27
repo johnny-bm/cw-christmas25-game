@@ -17,7 +17,6 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
   });
 
   useEffect(() => {
-    console.log('✅ StartScreen RENDERED - Refresh count:', leaderboardRefresh);
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
@@ -49,7 +48,6 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
     if (typeof (window as any).__toggleGameMute === 'function') {
       const newMutedState = (window as any).__toggleGameMute();
       setIsMuted(newMutedState);
-      console.log('🔊 Mute button clicked, new state:', newMutedState);
     } else {
       console.warn('⚠️ __toggleGameMute function not available');
     }
@@ -96,7 +94,6 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
           <button
             onClick={() => {
               if (!gameReady) return;
-              console.log('🚀 START button clicked');
               onStart();
             }}
             disabled={!gameReady}
@@ -138,7 +135,6 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
             <button
               onClick={() => {
                 if (!gameReady) return;
-                console.log('🚀 START button clicked');
                 onStart();
               }}
               disabled={!gameReady}

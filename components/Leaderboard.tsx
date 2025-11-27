@@ -7,10 +7,10 @@ interface LeaderboardProps {
   className?: string;
   refresh?: number | boolean; // Add a refresh prop to trigger reloads
   compact?: boolean; // Add compact mode for horizontal layout
-  highlightPlayerName?: string; // Player name/initials to highlight in the leaderboard
+  highlightScoreId?: string; // Score ID to highlight in the leaderboard
 }
 
-export function Leaderboard({ className = '', refresh = 0, compact = false, highlightPlayerName }: LeaderboardProps) {
+export function Leaderboard({ className = '', refresh = 0, compact = false, highlightScoreId }: LeaderboardProps) {
   const [scores, setScores] = useState<ScoreEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -108,17 +108,23 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
 
   // Scroll to highlighted row when it first appears
   useEffect(() => {
-    if (!highlightPlayerName || !highlightedRowRef.current || !scrollContainerRef.current || hasScrolledToHighlightRef.current) return;
+    if (!highlightScoreId || !scrollContainerRef.current || hasScrolledToHighlightRef.current || loading || loadingMore) return;
+    
+    // Find the highlighted row in the current scores
+    const highlightedScore = scores.find(score => score.id === highlightScoreId);
+    if (!highlightedScore) {
+      // Score not found yet, might need to load more or wait for refresh
+      return;
+    }
     
     const scrollContainer = scrollContainerRef.current;
-    const highlightedRow = highlightedRowRef.current;
     
     // Wait for DOM to update, then scroll to highlighted row
     const timeoutId = setTimeout(() => {
+      const highlightedRow = highlightedRowRef.current;
       if (highlightedRow && scrollContainer) {
         const rowTop = highlightedRow.offsetTop;
         const rowHeight = highlightedRow.offsetHeight;
-        const containerTop = scrollContainer.scrollTop;
         const containerHeight = scrollContainer.clientHeight;
         
         // Calculate position to center the row in view
@@ -131,17 +137,20 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
         
         hasScrolledToHighlightRef.current = true;
       }
-    }, 300);
+    }, 500); // Increased timeout to ensure leaderboard has fully rendered after refresh
     
     return () => clearTimeout(timeoutId);
-  }, [highlightPlayerName, scores.length]);
+  }, [highlightScoreId, scores.length, loading, loadingMore]);
 
   // Reset scroll flag when highlight changes
   useEffect(() => {
-    if (!highlightPlayerName) {
+    if (!highlightScoreId) {
+      hasScrolledToHighlightRef.current = false;
+    } else {
+      // Reset scroll flag when a new score ID is provided to allow scrolling again
       hasScrolledToHighlightRef.current = false;
     }
-  }, [highlightPlayerName]);
+  }, [highlightScoreId]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -230,7 +239,7 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
           </thead>
           <tbody>
             {scores.map((score, index) => {
-              const isHighlighted = highlightPlayerName && score.player_name.toUpperCase() === highlightPlayerName.toUpperCase().trim();
+              const isHighlighted = highlightScoreId && score.id === highlightScoreId;
               const rowBgClass = isHighlighted 
                 ? (isLightMode ? 'bg-yellow-200 border-yellow-500' : 'bg-yellow-900/50 border-yellow-500/60')
                 : '';

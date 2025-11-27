@@ -2,6 +2,7 @@ import { ArrowLeft, Zap, Trophy, Volume2, VolumeX } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { GameData } from '../App';
 import { formatNumber } from '../lib/formatNumber';
+import { GameConfig } from '../game/gameConfig';
 
 interface GameUIProps {
   gameData: GameData;
@@ -55,8 +56,18 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
   };
 
   // Convert deadline proximity to meters (higher proximity = closer = fewer meters)
+  // Uses maxDistance as the base - when energy is 100 (proximity 0), distance reaches maxDistance
   const getDeadlineDistance = () => {
-    return Math.round((100 - deadlineProximity) * 2);
+    if (GameConfig.deadline.maxDistance === Infinity) {
+      // No cap: use multiplier-based calculation
+      return Math.round((100 - deadlineProximity) * GameConfig.deadline.distanceMultiplier);
+    } else {
+      // Capped: calculate as percentage of maxDistance
+      // When energy is 100 (proximity 0): distance = maxDistance
+      // When energy is 0 (proximity 100): distance = 0
+      const calculatedDistance = (100 - deadlineProximity) / 100 * GameConfig.deadline.maxDistance;
+      return Math.round(calculatedDistance);
+    }
   };
 
   return (

@@ -22,6 +22,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
   const [email, setEmail] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [scoreSaved, setScoreSaved] = useState(false);
+  const [savedScoreId, setSavedScoreId] = useState<string | null>(null);
   const [isTopScore, setIsTopScore] = useState(false);
   const [isMuted, setIsMuted] = useState(() => {
     // Check localStorage for saved mute state
@@ -85,7 +86,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
 
     setIsSaving(true);
     try {
-      await scoreService.saveScore(
+      const savedScore = await scoreService.saveScore(
         playerName.trim(), 
         distance, 
         maxCombo, 
@@ -93,6 +94,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
         elfScore,
         email.trim() || undefined // Only pass email if it's not empty
       );
+      setSavedScoreId(savedScore.id);
       setScoreSaved(true);
     } catch (error) {
       console.error('Failed to save score:', error);
@@ -284,7 +286,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
               className="text-black" 
               refresh={scoreSaved} 
               compact={true}
-              highlightPlayerName={scoreSaved ? playerName.trim() : undefined}
+              highlightScoreId={savedScoreId || undefined}
             />
           </div>
         </div>

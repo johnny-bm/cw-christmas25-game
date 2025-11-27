@@ -218,8 +218,6 @@ export default function App() {
   }, []);
 
   const handleRestart = () => {
-    console.log('🔄 RESTART CLICKED - Current state:', gameState);
-    
     // Reset game data to initial state
     setGameData({
       distance: 0,
@@ -236,26 +234,17 @@ export default function App() {
     // Transition directly to playing state (not via start screen)
     // First set to start briefly to reset the game scene, then immediately to playing
     setGameState('start');
-    console.log('🔄 State changed to: start');
     
     // After a brief delay, transition to playing state to ensure game scene resets properly
     setTimeout(() => {
       setGameState('playing');
-      console.log('🔄 State changed to: playing after restart');
     }, 150);
     
-    setLeaderboardRefresh(prev => {
-      const newValue = prev + 1;
-      console.log('📊 Leaderboard refresh triggered:', newValue);
-      return newValue;
-    });
+    setLeaderboardRefresh(prev => prev + 1);
   };
 
   // Check if we should show portrait blocker
   const showPortraitBlocker = isMobile && isPortrait;
-  
-  console.log('🎮 App render - State:', gameState, 'Distance:', finalDistance, 'Best:', bestDistance);
-  console.log('📱 Mobile:', isMobile, 'Portrait:', isPortrait, 'Show blocker:', showPortraitBlocker);
 
   return (
     <div className="w-full h-[100dvh] bg-white overflow-hidden relative" style={{ margin: 0, padding: 0, width: '100vw', height: '100vh' }}>

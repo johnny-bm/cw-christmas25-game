@@ -1,5 +1,15 @@
 import Phaser from 'phaser';
 import { createCharacterTextures } from './createCharacterTextures';
+import { GameConfig } from './gameConfig';
+import { 
+  getElementColorPhaser, 
+  getElementColor,
+  getColorTokenPhaser,
+  regularCollectibleColors,
+  specialCollectibleColors,
+  confettiColors,
+  explosionColors
+} from './colorConfig';
 
 const COLLECT_MESSAGES = [
   'Creative spark\'s back!',
@@ -62,17 +72,18 @@ export class GameScene extends Phaser.Scene {
   private deadlineEdge!: Phaser.GameObjects.Rectangle;
   
   private distance: number = 0;
-  private energy: number = 100;
+  private energy: number = GameConfig.energy.initial;
   private combo: number = 0;
   private maxCombo: number = 0;
   private grinchScore: number = 0;
   private elfScore: number = 0;
   
-  private gameSpeed: number = 300;
+  private gameSpeed: number = GameConfig.speed.initial;
   
   private sprintMode: boolean = false;
   private sprintTimer: number = 0;
   private sprintGlow!: Phaser.GameObjects.Rectangle;
+  private vignette!: Phaser.GameObjects.Image;
   
   private jumpsRemaining: number = 2;
   
@@ -99,11 +110,11 @@ export class GameScene extends Phaser.Scene {
   private lowEnergyMessageTimer: number = 0;
   private energyDrainTimer: number = 0;
   private distanceTimer: number = 0;
-  private obstacleTimer: number = 1000;
-  private floatingObstacleTimer: number = 2000;
-  private projectileObstacleTimer: number = 3000;
-  private collectibleTimer: number = 2000;
-  private specialCollectibleTimer: number = 5000;
+  private obstacleTimer: number = GameConfig.timers.obstacleInitial;
+  private floatingObstacleTimer: number = GameConfig.timers.floatingObstacleInitial;
+  private projectileObstacleTimer: number = GameConfig.timers.projectileObstacleInitial;
+  private collectibleTimer: number = GameConfig.timers.collectibleInitial;
+  private specialCollectibleTimer: number = GameConfig.timers.specialCollectibleInitial;
   private messageTimer: number = 0; // Cooldown timer for messages
   
   private backgroundMusic!: Phaser.Sound.BaseSound;
@@ -148,10 +159,12 @@ export class GameScene extends Phaser.Scene {
       this.collectibleImageKeys.push(key);
     });
     
+    // Load vignette image
+    this.load.image('vignette', '/Assets/Vignet.png');
+    
     
     // Load background music - encode spaces in filename
     const musicPath = '/Deck The Halls Christmas Rock.mp3';
-    console.log('🎵 Loading audio:', musicPath);
     this.load.audio('bgMusic', musicPath);
     
     // Load sound effects
@@ -162,18 +175,12 @@ export class GameScene extends Phaser.Scene {
     
     // Track loading progress
     this.load.on('progress', (progress: number) => {
-      console.log('📦 Loading progress:', Math.round(progress * 100) + '%');
       this.game.events.emit('loadingProgress', progress);
     });
     
     // Listen for load complete
     this.load.on('complete', () => {
-      console.log('✅ All assets loaded successfully');
       this.game.events.emit('assetsLoaded');
-    });
-    
-    this.load.on('filecomplete-audio-bgMusic', () => {
-      console.log('✅ bgMusic audio file loaded successfully');
     });
     
     this.load.on('loaderror', (file: Phaser.Loader.File) => {
@@ -186,35 +193,25 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    console.log('🎮 GameScene create() started');
     // Get actual canvas dimensions (no fixed 1920x1080)
     const { width, height } = this.scale;
 
-    console.log('📐 Canvas size:', width, 'x', height);
-    console.log('📐 Scale mode:', this.scale.scaleMode);
-
     // Set camera bounds to match actual canvas size
     this.cameras.main.setBounds(0, 0, width, height);
-    this.cameras.main.setBackgroundColor('#ffffff'); // White background
+    this.cameras.main.setBackgroundColor(getElementColorPhaser('background')); // White background
     
     // Set physics world bounds to match canvas size
     this.physics.world.setBounds(0, 0, width, height);
     
     // Scale gravity relative to screen height for responsive jump physics
-    // Base gravity is 2000 for 1080px height, scale proportionally
-    // On mobile, keep gravity normal to prevent floaty feeling
     const isMobile = width <= 768 || height <= 768;
-    const mobileGravityMultiplier = isMobile ? 0.98 : 1.0; // Only 2% less gravity on mobile (reduced from 8%)
-    const baseGravity = 2000;
-    const baseHeight = 1080;
-    const scaledGravity = baseGravity * (height / baseHeight) * mobileGravityMultiplier;
+    const mobileGravityMultiplier = isMobile ? GameConfig.physics.mobileGravityMultiplier : 1.0;
+    const scaledGravity = GameConfig.physics.baseGravity * (height / GameConfig.physics.baseGravityHeight) * mobileGravityMultiplier;
     this.physics.world.gravity.y = scaledGravity;
-    console.log('📐 Scaled gravity:', scaledGravity, 'for height:', height, 'mobile:', isMobile);
 
     // White game background
-    const bg = this.add.rectangle(width / 2, height / 2, width, height, 0xffffff);
+    const bg = this.add.rectangle(width / 2, height / 2, width, height, getElementColorPhaser('background'));
     bg.setDepth(-100);
-    console.log('✅ Game background created');
 
     // Parallax background
     this.createParallaxBackground();
@@ -229,7 +226,7 @@ export class GameScene extends Phaser.Scene {
     this.ground = this.physics.add.staticGroup();
     
     // Create ground rectangle
-    const groundRect = this.add.rectangle(width / 2, groundCenterY, groundWidth, groundHeight, 0x000000);
+    const groundRect = this.add.rectangle(width / 2, groundCenterY, groundWidth, groundHeight, getElementColorPhaser('ground'));
     groundRect.setDepth(10);
     groundRect.setOrigin(0.5, 0.5);
     groundRect.setVisible(true);
@@ -248,8 +245,6 @@ export class GameScene extends Phaser.Scene {
       body.setSize(groundWidth, groundHeight);
       body.setOffset(0, 0);
     }
-    
-    console.log('✅ Ground created at:', groundRect.x, groundRect.y, 'size:', groundWidth, 'x', groundHeight);
 
     // Position player at 20% from left, on ground
     const playerX = width * 0.2;
@@ -270,9 +265,6 @@ export class GameScene extends Phaser.Scene {
     this.player.body.setCollideWorldBounds(false);
     this.player.body.setAllowGravity(true);
     this.player.body.enable = true;
-    
-    console.log('✅ Player created at:', this.player.x, this.player.y);
-    console.log('✅ Ground Y:', this.groundY);
 
     // Add collider between player and ground
     this.physics.add.collider(this.player, this.ground);
@@ -290,18 +282,34 @@ export class GameScene extends Phaser.Scene {
       this.player.y, 
       glowWidth, 
       glowHeight, 
-      0xffff00,
+      getElementColorPhaser('sprintGlow'),
       0
     );
     this.sprintGlow.setDepth(19);
 
     // Position deadline at center or relative to height
-    this.deadline = this.add.rectangle(-50, height * 0.5, 5000, height, 0x000000);
+    this.deadline = this.add.rectangle(-50, height * 0.5, 5000, height, getElementColorPhaser('deadline'));
     this.deadline.setOrigin(1, 0.5);
     this.deadline.setDepth(1);
     
-    this.deadlineEdge = this.add.rectangle(-100, height * 0.5, 5, height, 0xff0000);
+    this.deadlineEdge = this.add.rectangle(-100, height * 0.5, 5, height, getElementColorPhaser('deadlineEdge'));
     this.deadlineEdge.setDepth(2);
+
+    // Create vignette effect using PNG image (starts invisible, will be shown when energy is low)
+    if (this.textures.exists('vignette')) {
+      this.vignette = this.add.image(width / 2, height / 2, 'vignette');
+      // Scale to cover entire screen (use larger dimension to ensure full coverage)
+      const maxDimension = Math.max(width, height);
+      this.vignette.setDisplaySize(maxDimension, maxDimension); // Scale to cover screen
+      this.vignette.setOrigin(0.5, 0.5);
+      this.vignette.setDepth(9999); // Maximum depth to ensure it's above all game elements (UI is rendered separately in React)
+      this.vignette.setAlpha(0); // Start invisible
+      // Use NORMAL blend mode (MULTIPLY was making it too dark/invisible)
+      this.vignette.setBlendMode(Phaser.BlendModes.NORMAL);
+    } else {
+      console.warn('⚠️ Vignette texture not found - image may not have loaded');
+      console.warn('⚠️ Available textures:', Object.keys(this.textures.list));
+    }
 
     // Initialize groups
     this.obstacles = this.add.group();
@@ -313,8 +321,6 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-SPACE', () => this.jump());
     this.input.keyboard!.on('keydown-UP', () => this.jump());
     this.input.on('pointerdown', () => this.jump());
-
-    console.log('✅ GameScene setup complete');
     
     // Initialize all sounds
     try {
@@ -331,7 +337,7 @@ export class GameScene extends Phaser.Scene {
       // Initialize background music - start playing immediately at low volume
       // Higher volume on mobile for better audibility
       const isMobile = width <= 768 || height <= 768;
-      const musicVolume = isMobile ? 0.3 : 0.2; // Slightly higher on mobile
+      const musicVolume = isMobile ? GameConfig.audio.musicVolumeMobile : GameConfig.audio.musicVolumeDesktop;
       if (this.cache.audio.exists('bgMusic')) {
         this.backgroundMusic = this.sound.add('bgMusic', { 
           loop: true, 
@@ -340,7 +346,6 @@ export class GameScene extends Phaser.Scene {
           detune: 0,
           rate: 1.0
         });
-        console.log('✅ Background music initialized', { isMobile, musicVolume });
       } else {
         this.backgroundMusic = this.sound.add('bgMusic', { 
           loop: true, 
@@ -354,8 +359,8 @@ export class GameScene extends Phaser.Scene {
       try {
         // Detect mobile for higher volume
         const isMobile = width <= 768 || height <= 768;
-        const soundVolume = isMobile ? 0.9 : 0.7; // Higher volume on mobile
-        const comboVolume = isMobile ? 1.0 : 0.8; // Max volume for combo on mobile
+        const soundVolume = isMobile ? GameConfig.audio.soundVolumeMobile : GameConfig.audio.soundVolumeDesktop;
+        const comboVolume = isMobile ? GameConfig.audio.comboVolumeMobile : GameConfig.audio.comboVolumeDesktop;
         
         // Use Web Audio API explicitly for all sounds
         const soundConfig = { 
@@ -367,13 +372,9 @@ export class GameScene extends Phaser.Scene {
         this.collectSound = this.sound.add('collectSound', { volume: soundVolume, ...soundConfig });
         this.comboSound = this.sound.add('comboSound', { volume: comboVolume, ...soundConfig });
         this.stumbleSound = this.sound.add('stumbleSound', { volume: soundVolume, ...soundConfig });
-        console.log('✅ Sound effects initialized', { isMobile, soundVolume });
       } catch (error) {
         console.warn('⚠️ Some sound effects may not be loaded yet:', error);
       }
-      
-      console.log('✅ All sounds initialized');
-      console.log('📱 Note: iOS Safari respects silent mode. Sounds will only play when device is not in silent mode.');
     } catch (error) {
       console.error('❌ Failed to initialize sounds:', error);
     }
@@ -383,9 +384,6 @@ export class GameScene extends Phaser.Scene {
     if (savedMuteState === 'true') {
       this.isMuted = true;
       this.sound.mute = true;
-      console.log('🔇 Sound muted from localStorage');
-    } else {
-      console.log('🔊 Sound not muted');
     }
     
     // Unlock audio on first user interaction and start music
@@ -393,15 +391,12 @@ export class GameScene extends Phaser.Scene {
     const unlockAndStartAudio = () => {
       if (this.sound.locked) {
         this.sound.unlock();
-        console.log('🔓 Audio unlocked');
       }
       
       // Ensure audio context is resumed (required for mobile)
       const audioContext = this.getAudioContext();
       if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume().then(() => {
-          console.log('🔊 Audio context resumed');
-        }).catch((err) => {
+        audioContext.resume().catch((err) => {
           console.warn('⚠️ Failed to resume audio context:', err);
         });
       }
@@ -410,7 +405,6 @@ export class GameScene extends Phaser.Scene {
       if (this.backgroundMusic && !this.backgroundMusic.isPlaying && !this.isMuted) {
         try {
           this.backgroundMusic.play();
-          console.log('🎵 Music started');
         } catch (error) {
           console.warn('⚠️ Failed to play music:', error);
         }
@@ -418,7 +412,6 @@ export class GameScene extends Phaser.Scene {
     };
     
     if (this.sound.locked) {
-      console.log('🔒 Audio is locked, will unlock on user interaction');
       // Listen for multiple interaction types for better mobile support
       const unlockAudio = (e: Event) => {
         e.preventDefault();
@@ -457,7 +450,6 @@ export class GameScene extends Phaser.Scene {
     this.isMuted = !this.isMuted;
     this.sound.mute = this.isMuted;
     localStorage.setItem('escapeTheDeadline_muted', this.isMuted.toString());
-    console.log('🔊 Mute toggled:', this.isMuted);
     return this.isMuted;
   }
   
@@ -468,7 +460,6 @@ export class GameScene extends Phaser.Scene {
   setMusicVolume(volume: number) {
     if (this.backgroundMusic && 'setVolume' in this.backgroundMusic) {
       (this.backgroundMusic as any).setVolume(volume);
-      console.log('🎵 Music volume set to:', volume);
     }
   }
 
@@ -478,7 +469,6 @@ export class GameScene extends Phaser.Scene {
     // Ensure audio is unlocked on first jump (mobile)
     if (this.sound.locked) {
       this.sound.unlock();
-      console.log('🔓 Audio unlocked on jump');
     }
     
     const onGround = this.player.body.touching.down;
@@ -487,15 +477,15 @@ export class GameScene extends Phaser.Scene {
     // Base jump velocity is -800 for 1080px height, scale proportionally
     const { width, height } = this.scale;
     const isMobile = width <= 768 || height <= 768;
-    // Make jump feel snappier on mobile - slightly stronger but not floaty
-    const mobileJumpMultiplier = isMobile ? 1.05 : 1.0; // Only 5% stronger jump on mobile (reduced from 15%)
-    const baseJumpVelocity = -800;
-    const baseHeight = 1080;
-    const jumpVelocity = baseJumpVelocity * (height / baseHeight) * mobileJumpMultiplier;
+    const mobileJumpMultiplier = isMobile ? GameConfig.physics.mobileJumpMultiplier : 1.0;
+    const jumpVelocity = GameConfig.physics.baseJumpVelocity * (height / GameConfig.physics.baseGravityHeight) * mobileJumpMultiplier;
     
     if (onGround) {
       this.player.setVelocityY(jumpVelocity);
       this.jumpsRemaining = 1;
+      // Deduct energy for jumping (free during sprint mode)
+      const jumpCost = this.sprintMode ? GameConfig.energy.jumpCostSprint : GameConfig.energy.jumpCost;
+      this.energy = Math.max(0, this.energy - jumpCost);
       // Play jump sound - ensure audio context is active
       if (this.jumpSound && !this.isMuted) {
         try {
@@ -512,6 +502,9 @@ export class GameScene extends Phaser.Scene {
     } else if (this.jumpsRemaining > 0) {
       this.player.setVelocityY(jumpVelocity);
       this.jumpsRemaining = 0;
+      // Deduct energy for jumping (free during sprint mode)
+      const jumpCost = this.sprintMode ? GameConfig.energy.jumpCostSprint : GameConfig.energy.jumpCost;
+      this.energy = Math.max(0, this.energy - jumpCost);
       // Play jump sound - ensure audio context is active
       if (this.jumpSound && !this.isMuted) {
         try {
@@ -553,7 +546,7 @@ export class GameScene extends Phaser.Scene {
       this.groundY - obstacleHeight / 2,
       obstacleWidth,
       obstacleHeight,
-      0xaaaaaa
+      getElementColorPhaser('obstacleRegular')
     );
     obstacle.setDepth(10);
     this.obstacles.add(obstacle);
@@ -562,9 +555,9 @@ export class GameScene extends Phaser.Scene {
     const obstacleSpeed = -400 * baseSpeed;
     obstacle.setData('speed', obstacleSpeed);
     
-    const minInterval = 800;
-    const maxInterval = 2500;
-    const speedFactor = Math.min(1, (this.gameSpeed - 300) / 300);
+    const minInterval = GameConfig.obstacles.regular.spawnIntervalMin;
+    const maxInterval = GameConfig.obstacles.regular.spawnIntervalMax;
+    const speedFactor = Math.min(1, (this.gameSpeed - GameConfig.speed.initial) / GameConfig.speed.initial);
     const baseInterval = maxInterval - (speedFactor * (maxInterval - minInterval));
     this.obstacleTimer = Phaser.Math.Between(baseInterval * 0.5, baseInterval * 1.5);
   }
@@ -597,7 +590,7 @@ export class GameScene extends Phaser.Scene {
       y,
       obstacleWidth,
       obstacleHeight,
-      0x888888
+      getElementColorPhaser('obstacleFloating')
     );
     obstacle.setDepth(10);
     this.floatingObstacles.add(obstacle);
@@ -606,8 +599,8 @@ export class GameScene extends Phaser.Scene {
     const obstacleSpeed = -400 * baseSpeed;
     obstacle.setData('speed', obstacleSpeed);
     
-    const minInterval = 1500;
-    const maxInterval = 3500;
+    const minInterval = GameConfig.obstacles.floating.spawnIntervalMin;
+    const maxInterval = GameConfig.obstacles.floating.spawnIntervalMax;
     this.floatingObstacleTimer = Phaser.Math.Between(minInterval, maxInterval);
   }
 
@@ -659,7 +652,7 @@ export class GameScene extends Phaser.Scene {
       startY,
       projectileSize,
       projectileSize,
-      0xff4444 // Red color to distinguish from regular obstacles
+      getElementColorPhaser('obstacleProjectile') // Red color to distinguish from regular obstacles
     );
     projectile.setDepth(10);
     this.projectileObstacles.add(projectile);
@@ -676,8 +669,8 @@ export class GameScene extends Phaser.Scene {
     projectile.setData('velocityY', vy);
     
     // Set timer for next spawn
-    const minInterval = 2000;
-    const maxInterval = 5000;
+    const minInterval = GameConfig.obstacles.projectile.spawnIntervalMin;
+    const maxInterval = GameConfig.obstacles.projectile.spawnIntervalMax;
     this.projectileObstacleTimer = Phaser.Math.Between(minInterval, maxInterval);
   }
 
@@ -703,11 +696,26 @@ export class GameScene extends Phaser.Scene {
     // Pick a random collectible image
     const imageKey = Phaser.Math.RND.pick(this.collectibleImageKeys);
     
+    // Determine if this collectible is special or regular based on config
+    // Extract the original name from the key (e.g., "collectible-crown" -> "Crown")
+    // The key format is "collectible-{name-lowercase-with-dashes}"
+    // We need to match it back to the original name in the config
+    const keyNameLower = imageKey.replace('collectible-', '');
+    // Find matching name from config by comparing lowercase versions
+    const matchingName = GameConfig.collectibles.types.regular.find(name => 
+      name.toLowerCase().replace(/\s+/g, '-') === keyNameLower
+    ) || GameConfig.collectibles.types.special.find(name => 
+      name.toLowerCase().replace(/\s+/g, '-') === keyNameLower
+    );
+    const isSpecial = matchingName ? GameConfig.collectibles.types.special.includes(matchingName) : false;
+    
     const collectible = this.add.image(width + 50, y, imageKey);
     // Scale collectible image relative to screen height (assuming base image is ~50px, scale to collectibleSize)
     const imageScale = collectibleSize / 50;
     collectible.setScale(imageScale);
     collectible.setOrigin(0.5, 0.5);
+    // Store collectible type for collection logic
+    collectible.setData('isSpecial', isSpecial);
     this.collectibles.add(collectible);
     
     // Scale animation distance relative to screen height
@@ -726,7 +734,11 @@ export class GameScene extends Phaser.Scene {
     const collectibleSpeed = -400 * baseSpeed;
     collectible.setData('speed', collectibleSpeed);
     
-    this.collectibleTimer = Phaser.Math.Between(500, 3000);
+    // Use appropriate spawn interval based on collectible type
+    const spawnInterval = isSpecial 
+      ? Phaser.Math.Between(GameConfig.collectibles.special.spawnIntervalMin, GameConfig.collectibles.special.spawnIntervalMax)
+      : Phaser.Math.Between(GameConfig.collectibles.regular.spawnIntervalMin, GameConfig.collectibles.regular.spawnIntervalMax);
+    this.collectibleTimer = spawnInterval;
   }
 
   spawnSpecialCollectible() {
@@ -747,8 +759,7 @@ export class GameScene extends Phaser.Scene {
       this.groundY - height * 0.167   // ~16.7% from ground
     ];
     const y = Phaser.Math.RND.pick(heights);
-    const colors = [0xff0000, 0x00ff00, 0x0000ff];
-    const color = Phaser.Math.RND.pick(colors);
+    const color = Phaser.Math.RND.pick(specialCollectibleColors);
     
     const collectible = this.add.arc(width + 50, y, collectibleRadius, 0, Math.PI * 2, false, color);
     this.specialCollectibles.push(collectible);
@@ -779,7 +790,7 @@ export class GameScene extends Phaser.Scene {
     const collectibleSpeed = -400 * baseSpeed;
     collectible.setData('speed', collectibleSpeed);
     
-    this.specialCollectibleTimer = Phaser.Math.Between(8000, 15000);
+    this.specialCollectibleTimer = Phaser.Math.Between(GameConfig.collectibles.special.spawnIntervalMin, GameConfig.collectibles.special.spawnIntervalMax);
   }
 
   checkCollisions() {
@@ -798,11 +809,11 @@ export class GameScene extends Phaser.Scene {
           obstacle.destroy();
           this.obstacles.remove(obstacle);
         } else {
-          this.energy -= 10;
+          this.energy -= GameConfig.obstacles.regular.damage;
           this.combo = 0;
           this.grinchScore += 1; // Increment Grinch score on obstacle hit
           this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
-          this.cameras.main.shake(150, 0.005);
+          this.cameras.main.shake(GameConfig.effects.cameraShakeDuration, GameConfig.effects.cameraShakeIntensity);
           this.createCollisionEffect(obstacle.x, obstacle.y);
           // Play stumble sound - ensure audio context is active
           if (this.stumbleSound && !this.isMuted) {
@@ -828,14 +839,16 @@ export class GameScene extends Phaser.Scene {
       } else if (!this.obstaclesPassed.has(obstacle) && obstacle.x < this.player.x) {
         this.obstaclesPassed.add(obstacle);
         this.combo += 1;
+        // Reward energy for successfully passing obstacle
+        this.energy = Math.min(GameConfig.energy.max, this.energy + GameConfig.energy.obstaclePassReward);
         
-        if (this.combo % 10 === 0 && this.combo >= 10 && !this.sprintMode) {
+        if (this.combo % GameConfig.combo.sprintThreshold === 0 && this.combo >= GameConfig.combo.sprintThreshold && !this.sprintMode) {
           this.activateSprintMode();
         }
         
-        if (this.combo === 3) {
+        if (this.combo === GameConfig.combo.milestone3) {
           this.showMessage('🔥 3 in a row!');
-        } else if (this.combo % 10 === 0 && this.combo >= 10) {
+        } else if (this.combo % GameConfig.combo.sprintThreshold === 0 && this.combo >= GameConfig.combo.sprintThreshold) {
           this.showMessage(`⚡ ON FIRE! ${this.combo} COMBO!`);
         }
         
@@ -858,11 +871,11 @@ export class GameScene extends Phaser.Scene {
           obstacle.destroy();
           this.floatingObstacles.remove(obstacle);
         } else {
-          this.energy -= 10;
+          this.energy -= GameConfig.obstacles.floating.damage;
           this.combo = 0;
           this.grinchScore += 1; // Increment Grinch score on floating obstacle hit
           this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
-          this.cameras.main.shake(150, 0.005);
+          this.cameras.main.shake(GameConfig.effects.cameraShakeDuration, GameConfig.effects.cameraShakeIntensity);
           this.createCollisionEffect(obstacle.x, obstacle.y);
           // Play stumble sound - ensure audio context is active
           if (this.stumbleSound && !this.isMuted) {
@@ -888,10 +901,12 @@ export class GameScene extends Phaser.Scene {
       } else if (!this.obstaclesPassed.has(obstacle) && obstacle.x < this.player.x) {
         this.obstaclesPassed.add(obstacle);
         this.combo += 1;
+        // Reward energy for successfully passing floating obstacle
+        this.energy = Math.min(GameConfig.energy.max, this.energy + GameConfig.energy.obstaclePassReward);
         
         // Play combo sound for milestones - ensure audio context is active
         if (this.comboSound && !this.isMuted) {
-          if (this.combo === 3 || this.combo % 10 === 0) {
+          if (this.combo === GameConfig.combo.milestone3 || this.combo % GameConfig.combo.sprintThreshold === 0) {
             try {
               // Resume audio context if suspended (mobile requirement)
               const audioContext = this.getAudioContext();
@@ -905,13 +920,13 @@ export class GameScene extends Phaser.Scene {
           }
         }
         
-        if (this.combo % 10 === 0 && this.combo >= 10 && !this.sprintMode) {
+        if (this.combo % GameConfig.combo.sprintThreshold === 0 && this.combo >= GameConfig.combo.sprintThreshold && !this.sprintMode) {
           this.activateSprintMode();
         }
         
-        if (this.combo === 3) {
+        if (this.combo === GameConfig.combo.milestone3) {
           this.showMessage('🔥 3 in a row!');
-        } else if (this.combo % 10 === 0 && this.combo >= 10) {
+        } else if (this.combo % GameConfig.combo.sprintThreshold === 0 && this.combo >= GameConfig.combo.sprintThreshold) {
           this.showMessage(`⚡ ON FIRE! ${this.combo} COMBO!`);
         }
         
@@ -934,11 +949,11 @@ export class GameScene extends Phaser.Scene {
           projectile.destroy();
           this.projectileObstacles.remove(projectile);
         } else {
-          this.energy -= 15; // Projectiles do more damage
+          this.energy -= GameConfig.obstacles.projectile.damage;
           this.combo = 0;
           this.grinchScore += 1; // Increment Grinch score on projectile hit
           this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
-          this.cameras.main.shake(200, 0.008); // Stronger shake for projectiles
+          this.cameras.main.shake(GameConfig.effects.cameraShakeProjectileDuration, GameConfig.effects.cameraShakeProjectileIntensity);
           this.createCollisionEffect(projectile.x, projectile.y);
           // Play stumble sound - ensure audio context is active
           if (this.stumbleSound && !this.isMuted) {
@@ -972,11 +987,23 @@ export class GameScene extends Phaser.Scene {
       const collectibleBounds = collectible.getBounds();
       
       if (Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, collectibleBounds)) {
-        this.energy = Math.min(100, this.energy + 5);
+        // Check if this is a special collectible
+        const isSpecial = collectible.getData('isSpecial') || false;
+        const energyGain = isSpecial 
+          ? GameConfig.collectibles.special.energyGain 
+          : GameConfig.collectibles.regular.energyGain;
+        
+        this.energy = Math.min(GameConfig.energy.max, this.energy + energyGain);
         this.elfScore += 1; // Increment Elf score on collectible collection
-        this.showMessage(Phaser.Math.RND.pick(COLLECT_MESSAGES));
-        // Use a default color for the effect (yellow/gold)
-        this.createCollectEffect(collectible.x, collectible.y, 0xffff00);
+        
+        if (isSpecial) {
+          this.showMessage(Phaser.Math.RND.pick(SPECIAL_COLLECT_MESSAGES));
+          this.createSpecialCollectEffect(collectible.x, collectible.y);
+        } else {
+          this.showMessage(Phaser.Math.RND.pick(COLLECT_MESSAGES));
+          // Use a default color for the effect (yellow/gold)
+          this.createCollectEffect(collectible.x, collectible.y, getElementColorPhaser('collectibleRegular1'));
+        }
         // Play collect sound - ensure audio context is active
         if (this.collectSound && !this.isMuted) {
           try {
@@ -1001,7 +1028,7 @@ export class GameScene extends Phaser.Scene {
       const collectibleBounds = collectible.getBounds();
       
       if (Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, collectibleBounds)) {
-        this.energy = Math.min(100, this.energy + 20);
+        this.energy = Math.min(GameConfig.energy.max, this.energy + GameConfig.collectibles.special.energyGain);
         this.elfScore += 1; // Increment Elf score on special collectible collection
         this.showMessage(Phaser.Math.RND.pick(SPECIAL_COLLECT_MESSAGES));
         this.createSpecialCollectEffect(collectible.x, collectible.y);
@@ -1031,7 +1058,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   showMessage(message: string) {
-    // Check cooldown timer - only allow messages every 2 seconds (except for special messages)
+    // Check cooldown timer - only allow messages every X seconds (except for special messages)
     const isSpecialMessage = message.includes('SPRINT') || message.includes('ON FIRE') || message.includes('🔥');
     if (!isSpecialMessage && this.messageTimer > 0) {
       return; // Skip this message if cooldown hasn't expired
@@ -1039,10 +1066,10 @@ export class GameScene extends Phaser.Scene {
     
     // Reset cooldown timer
     if (!isSpecialMessage) {
-      this.messageTimer = 2000; // 2 second cooldown
+      this.messageTimer = GameConfig.messages.cooldown;
     }
     
-    if (this.messageBubbles.length >= 3) {
+    if (this.messageBubbles.length >= GameConfig.messages.maxBubbles) {
       const oldest = this.messageBubbles[0];
       oldest.container.destroy();
       this.messageBubbles.shift();
@@ -1057,9 +1084,11 @@ export class GameScene extends Phaser.Scene {
     const baseFontSize = isMobile 
       ? (isSpecial ? '16px' : '12px')  // Smaller on mobile
       : (isSpecial ? '24px' : '18px'); // Normal on desktop
-    const bgColor = isNegative ? 0x666666 : (isSpecial ? 0xffaa00 : 0x000000);
-    const textColor = isSpecial ? '#000000' : '#ffffff';
-    const strokeColor = isSpecial ? '#ffffff' : '#000000';
+    const bgColor = isNegative 
+      ? getElementColorPhaser('messageBubbleNegative') 
+      : (isSpecial ? getElementColorPhaser('messageBubbleSpecial') : getElementColorPhaser('messageBubbleNormal'));
+    const textColor = isSpecial ? getElementColor('messageTextSpecial') : getElementColor('messageTextNormal');
+    const strokeColor = isSpecial ? getElementColor('messageStrokeSpecial') : getElementColor('messageStrokeNormal');
     
     // Match text resolution to canvas resolution for crisp rendering
     // Use device pixel ratio (same as canvas resolution) for crisp text
@@ -1083,7 +1112,7 @@ export class GameScene extends Phaser.Scene {
       ? (isSpecial ? 6 : 5)  // Smaller padding on mobile
       : (isSpecial ? 10 : 8); // Normal padding on desktop
     const messageBg = this.add.rectangle(0, 0, messageText.width + (padding * 2), messageText.height + (padding * 2), bgColor);
-    messageBg.setStrokeStyle(isSpecial ? 2 : 1, 0xffffff);
+    messageBg.setStrokeStyle(isSpecial ? 2 : 1, getColorTokenPhaser('white'));
     messageBg.setOrigin(0.5, 0.5); // Center the background
     messageBg.setDepth(1000);
     
@@ -1092,7 +1121,7 @@ export class GameScene extends Phaser.Scene {
     
     // Add subtle glow effect for special messages
     if (isSpecial) {
-      const glow = this.add.rectangle(0, 0, messageText.width + (padding * 2) + 6, messageText.height + (padding * 2) + 6, 0xffff00, 0.3);
+      const glow = this.add.rectangle(0, 0, messageText.width + (padding * 2) + 6, messageText.height + (padding * 2) + 6, getElementColorPhaser('sprintGlow'), 0.3);
       glow.setOrigin(0.5, 0.5); // Center the glow
       glow.setDepth(999);
       glow.setBlendMode(Phaser.BlendModes.ADD);
@@ -1117,7 +1146,7 @@ export class GameScene extends Phaser.Scene {
       container: messageContainer,
       bg: messageBg,
       text: messageText,
-      timer: 2500,
+      timer: GameConfig.messages.displayDuration,
       id: this.messageIdCounter++
     };
     
@@ -1157,7 +1186,6 @@ export class GameScene extends Phaser.Scene {
   endGame() {
     if (this.isGameOver) return;
     
-    console.log('💀 Game Over! Distance:', this.distance);
     this.isGameOver = true;
     
     // Lower music volume for game over screen and reset speed
@@ -1165,18 +1193,18 @@ export class GameScene extends Phaser.Scene {
       this.setMusicVolume(0.2); // Low volume for game over screen
       // Reset music speed to normal
       try {
-        this.currentMusicRate = 1.0;
+        this.currentMusicRate = GameConfig.audio.musicRateNormal;
         if ('setRate' in this.backgroundMusic) {
-          (this.backgroundMusic as any).setRate(1.0);
+          (this.backgroundMusic as any).setRate(GameConfig.audio.musicRateNormal);
         } else if ('rate' in this.backgroundMusic) {
-          (this.backgroundMusic as any).rate = 1.0;
+          (this.backgroundMusic as any).rate = GameConfig.audio.musicRateNormal;
         }
       } catch (error) {
         console.warn('⚠️ Failed to reset music speed on game over:', error);
       }
     }
     
-    this.cameras.main.shake(500, 0.01);
+    this.cameras.main.shake(500, 0.01); // Game over shake (hardcoded for dramatic effect)
     this.cameras.main.flash(300, 255, 0, 0);
     
     this.time.delayedCall(100, () => {
@@ -1202,7 +1230,7 @@ export class GameScene extends Phaser.Scene {
     
     // Detect mobile - use speed multiplier for mobile devices
     const isMobile = canvasWidth <= 768 || canvasHeight <= 768;
-    const mobileSpeedMultiplier = isMobile ? 1.5 : 1.0; // 50% faster on mobile
+    const mobileSpeedMultiplier = isMobile ? GameConfig.speed.mobileMultiplier : 1.0;
     
     // Scale base speed relative to screen width, then apply mobile multiplier
     const baseSpeed = (canvasWidth / 1920) * mobileSpeedMultiplier;
@@ -1213,20 +1241,15 @@ export class GameScene extends Phaser.Scene {
       this.jumpsRemaining = 2;
     }
 
-    // Increase speed over time - more noticeable acceleration
-    // Scale max speed relative to screen width (already includes mobile multiplier)
-    const maxSpeed = 600 * baseSpeed;
-    // Increase speed more aggressively - 6x faster acceleration (0.3 instead of 0.05)
-    // This makes speed increase from 300 to 600 in about 10 seconds (much more noticeable)
-    // Speed accumulates over time: starts at 300, increases by 0.3 per millisecond
-    this.gameSpeed = Math.min(maxSpeed, this.gameSpeed + delta * 0.3 * baseSpeed);
+    // Increase speed over time
+    const maxSpeed = GameConfig.speed.max * baseSpeed;
+    this.gameSpeed = Math.min(maxSpeed, this.gameSpeed + delta * GameConfig.speed.acceleration * baseSpeed);
     // Distance-based minimum speed: ensures speed increases as you progress
-    // Every 15 meters adds +8 speed (capped at +180) - provides a speed floor based on distance
-    const distanceMinSpeed = (300 + Math.min(180, Math.floor(this.distance / 15) * 8)) * baseSpeed;
+    const distanceMinSpeed = (GameConfig.speed.initial + Math.min(GameConfig.speed.distanceSpeedCap, Math.floor(this.distance / GameConfig.speed.distanceSpeedInterval) * GameConfig.speed.distanceSpeedBonus)) * baseSpeed;
     // Use the higher of time-accumulated speed or distance-based minimum
     this.gameSpeed = Math.max(this.gameSpeed, Math.min(maxSpeed, distanceMinSpeed));
 
-    const speedMultiplier = this.sprintMode ? 2.0 : 1.0;
+    const speedMultiplier = this.sprintMode ? GameConfig.sprint.speedMultiplier : 1.0;
     const currentSpeed = this.gameSpeed * speedMultiplier;
 
     // Move parallax background
@@ -1334,16 +1357,16 @@ export class GameScene extends Phaser.Scene {
       this.spawnObstacle();
     }
 
-    // Spawn floating obstacles (only after 5000m)
-    if (this.distance > 5000) {
+    // Spawn floating obstacles (only after unlock distance)
+    if (this.distance > GameConfig.obstacles.floating.unlockDistance) {
       this.floatingObstacleTimer -= delta;
       if (this.floatingObstacleTimer <= 0) {
         this.spawnFloatingObstacle();
       }
     }
 
-    // Spawn projectile obstacles (only after 3000m)
-    if (this.distance > 3000) {
+    // Spawn projectile obstacles (only after unlock distance)
+    if (this.distance > GameConfig.obstacles.projectile.unlockDistance) {
       this.projectileObstacleTimer -= delta;
       if (this.projectileObstacleTimer <= 0) {
         this.spawnProjectileObstacle();
@@ -1364,9 +1387,9 @@ export class GameScene extends Phaser.Scene {
 
     // Energy drain
     this.energyDrainTimer += delta;
-    if (this.energyDrainTimer >= 500) {
+    if (this.energyDrainTimer >= GameConfig.energy.drainInterval) {
       if (!this.sprintMode) {
-        this.energy = Math.max(0, this.energy - 1);
+        this.energy = Math.max(0, this.energy - GameConfig.energy.drainAmount);
       }
       this.energyDrainTimer = 0;
       
@@ -1390,16 +1413,16 @@ export class GameScene extends Phaser.Scene {
     if (!this.sprintMode && this.backgroundMusic && !this.isMuted) {
       // Calculate desired music rate based on energy
       // Energy 100-50: normal speed (1.0)
-      // Energy 50-0: gradually slow down from 1.0 to 0.75
-      let targetRate = 1.0;
+      // Energy 50-0: gradually slow down from 1.0 to min rate
+      let targetRate = GameConfig.audio.musicRateNormal;
       if (this.energy < 50) {
-        // Linear interpolation: energy 50 = 1.0, energy 0 = 0.75
+        // Linear interpolation: energy 50 = 1.0, energy 0 = min rate
         const energyRatio = this.energy / 50; // 0 to 1 as energy goes from 0 to 50
-        targetRate = 0.75 + (energyRatio * 0.25); // 0.75 to 1.0
+        targetRate = GameConfig.audio.musicRateMin + (energyRatio * (GameConfig.audio.musicRateNormal - GameConfig.audio.musicRateMin));
       }
       
       // Smoothly transition to target rate (avoid abrupt changes)
-      const rateChangeSpeed = 0.02; // How fast to change rate per frame
+      const rateChangeSpeed = GameConfig.audio.musicRateTransitionSpeed;
       if (Math.abs(this.currentMusicRate - targetRate) > 0.01) {
         if (this.currentMusicRate > targetRate) {
           this.currentMusicRate = Math.max(targetRate, this.currentMusicRate - rateChangeSpeed);
@@ -1419,13 +1442,16 @@ export class GameScene extends Phaser.Scene {
         }
       }
     }
+    
+    // Update vignette intensity based on energy
+    this.updateVignette();
 
     // Low energy warnings
     this.lowEnergyMessageTimer += delta;
-    if (this.lowEnergyMessageTimer >= 3000) {
-      if (this.energy <= 20 && this.energy > 0) {
+    if (this.lowEnergyMessageTimer >= GameConfig.warnings.warningInterval) {
+      if (this.energy <= GameConfig.warnings.criticalEnergyThreshold && this.energy > 0) {
         this.showMessage(Phaser.Math.RND.pick(CRITICAL_ENERGY_MESSAGES));
-      } else if (this.energy <= 40 && this.energy > 20) {
+      } else if (this.energy <= GameConfig.warnings.lowEnergyThreshold && this.energy > GameConfig.warnings.criticalEnergyThreshold) {
         this.showMessage(Phaser.Math.RND.pick(LOW_ENERGY_MESSAGES));
       }
       this.lowEnergyMessageTimer = 0;
@@ -1438,15 +1464,15 @@ export class GameScene extends Phaser.Scene {
 
     // Distance tracking
     this.distanceTimer += delta;
-    if (this.distanceTimer >= 100) {
-      const distanceMultiplier = this.sprintMode ? 2.0 : 1.0;
+    if (this.distanceTimer >= GameConfig.timers.distanceUpdateInterval) {
+      const distanceMultiplier = this.sprintMode ? GameConfig.sprint.distanceMultiplier : 1.0;
       this.distance += (this.gameSpeed / 100) * distanceMultiplier;
       this.distanceTimer = 0;
     }
 
     // Move deadline
-    const deadlineTargetX = -100 + ((100 - this.energy) / 100) * (this.player.x + 150);
-    this.deadlineX = this.deadlineX + (deadlineTargetX - this.deadlineX) * deltaSeconds * 3;
+    const deadlineTargetX = -100 + ((GameConfig.energy.max - this.energy) / GameConfig.energy.max) * (this.player.x + GameConfig.deadline.offsetFromPlayer);
+    this.deadlineX = this.deadlineX + (deadlineTargetX - this.deadlineX) * deltaSeconds * GameConfig.deadline.movementSpeed;
     this.deadline.x = this.deadlineX;
     this.deadlineEdge.x = this.deadlineX;
 
@@ -1461,22 +1487,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   startGame() {
-    console.log('🚀 START GAME CALLED');
-    console.log('🚀 Setting isGameStarted to true');
-    
     // Ensure audio is unlocked when game starts (mobile)
     if (this.sound.locked) {
       this.sound.unlock();
-      console.log('🔓 Audio unlocked on game start');
     }
     
     this.isGameStarted = true;
-    console.log('🚀 isGameStarted is now:', this.isGameStarted);
     this.isGameOver = false;
-    this.energy = 100;
+    this.energy = GameConfig.energy.initial;
     this.combo = 0;
     this.distance = 0;
-    this.gameSpeed = 300;
+    this.gameSpeed = GameConfig.speed.initial;
     this.grinchScore = 0;
     this.elfScore = 0;
     
@@ -1519,11 +1540,11 @@ export class GameScene extends Phaser.Scene {
     // Reset music speed to normal when starting new game
     if (this.backgroundMusic && !this.isMuted) {
       try {
-        this.currentMusicRate = 1.0;
+        this.currentMusicRate = GameConfig.audio.musicRateNormal;
         if ('setRate' in this.backgroundMusic) {
-          (this.backgroundMusic as any).setRate(1.0);
+          (this.backgroundMusic as any).setRate(GameConfig.audio.musicRateNormal);
         } else if ('rate' in this.backgroundMusic) {
-          (this.backgroundMusic as any).rate = 1.0;
+          (this.backgroundMusic as any).rate = GameConfig.audio.musicRateNormal;
         }
       } catch (error) {
         console.warn('⚠️ Failed to reset music speed on game start:', error);
@@ -1531,25 +1552,22 @@ export class GameScene extends Phaser.Scene {
     }
     
     // Increase music volume for gameplay and ensure it plays
-    // Higher volume on mobile for better audibility
-    const { width, height } = this.scale;
-    const isMobile = width <= 768 || height <= 768;
-    const gameplayVolume = isMobile ? 0.7 : 0.5; // Higher volume on mobile
+      // Higher volume on mobile for better audibility
+      const { width, height } = this.scale;
+      const isMobile = width <= 768 || height <= 768;
+      const gameplayVolume = isMobile ? GameConfig.audio.musicVolumeGameplayMobile : GameConfig.audio.musicVolumeGameplayDesktop;
     if (this.backgroundMusic) {
       this.setMusicVolume(gameplayVolume);
       // Ensure audio context is resumed (required for mobile)
       const audioContext = this.getAudioContext();
       if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume().then(() => {
-          console.log('🔊 Audio context resumed on game start');
-        }).catch((err) => {
+        audioContext.resume().catch((err) => {
           console.warn('⚠️ Failed to resume audio context:', err);
         });
       }
       if (!this.backgroundMusic.isPlaying && !this.isMuted) {
         try {
           this.backgroundMusic.play();
-          console.log('🎵 Music started on game start');
         } catch (error) {
           console.warn('⚠️ Failed to start music on game start:', error);
         }
@@ -1557,12 +1575,9 @@ export class GameScene extends Phaser.Scene {
     }
     
     this.updateGameData();
-    
-    console.log('✅ Game started successfully!');
   }
 
   resetGame() {
-    console.log('🔄 Resetting game...');
     this.isGameStarted = false;
     this.isGameOver = false;
     
@@ -1571,20 +1586,20 @@ export class GameScene extends Phaser.Scene {
       this.setMusicVolume(0.2); // Low volume for start screen
       // Reset music speed to normal
       try {
-        this.currentMusicRate = 1.0;
+        this.currentMusicRate = GameConfig.audio.musicRateNormal;
         if ('setRate' in this.backgroundMusic) {
-          (this.backgroundMusic as any).setRate(1.0);
+          (this.backgroundMusic as any).setRate(GameConfig.audio.musicRateNormal);
         } else if ('rate' in this.backgroundMusic) {
-          (this.backgroundMusic as any).rate = 1.0;
+          (this.backgroundMusic as any).rate = GameConfig.audio.musicRateNormal;
         }
       } catch (error) {
         console.warn('⚠️ Failed to reset music speed on game reset:', error);
       }
     }
     
-    this.gameSpeed = 300;
+    this.gameSpeed = GameConfig.speed.initial;
     this.distance = 0;
-    this.energy = 100;
+    this.energy = GameConfig.energy.initial;
     this.combo = 0;
     this.maxCombo = 0;
     this.grinchScore = 0;
@@ -1617,10 +1632,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   createCollisionEffect(x: number, y: number) {
-    const colors = [0xff0000, 0xaaaaaa, 0x888888, 0xffffff];
-    
     for (let i = 0; i < 15; i++) {
-      const particle = this.add.circle(x, y, Phaser.Math.Between(3, 6), Phaser.Math.RND.pick(colors));
+      const particle = this.add.circle(x, y, Phaser.Math.Between(3, 6), Phaser.Math.RND.pick(explosionColors));
       const angle = Phaser.Math.Between(0, 360);
       const speed = Phaser.Math.Between(100, 300);
       const velocityX = Math.cos(angle * Math.PI / 180) * speed;
@@ -1674,8 +1687,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   createSpecialCollectEffect(x: number, y: number) {
-    const confettiColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff];
-    
     for (let i = 0; i < 25; i++) {
       const isRect = Math.random() > 0.5;
       const color = Phaser.Math.RND.pick(confettiColors);
@@ -1704,9 +1715,10 @@ export class GameScene extends Phaser.Scene {
     }
     
     for (let i = 0; i < 3; i++) {
-      const ring = this.add.circle(x, y, 5, 0xffffff);
-      ring.setStrokeStyle(3, 0xffffff);
-      ring.setFillStyle(0xffffff, 0);
+      const ringColor = getColorTokenPhaser('white');
+      const ring = this.add.circle(x, y, 5, ringColor);
+      ring.setStrokeStyle(3, ringColor);
+      ring.setFillStyle(ringColor, 0);
       
       this.tweens.add({
         targets: ring,
@@ -1720,24 +1732,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   activateSprintMode() {
-    console.log('⚡ Sprint mode activated!');
     this.sprintMode = true;
-    this.sprintTimer = 5000;
-    this.energy = 100;
+    this.sprintTimer = GameConfig.sprint.duration;
+    this.energy = GameConfig.sprint.energyRestore;
     this.sprintGlow.setAlpha(0.5);
     this.showMessage('💨 SPRINT MODE! UNSTOPPABLE!');
     
     // Speed up music during sprint mode (overrides energy-based slowdown)
     if (this.backgroundMusic && !this.isMuted) {
       try {
-        // Increase playback rate to 1.3x (30% faster)
-        this.currentMusicRate = 1.3;
+        // Increase playback rate for sprint mode
+        this.currentMusicRate = GameConfig.audio.musicRateSprint;
         if ('setRate' in this.backgroundMusic) {
-          (this.backgroundMusic as any).setRate(1.3);
+          (this.backgroundMusic as any).setRate(GameConfig.audio.musicRateSprint);
         } else if ('rate' in this.backgroundMusic) {
-          (this.backgroundMusic as any).rate = 1.3;
+          (this.backgroundMusic as any).rate = GameConfig.audio.musicRateSprint;
         }
-        console.log('🎵 Music speed increased for sprint mode');
       } catch (error) {
         console.warn('⚠️ Failed to speed up music:', error);
       }
@@ -1755,13 +1765,12 @@ export class GameScene extends Phaser.Scene {
         if (this.backgroundMusic && !this.isMuted) {
           try {
             // Reset playback rate tracking - will be recalculated based on energy in update loop
-            this.currentMusicRate = 1.0;
+            this.currentMusicRate = GameConfig.audio.musicRateNormal;
             if ('setRate' in this.backgroundMusic) {
-              (this.backgroundMusic as any).setRate(1.0);
+              (this.backgroundMusic as any).setRate(GameConfig.audio.musicRateNormal);
             } else if ('rate' in this.backgroundMusic) {
-              (this.backgroundMusic as any).rate = 1.0;
+              (this.backgroundMusic as any).rate = GameConfig.audio.musicRateNormal;
             }
-            console.log('🎵 Music speed reset to normal');
           } catch (error) {
             console.warn('⚠️ Failed to reset music speed:', error);
           }
@@ -1836,7 +1845,7 @@ export class GameScene extends Phaser.Scene {
         this.groundY - (buildingHeight / 2), // Position relative to ground
         buildingWidth,
         buildingHeight,
-        0xf0f0f0
+        getElementColorPhaser('backgroundBuilding')
       );
       building.setDepth(-100);
       building.setAlpha(0.4);
@@ -1852,12 +1861,35 @@ export class GameScene extends Phaser.Scene {
         Phaser.Math.Between(height * 0.1, height * 0.4),
         cloudWidth,
         cloudHeight,
-        0xe8e8e8
+        getElementColorPhaser('backgroundCloud')
       );
       cloud.setDepth(-80);
       cloud.setAlpha(0.3);
       this.backgroundClouds.push(cloud);
     }
+  }
+
+  private updateVignette() {
+    if (!this.vignette) return;
+    
+    // Calculate vignette intensity based on energy
+    let vignetteAlpha = 0;
+    if (this.energy < GameConfig.effects.vignetteStartEnergy) {
+      // Calculate progress: 0 to 1 as energy goes from startEnergy to 0
+      const progress = 1 - (this.energy / GameConfig.effects.vignetteStartEnergy); // 0 to 1
+      // Use exponential curve (ease-in) for more dramatic darkening at low energy
+      const curvedProgress = Math.pow(progress, GameConfig.effects.vignetteCurve); // Exponential curve
+      vignetteAlpha = curvedProgress * GameConfig.effects.vignetteMaxAlpha;
+    }
+    
+    // Update vignette alpha (the PNG already has the vignette effect built in)
+    this.vignette.setAlpha(vignetteAlpha);
+    
+    // Update vignette size on screen resize (ensure full coverage)
+    const { width, height } = this.scale;
+    this.vignette.setPosition(width / 2, height / 2);
+    const maxDimension = Math.max(width, height);
+    this.vignette.setDisplaySize(maxDimension, maxDimension); // Scale to cover screen
   }
 
   private handleResize() {
@@ -1866,16 +1898,13 @@ export class GameScene extends Phaser.Scene {
     // Update camera bounds
     if (this.cameras && this.cameras.main) {
       this.cameras.main.setBounds(0, 0, width, height);
-      this.cameras.main.setBackgroundColor('#ffffff');
+      this.cameras.main.setBackgroundColor(getElementColorPhaser('background'));
     }
     
     // Update gravity to scale with new screen height
-    // On mobile, keep gravity normal to prevent floaty feeling
     const isMobile = width <= 768 || height <= 768;
-    const mobileGravityMultiplier = isMobile ? 0.98 : 1.0; // Only 2% less gravity on mobile (reduced from 8%)
-    const baseGravity = 2000;
-    const baseHeight = 1080;
-    const scaledGravity = baseGravity * (height / baseHeight) * mobileGravityMultiplier;
+    const mobileGravityMultiplier = isMobile ? GameConfig.physics.mobileGravityMultiplier : 1.0;
+    const scaledGravity = GameConfig.physics.baseGravity * (height / GameConfig.physics.baseGravityHeight) * mobileGravityMultiplier;
     this.physics.world.gravity.y = scaledGravity;
     
     // Reposition ground at new bottom (80px from bottom)
@@ -1924,6 +1953,13 @@ export class GameScene extends Phaser.Scene {
     if (this.deadlineEdge) {
       this.deadlineEdge.setPosition(-100, height * 0.5);
       this.deadlineEdge.setSize(5, height);
+    }
+    
+    // Update vignette on resize
+    if (this.vignette) {
+      this.vignette.setPosition(width / 2, height / 2);
+      const maxDimension = Math.max(width, height);
+      this.vignette.setDisplaySize(maxDimension, maxDimension); // Scale to cover screen
     }
     
     // Update parallax buildings if needed
