@@ -17,6 +17,8 @@ export interface GameData {
   maxCombo?: number;
   sprintMode?: boolean;
   sprintTimer?: number;
+  grinchScore?: number;
+  elfScore?: number;
 }
 
 // Detect if device is mobile
@@ -191,7 +193,7 @@ export default function App() {
     });
   };
 
-  const handleGameOver = useCallback((finalDist: number, maxCombo: number) => {
+  const handleGameOver = useCallback((finalDist: number, maxCombo: number, grinchScore?: number, elfScore?: number) => {
     setFinalDistance(finalDist);
     setFinalMaxCombo(maxCombo);
     setGameState('gameover');
@@ -200,6 +202,14 @@ export default function App() {
     if (finalDist > bestDistance) {
       setBestDistance(finalDist);
       localStorage.setItem('escapeTheDeadline_bestDistance', finalDist.toString());
+    }
+    
+    // Store character scores for GameOver component
+    if (grinchScore !== undefined) {
+      (window as any).__finalGrinchScore = grinchScore;
+    }
+    if (elfScore !== undefined) {
+      (window as any).__finalElfScore = elfScore;
     }
   }, [bestDistance]);
 
@@ -331,6 +341,8 @@ export default function App() {
             distance={finalDistance}
             bestDistance={bestDistance}
             maxCombo={finalMaxCombo}
+            grinchScore={(window as any).__finalGrinchScore}
+            elfScore={(window as any).__finalElfScore}
             onRestart={handleRestart}
           />
         </div>

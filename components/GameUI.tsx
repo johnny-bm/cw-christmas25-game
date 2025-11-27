@@ -9,7 +9,7 @@ interface GameUIProps {
 }
 
 export function GameUI({ gameData, bestDistance }: GameUIProps) {
-  const { distance, energy, deadlineProximity, combo, sprintMode, sprintTimer } = gameData;
+  const { distance, energy, deadlineProximity, combo, sprintMode, sprintTimer, grinchScore = 0, elfScore = 0 } = gameData;
   const [isMuted, setIsMuted] = useState(() => {
     // Check localStorage for saved mute state
     return localStorage.getItem('escapeTheDeadline_muted') === 'true';
@@ -70,6 +70,40 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       >
         <div className="text-3xl max-md:landscape:text-2xl sm:text-5xl md:text-7xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
           {formatNumber(distance)}m
+        </div>
+      </div>
+
+      {/* Character Scores - Below Distance Counter - Responsive */}
+      <div 
+        className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 sm:gap-4 md:gap-6"
+        style={{
+          top: 'max(5.5rem, env(safe-area-inset-top, 0.75rem) + 5rem)'
+        }}
+      >
+        {/* Grinch Score */}
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+          <img 
+            src="/Assets/Characters/Grinch.svg" 
+            alt="Grinch" 
+            className="w-6 h-6 max-md:landscape:w-5 max-md:landscape:h-5 sm:w-8 sm:h-8 md:w-10 md:h-10"
+            style={{ objectFit: 'contain' }}
+          />
+          <span className="text-lg max-md:landscape:text-base sm:text-2xl md:text-3xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+            {grinchScore}
+          </span>
+        </div>
+
+        {/* Elf Score */}
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+          <img 
+            src="/Assets/Characters/Elf.svg" 
+            alt="Elf" 
+            className="w-6 h-6 max-md:landscape:w-5 max-md:landscape:h-5 sm:w-8 sm:h-8 md:w-10 md:h-10"
+            style={{ objectFit: 'contain' }}
+          />
+          <span className="text-lg max-md:landscape:text-base sm:text-2xl md:text-3xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+            {elfScore}
+          </span>
         </div>
       </div>
 

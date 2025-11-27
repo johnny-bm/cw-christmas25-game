@@ -15,6 +15,9 @@ export interface ScoreEntry {
   player_name: string;
   distance: number;
   max_combo?: number;
+  grinch_score?: number;
+  elf_score?: number;
+  email?: string;
   created_at: string;
 }
 
@@ -43,6 +46,9 @@ class ScoreService {
           player_name: data.player_name,
           distance: data.distance,
           max_combo: data.max_combo,
+          grinch_score: data.grinch_score,
+          elf_score: data.elf_score,
+          email: data.email, // Note: email is not displayed in UI, only stored
           created_at: data.created_at ?? new Date().toISOString(),
         };
       });
@@ -56,28 +62,40 @@ class ScoreService {
   }
 
   // Firebase version of saveScore
-  async saveScore(playerName: string, distance: number, maxCombo?: number): Promise<ScoreEntry> {
+  async saveScore(playerName: string, distance: number, maxCombo?: number, grinchScore?: number, elfScore?: number, email?: string): Promise<ScoreEntry> {
     const newScore: ScoreEntry = {
       id: Date.now().toString(),
       player_name: playerName,
       distance,
       max_combo: maxCombo,
+      grinch_score: grinchScore,
+      elf_score: elfScore,
+      email: email,
       created_at: new Date().toISOString(),
     };
 
     try {
-      const docRef = await addDoc(this.scoresCollection, {
+      const docData: any = {
         player_name: playerName,
         distance,
         max_combo: maxCombo ?? 0,
+        grinch_score: grinchScore ?? 0,
+        elf_score: elfScore ?? 0,
         created_at: newScore.created_at,
-      });
+      };
+      
+      // Only include email if provided
+      if (email && email.trim()) {
+        docData.email = email.trim();
+      }
+      
+      const docRef = await addDoc(this.scoresCollection, docData);
 
       return { ...newScore, id: docRef.id };
     } catch (error) {
       console.error("Error saving score to Firebase:", error);
       // fall back to local storage
-      return this.saveLocalScore(playerName, distance, maxCombo);
+      return this.saveLocalScore(playerName, distance, maxCombo, grinchScore, elfScore, email);
     }
   }
 
@@ -136,12 +154,15 @@ class ScoreService {
   }
 
   // Helper: Save score to localStorage
-  private saveLocalScore(playerName: string, distance: number, maxCombo?: number): ScoreEntry {
+  private saveLocalScore(playerName: string, distance: number, maxCombo?: number, grinchScore?: number, elfScore?: number, email?: string): ScoreEntry {
     const newScore: ScoreEntry = {
       id: Date.now().toString(),
       player_name: playerName,
       distance: distance,
       max_combo: maxCombo,
+      grinch_score: grinchScore,
+      elf_score: elfScore,
+      email: email,
       created_at: new Date().toISOString()
     };
 

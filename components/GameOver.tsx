@@ -8,15 +8,18 @@ interface GameOverProps {
   distance: number;
   bestDistance: number;
   maxCombo: number;
+  grinchScore?: number;
+  elfScore?: number;
   onRestart: () => void;
 }
 
-export function GameOver({ distance, bestDistance, maxCombo, onRestart }: GameOverProps) {
+export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, elfScore = 0, onRestart }: GameOverProps) {
   const isNewBest = distance === bestDistance && distance > 0;
   const [showContent, setShowContent] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showButton, setShowButton] = useState(false);
   const [playerName, setPlayerName] = useState('');
+  const [email, setEmail] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [scoreSaved, setScoreSaved] = useState(false);
   const [isTopScore, setIsTopScore] = useState(false);
@@ -76,11 +79,20 @@ export function GameOver({ distance, bestDistance, maxCombo, onRestart }: GameOv
 
   const handleSaveScore = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Validation: If email is provided, all 3 initials are required
     if (!playerName.trim() || isSaving || scoreSaved) return;
+    if (email.trim() && playerName.trim().length < 3) return;
 
     setIsSaving(true);
     try {
-      await scoreService.saveScore(playerName.trim(), distance, maxCombo);
+      await scoreService.saveScore(
+        playerName.trim(), 
+        distance, 
+        maxCombo, 
+        grinchScore, 
+        elfScore,
+        email.trim() || undefined // Only pass email if it's not empty
+      );
       setScoreSaved(true);
     } catch (error) {
       console.error('Failed to save score:', error);
@@ -90,6 +102,13 @@ export function GameOver({ distance, bestDistance, maxCombo, onRestart }: GameOv
     } finally {
       setIsSaving(false);
     }
+  };
+  
+  // Email validation helper
+  const isValidEmail = (email: string) => {
+    if (!email.trim()) return true; // Empty is valid (optional field)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   return (
@@ -190,28 +209,52 @@ export function GameOver({ distance, bestDistance, maxCombo, onRestart }: GameOv
                     <span className="text-gray-700 text-[8px] sm:text-[10px] md:text-xs">SAVE YOUR ESCAPE</span>
                   </div>
                 )}
-                <form onSubmit={handleSaveScore} className="flex gap-1 sm:gap-1.5">
+                <form onSubmit={handleSaveScore} className="space-y-1.5 sm:space-y-2">
+                  <div className="flex gap-1 sm:gap-1.5">
+                    <input
+                      type="text"
+                      value={playerName}
+                      onChange={(e) => {
+                        // Only allow letters, uppercase, max 3 characters
+                        const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+                        setPlayerName(value);
+                      }}
+                      placeholder="Your initials (3 letters)"
+                      maxLength={3}
+                      className="flex-1 px-1.5 py-1 sm:px-2 sm:py-1.5 text-[10px] sm:text-xs md:text-sm bg-white border-2 border-gray-300 text-black placeholder-gray-400 focus:border-yellow-500 focus:outline-none rounded"
+                      disabled={isSaving}
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      disabled={
+                        !playerName.trim() || 
+                        isSaving || 
+                        playerName.length < 1 ||
+                        (email.trim() && !isValidEmail(email)) ||
+                        (email.trim() && playerName.trim().length < 3)
+                      }
+                      className="px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs md:text-sm bg-yellow-500 text-black hover:bg-yellow-400 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-all rounded"
+                    >
+                      {isSaving ? '...' : 'SAVE'}
+                    </button>
+                  </div>
                   <input
-                    type="text"
-                    value={playerName}
+                    type="email"
+                    value={email}
                     onChange={(e) => {
-                      // Only allow letters, uppercase, max 3 characters
-                      const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-                      setPlayerName(value);
+                      setEmail(e.target.value);
                     }}
-                    placeholder="Your initials (3 letters)"
-                    maxLength={3}
-                    className="flex-1 px-1.5 py-1 sm:px-2 sm:py-1.5 text-[10px] sm:text-xs md:text-sm bg-white border-2 border-gray-300 text-black placeholder-gray-400 focus:border-yellow-500 focus:outline-none rounded"
+                    placeholder="Email (optional)"
+                    className="w-full px-1.5 py-1 sm:px-2 sm:py-1.5 text-[10px] sm:text-xs md:text-sm bg-white border-2 border-gray-300 text-black placeholder-gray-400 focus:border-yellow-500 focus:outline-none rounded"
                     disabled={isSaving}
-                    autoFocus
                   />
-                  <button
-                    type="submit"
-                    disabled={!playerName.trim() || isSaving || playerName.length < 1}
-                    className="px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs md:text-sm bg-yellow-500 text-black hover:bg-yellow-400 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-all rounded"
-                  >
-                    {isSaving ? '...' : 'SAVE'}
-                  </button>
+                  {email.trim() && !isValidEmail(email) && (
+                    <p className="text-red-600 text-[9px] sm:text-[10px] md:text-xs">Please enter a valid email address</p>
+                  )}
+                  {email.trim() && playerName.trim().length < 3 && (
+                    <p className="text-red-600 text-[9px] sm:text-[10px] md:text-xs">All 3 initials are required when email is provided</p>
+                  )}
                 </form>
               </div>
             )}

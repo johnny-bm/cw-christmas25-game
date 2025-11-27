@@ -65,6 +65,8 @@ export class GameScene extends Phaser.Scene {
   private energy: number = 100;
   private combo: number = 0;
   private maxCombo: number = 0;
+  private grinchScore: number = 0;
+  private elfScore: number = 0;
   
   private gameSpeed: number = 300;
   
@@ -144,6 +146,7 @@ export class GameScene extends Phaser.Scene {
       this.load.image(key, path);
       this.collectibleImageKeys.push(key);
     });
+    
     
     // Load background music - encode spaces in filename
     const musicPath = '/Deck The Halls Christmas Rock.mp3';
@@ -796,6 +799,7 @@ export class GameScene extends Phaser.Scene {
         } else {
           this.energy -= 10;
           this.combo = 0;
+          this.grinchScore += 1; // Increment Grinch score on obstacle hit
           this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
           this.cameras.main.shake(150, 0.005);
           this.createCollisionEffect(obstacle.x, obstacle.y);
@@ -855,6 +859,7 @@ export class GameScene extends Phaser.Scene {
         } else {
           this.energy -= 10;
           this.combo = 0;
+          this.grinchScore += 1; // Increment Grinch score on floating obstacle hit
           this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
           this.cameras.main.shake(150, 0.005);
           this.createCollisionEffect(obstacle.x, obstacle.y);
@@ -930,6 +935,7 @@ export class GameScene extends Phaser.Scene {
         } else {
           this.energy -= 15; // Projectiles do more damage
           this.combo = 0;
+          this.grinchScore += 1; // Increment Grinch score on projectile hit
           this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
           this.cameras.main.shake(200, 0.008); // Stronger shake for projectiles
           this.createCollisionEffect(projectile.x, projectile.y);
@@ -966,6 +972,7 @@ export class GameScene extends Phaser.Scene {
       
       if (Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, collectibleBounds)) {
         this.energy = Math.min(100, this.energy + 5);
+        this.elfScore += 1; // Increment Elf score on collectible collection
         this.showMessage(Phaser.Math.RND.pick(COLLECT_MESSAGES));
         // Use a default color for the effect (yellow/gold)
         this.createCollectEffect(collectible.x, collectible.y, 0xffff00);
@@ -994,6 +1001,7 @@ export class GameScene extends Phaser.Scene {
       
       if (Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, collectibleBounds)) {
         this.energy = Math.min(100, this.energy + 20);
+        this.elfScore += 1; // Increment Elf score on special collectible collection
         this.showMessage(Phaser.Math.RND.pick(SPECIAL_COLLECT_MESSAGES));
         this.createSpecialCollectEffect(collectible.x, collectible.y);
         // Play collect sound - ensure audio context is active
@@ -1139,7 +1147,9 @@ export class GameScene extends Phaser.Scene {
       combo: this.combo,
       maxCombo: this.maxCombo,
       sprintMode: this.sprintMode,
-      sprintTimer: this.sprintTimer
+      sprintTimer: this.sprintTimer,
+      grinchScore: this.grinchScore,
+      elfScore: this.elfScore
     });
   }
 
@@ -1166,7 +1176,7 @@ export class GameScene extends Phaser.Scene {
     });
     
     this.time.delayedCall(1000, () => {
-      this.game.events.emit('gameOver', Math.floor(this.distance), this.maxCombo);
+      this.game.events.emit('gameOver', Math.floor(this.distance), this.maxCombo, this.grinchScore, this.elfScore);
     });
   }
 
@@ -1420,6 +1430,8 @@ export class GameScene extends Phaser.Scene {
     this.combo = 0;
     this.distance = 0;
     this.gameSpeed = 300;
+    this.grinchScore = 0;
+    this.elfScore = 0;
     
     // Reset camera fade/effects to ensure visibility
     this.cameras.main.resetFX();
@@ -1503,6 +1515,8 @@ export class GameScene extends Phaser.Scene {
     this.energy = 100;
     this.combo = 0;
     this.maxCombo = 0;
+    this.grinchScore = 0;
+    this.elfScore = 0;
     
     this.obstacleTimer = 1000;
     this.floatingObstacleTimer = 2000;

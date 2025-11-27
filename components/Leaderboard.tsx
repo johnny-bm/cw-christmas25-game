@@ -257,14 +257,32 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
                     {score.player_name}
                   </td>
                   <td className={`text-right ${rowTextClass} ${compact ? 'text-[10px] sm:text-xs py-1 sm:py-2' : 'text-xs sm:text-sm py-2 sm:py-3'}`}>
-                    <div className="flex items-center justify-end gap-1 sm:gap-1.5">
-                      <span>{formatNumber(score.distance)}m</span>
-                      {score.max_combo > 0 && (
-                        <span className={`flex items-center gap-0.5 ${isLightMode ? 'text-yellow-600' : 'text-yellow-400'} opacity-70`}>
-                          <Zap className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
-                          {score.max_combo}x
-                        </span>
-                      )}
+                    <div className="flex flex-col items-end gap-0.5 sm:gap-1">
+                      <div className="flex items-center justify-end gap-1 sm:gap-1.5">
+                        <span>{formatNumber(score.distance)}m</span>
+                        {score.max_combo > 0 && (
+                          <span className={`flex items-center gap-0.5 ${isLightMode ? 'text-yellow-600' : 'text-yellow-400'} opacity-70`}>
+                            <Zap className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
+                            {score.max_combo}x
+                          </span>
+                        )}
+                      </div>
+                      {(score.grinch_score !== undefined && score.grinch_score > 0) || (score.elf_score !== undefined && score.elf_score > 0) ? (
+                        <div className="flex items-center justify-end gap-1 sm:gap-1.5 opacity-70">
+                          {score.grinch_score !== undefined && score.grinch_score > 0 && (
+                            <span className={`flex items-center gap-0.5 ${mutedTextClass} ${compact ? 'text-[8px] sm:text-[9px]' : 'text-[9px] sm:text-[10px]'}`}>
+                              <img src="/Assets/Characters/Grinch.svg" alt="Grinch" className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                              {score.grinch_score}
+                            </span>
+                          )}
+                          {score.elf_score !== undefined && score.elf_score > 0 && (
+                            <span className={`flex items-center gap-0.5 ${mutedTextClass} ${compact ? 'text-[8px] sm:text-[9px]' : 'text-[9px] sm:text-[10px]'}`}>
+                              <img src="/Assets/Characters/Elf.svg" alt="Elf" className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                              {score.elf_score}
+                            </span>
+                          )}
+                        </div>
+                      ) : null}
                     </div>
                   </td>
                 </tr>

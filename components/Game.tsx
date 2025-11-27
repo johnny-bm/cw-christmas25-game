@@ -8,7 +8,7 @@ import { debounce } from '../lib/debounce';
 let globalGameInstance: Phaser.Game | null = null;
 
 interface GameProps {
-  onGameOver: (score: number, maxCombo: number) => void;
+  onGameOver: (score: number, maxCombo: number, grinchScore?: number, elfScore?: number) => void;
   onUpdateGameData: (data: GameData) => void;
   onGameReady?: () => void;
   onLoadingProgress?: (progress: number) => void;
@@ -101,8 +101,8 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     const game = gameRef.current;
     
     // Set up event listeners using refs so they always use latest callbacks
-    game.events.on('gameOver', (score: number, maxCombo: number) => {
-      callbacksRef.current.onGameOver(score, maxCombo);
+    game.events.on('gameOver', (score: number, maxCombo: number, grinchScore?: number, elfScore?: number) => {
+      callbacksRef.current.onGameOver(score, maxCombo, grinchScore, elfScore);
     });
 
     game.events.on('updateGameData', (data: GameData) => {
