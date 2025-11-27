@@ -47,7 +47,7 @@ export const GameConfig = {
     },
     regular: {
       energyGain: 5,            // Energy restored when collecting regular collectible
-      spawnIntervalMin: 500,    // Minimum milliseconds between spawns
+      spawnIntervalMin: 1000,    // Minimum milliseconds between spawns
       spawnIntervalMax: 3000,   // Maximum milliseconds between spawns
     },
     special: {
@@ -105,7 +105,7 @@ export const GameConfig = {
   speed: {
     initial: 300,               // Starting game speed
     max: 600,                   // Maximum game speed
-    acceleration: 0.3,         // Speed increase per millisecond (when scaled)
+    acceleration: 0.5,         // Speed increase per millisecond (when scaled)
     distanceSpeedBonus: 8,      // Speed bonus per 15 meters traveled
     distanceSpeedInterval: 15,  // Meters needed for speed bonus
     distanceSpeedCap: 180,      // Maximum speed bonus from distance
