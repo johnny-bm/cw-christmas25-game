@@ -364,8 +364,8 @@ export class GameScene extends Phaser.Scene {
     // Parallax background
     this.createParallaxBackground();
 
-    // Ground setup - responsive (same calculation as resize handler)
-    const groundHeightRatio = 100 / 1080; // Original ground height ratio
+    // Ground setup - 15% of screen height for ground, 85% for game area
+    const groundHeightRatio = 0.15; // 15% of screen height
     const groundHeight = height * groundHeightRatio; // Scale proportionally
     this.groundY = height - groundHeight;
     const groundWidth = width * 3;
@@ -1401,7 +1401,7 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // Check deadline - deadline hits character in the MIDDLE
+    // Check deadline - deadline hits character at the CENTER
     // Deadline's RIGHT edge (deadline.x + deadline.width) hits player's CENTER (player.x)
     // Only check collision if deadline is actually to the left of player (deadline.x < player.x)
     if (this.deadline.x < this.player.x) {
@@ -2529,9 +2529,9 @@ export class GameScene extends Phaser.Scene {
       this.player.body.setGravityY(resizeScaledGravity);
     }
     
-    // Reposition ground at new bottom - scale ground height proportionally
+    // Reposition ground at new bottom - 15% of screen height for ground, 85% for game area
     // Ground height scales with screen height (maintains visual proportion)
-    const groundHeightRatio = 100 / 1080; // Original ground height ratio
+    const groundHeightRatio = 0.15; // 15% of screen height
     const groundHeight = height * groundHeightRatio; // Scale proportionally
     this.groundY = height - groundHeight;
     const groundWidth = width * 3; // Ground width extends 3x screen width
