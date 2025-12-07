@@ -51,15 +51,15 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     // Get device pixel ratio for high DPI displays
     const devicePixelRatio = window.devicePixelRatio || 1;
     
-    // Use viewport dimensions (vw/vh) for fully responsive game
-    // Use visual viewport if available (handles iOS Safari address bar), otherwise use window
-    const initialWidth = window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth;
-    const initialHeight = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
-
+    // Use RESIZE mode to make the game world adapt to screen size
+    // Get initial container dimensions for responsive game world
+    const initialWidth = container.clientWidth || window.innerWidth || 1920;
+    const initialHeight = container.clientHeight || window.innerHeight || 1080;
+    
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.CANVAS,
-      width: initialWidth,
-      height: initialHeight,
+      width: initialWidth, // Game world adapts to screen width
+      height: initialHeight, // Game world adapts to screen height
       parent: container,
       backgroundColor: getElementColor('background'), // White background
       audio: {
@@ -73,16 +73,21 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         default: 'arcade',
         arcade: {
           gravity: { x: 0, y: 2000 },
-          debug: false
+          debug: false,
+          fps: 60, // Target FPS for physics
+          timeScale: 1.0 // Normal time scale
         }
+      },
+      fps: {
+        target: 60, // Target 60 FPS for smooth gameplay
+        forceSetTimeOut: false // Use requestAnimationFrame for better performance
       },
       scene: [GameScene],
       scale: {
-        mode: Phaser.Scale.RESIZE, // Canvas resizes to fit container
+        mode: Phaser.Scale.RESIZE, // RESIZE mode makes game world adapt to container size
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: initialWidth,
-        height: initialHeight,
-        fullscreenTarget: container // Ensure fullscreen targets the container
+        // No fixed width/height - game world will match container size
+        // This allows the design to adapt to any screen size proportionally
       },
       render: {
         pixelArt: false,
@@ -188,13 +193,17 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     }, 10000);
 
     // Handle window resize with debouncing and visual viewport support
+    // With RESIZE mode, Phaser automatically resizes the game world to match container
+    // We just need to trigger the resize event
     const handleResize = () => {
-      if (gameRef.current) {
-        // Use visual viewport if available (handles iOS Safari address bar)
-        // Fallback to window dimensions, then document client dimensions
-        const width = window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth;
-        const height = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
-        gameRef.current.scale.resize(width, height);
+      if (gameRef.current && container) {
+        // Get the actual container dimensions
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        
+        // With RESIZE mode, this updates the game world size to match container
+        // Everything will scale proportionally based on the new dimensions
+        gameRef.current.scale.resize(containerWidth, containerHeight);
       }
     };
 
@@ -327,7 +336,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     };
   }, []);
 
-  return <div ref={containerRef} className="w-full h-full overflow-hidden" style={{ margin: 0, padding: 0, width: '100vw', height: '100vh' }} />;
+  return <div ref={containerRef} className="w-full h-full overflow-hidden" style={{ margin: 0, padding: 0 }} />;
 }
 
 export const Game = memo(GameComponent);

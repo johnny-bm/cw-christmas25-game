@@ -12,11 +12,11 @@ export const GameConfig = {
   energy: {
     initial: 100,              // Starting energy (0-100)
     max: 100,                   // Maximum energy (0-100)
-    drainAmount: 1,             // Energy lost per drain cycle
-    drainInterval: 500,         // Milliseconds between energy drains
-    jumpCost: 3,                // Energy cost per jump (normal mode)
+    drainAmount: 0.9,           // Energy lost per drain cycle (challenging but fair)
+    drainInterval: 1000,        // Milliseconds between energy drains (faster drain = more challenging)
+    jumpCost: 0.8,              // Energy cost per jump (higher cost = skill matters more)
     jumpCostSprint: 0,          // Energy cost per jump during sprint mode (0 = free jumps)
-    obstaclePassReward: 3,       // Energy gained when successfully jumping over an obstacle
+    obstaclePassReward: 4,       // Energy gained when successfully jumping over an obstacle (rewarding but not too generous)
   },
 
   // ============================================
@@ -28,16 +28,10 @@ export const GameConfig = {
     // All other items will be treated as regular collectibles
     types: {
       regular: [
-        'Bow and Arrow',
-        'Bread',
-        'Chicken',
-        'Coin',
-        'Crown',
-        'Diamond',
-        'Emerald',
-        'Star',
-        'Trophy',
-        'Yellow Potion'
+        'Collectible-01',
+        'Collectible-02',
+        'Collectible-03',
+        'Collectible-04'
       ] as string[],
       special: [
         // Add collectible names here to make them special (e.g., 'Crown', 'Diamond')
@@ -46,14 +40,14 @@ export const GameConfig = {
       ] as string[],
     },
     regular: {
-      energyGain: 5,            // Energy restored when collecting regular collectible
-      spawnIntervalMin: 1000,    // Minimum milliseconds between spawns
-      spawnIntervalMax: 3000,   // Maximum milliseconds between spawns
+      energyGain: 10,            // Energy restored when collecting regular collectible (balanced reward)
+      spawnIntervalMin: 1000,    // Minimum milliseconds between spawns (less frequent = more strategic)
+      spawnIntervalMax: 3000,    // Maximum milliseconds between spawns (less frequent = more strategic)
     },
     special: {
-      energyGain: 20,           // Energy restored when collecting special collectible
-      spawnIntervalMin: 8000,   // Minimum milliseconds between spawns
-      spawnIntervalMax: 15000,  // Maximum milliseconds between spawns
+      energyGain: 20,           // Energy restored when collecting special collectible (valuable but rare)
+      spawnIntervalMin: 8000,   // Minimum milliseconds between spawns (rarer = more valuable)
+      spawnIntervalMax: 15000,   // Maximum milliseconds between spawns (rarer = more valuable)
     },
   },
 
@@ -62,21 +56,21 @@ export const GameConfig = {
   // ============================================
   obstacles: {
     regular: {
-      damage: 10,               // Energy cost when hitting regular obstacle
-      spawnIntervalMin: 800,    // Minimum milliseconds between spawns
-      spawnIntervalMax: 2500,   // Maximum milliseconds between spawns
+      damage: 12,               // Energy cost when hitting regular obstacle (more punishing = skill matters)
+      spawnIntervalMin: 700,    // Minimum milliseconds between spawns (more frequent = more challenging)
+      spawnIntervalMax: 2200,    // Maximum milliseconds between spawns (more frequent = more challenging)
     },
     floating: {
-      damage: 10,              // Energy cost when hitting floating obstacle
-      spawnIntervalMin: 1500,   // Minimum milliseconds between spawns
-      spawnIntervalMax: 3500,   // Maximum milliseconds between spawns
-      unlockDistance: 5000,     // Distance (meters) before floating obstacles appear
+      damage: 12,               // Energy cost when hitting floating obstacle (more punishing = skill matters)
+      spawnIntervalMin: 1200,   // Minimum milliseconds between spawns (more frequent = more challenging)
+      spawnIntervalMax: 3200,   // Maximum milliseconds between spawns (more frequent = more challenging)
+      unlockDistance: 3000,      // Distance (meters) before floating obstacles appear (earlier = more challenge)
     },
     projectile: {
-      damage: 15,              // Energy cost when hitting projectile (more than regular)
-      spawnIntervalMin: 2000,   // Minimum milliseconds between spawns
-      spawnIntervalMax: 5000,   // Maximum milliseconds between spawns
-      unlockDistance: 3000,     // Distance (meters) before projectile obstacles appear
+      damage: 18,               // Energy cost when hitting projectile (high risk = high skill requirement)
+      spawnIntervalMin: 1500,   // Minimum milliseconds between spawns (more frequent = more challenging)
+      spawnIntervalMax: 4500,   // Maximum milliseconds between spawns (more frequent = more challenging)
+      unlockDistance: 2000,      // Distance (meters) before projectile obstacles appear (earlier = more challenge)
     },
   },
 
@@ -84,16 +78,17 @@ export const GameConfig = {
   // COMBO SYSTEM
   // ============================================
   combo: {
-    sprintThreshold: 10,        // Combo count needed to activate sprint mode
-    milestone3: 3,              // Combo count for "3 in a row!" message
-    milestone10: 10,            // Combo count for "ON FIRE!" message
+    sprintThreshold: 8,         // Combo count needed to activate sprint mode (challenging but achievable)
+    milestone3: 3,              // Combo count for "3 in a row!" message (early milestone)
+    milestone5: 5,              // Combo count for "5 in a row!" message (mid milestone)
+    milestone10: 10,            // Combo count for "ON FIRE!" message (elite milestone)
   },
 
   // ============================================
   // SPRINT MODE
   // ============================================
   sprint: {
-    duration: 5000,             // Duration in milliseconds
+    duration: 5500,             // Duration in milliseconds (powerful but not too long)
     speedMultiplier: 2.0,       // Speed multiplier during sprint (2x = double speed)
     distanceMultiplier: 2.0,    // Distance accumulation multiplier during sprint
     energyRestore: 100,         // Energy restored when sprint activates (set to max energy)
@@ -104,7 +99,7 @@ export const GameConfig = {
   // ============================================
   speed: {
     initial: 300,               // Starting game speed
-    max: 600,                   // Maximum game speed
+    max: 1000,                   // Maximum game speed
     acceleration: 0.5,         // Speed increase per millisecond (when scaled)
     distanceSpeedBonus: 8,      // Speed bonus per 15 meters traveled
     distanceSpeedInterval: 15,  // Meters needed for speed bonus
@@ -145,11 +140,11 @@ export const GameConfig = {
   // ============================================
   timers: {
     distanceUpdateInterval: 100, // Milliseconds between distance updates
-    obstacleInitial: 1000,      // Initial obstacle spawn timer
-    floatingObstacleInitial: 2000, // Initial floating obstacle spawn timer
-    projectileObstacleInitial: 3000, // Initial projectile obstacle spawn timer
-    collectibleInitial: 2000,   // Initial collectible spawn timer
-    specialCollectibleInitial: 5000, // Initial special collectible spawn timer
+    obstacleInitial: 1200,      // Initial obstacle spawn timer (faster start = more challenging)
+    floatingObstacleInitial: 2000, // Initial floating obstacle spawn timer (faster start)
+    projectileObstacleInitial: 2500, // Initial projectile obstacle spawn timer (faster start)
+    collectibleInitial: 2000,   // Initial collectible spawn timer (balanced rewards)
+    specialCollectibleInitial: 5000, // Initial special collectible spawn timer (rarer = more valuable)
   },
 
   // ============================================
@@ -160,7 +155,7 @@ export const GameConfig = {
     baseGravityHeight: 1080,    // Reference screen height for gravity scaling
     baseJumpVelocity: -800,      // Base jump velocity (scaled by screen height)
     mobileGravityMultiplier: 0.98, // Gravity multiplier on mobile (0.98 = 2% less)
-    mobileJumpMultiplier: 1.05,   // Jump velocity multiplier on mobile (1.05 = 5% stronger)
+    mobileJumpMultiplier: 1.15,   // Jump velocity multiplier on mobile (1.15 = 15% stronger for better obstacle clearance)
   },
 
   // ============================================

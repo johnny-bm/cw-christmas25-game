@@ -16,29 +16,32 @@ export const ColorConfig = {
   tokens: {
     // Primary Colors
     white: '#ffffff',
-    black: '#000000',
+    black: '#312f31',
     
     // Yellow
-    yellow: '#ffff00',
-    yellowLight: '#ffaa00', // Orange-yellow for special messages
-    yellowUI: '#facc15', // Yellow-500 for UI elements
+    yellow: '#ff9c81',
+    yellowLight: '#ff9c81', // Orange-yellow for special messages
+    yellowUI: '#ff9c81', // Yellow-500 for UI elements
     
     // Red
-    red: '#ff0000',
-    redDark: '#ff4444', // Darker red for projectiles
-    redUI: '#dc2626', // Red-600 for UI elements
+    red: '#d7586c',
+    redDark: '#a95661', // Darker red for projectiles
+    redUI: '#d7586c', // Red-600 for UI elements
     
     // Green
-    green: '#00ff00',
+    green: '#00a994',
     
     // Blue
-    blue: '#0000ff',
+    blue: '#4fa7dd',
     
     // Cyan
     cyan: '#00ffff',
     
     // Magenta
     magenta: '#ff00ff',
+    
+    // Purple
+    purple: '#af81b7', // Purple-500 for combo messages
     
     // Gray Scale
     grayLight: '#aaaaaa', // Light gray for regular obstacles
@@ -49,15 +52,21 @@ export const ColorConfig = {
     grayBorder: '#e5e7eb', // Gray border
     
     // Orange
-    orange: '#ff6600',
-    orangeUI: '#f97316', // Orange-500 for UI elements
+    orange: '#ff9c81',
+    orangeUI: '#ff9c81', // Orange-500 for UI elements
+    
+    // Combo Rush (Sprint Mode)
+    comboRush: '#F6A288', // Combo Rush background color
+    comboRushBar: '#E37B62', // Combo Rush progress bar color
     
     // Special UI Colors
     greenSuccess: '#16a34a', // Green for success states
     greenSuccessLight: '#dcfce7', // Light green background
     
     // Background Elements
-    backgroundBuilding: '#f0f0f0', // Light gray for background buildings
+    gameBackground: '#EEEDEE', // Game background color
+    groundColor: '#DEDCDE', // Ground color
+    backgroundBuilding: '#E8E7E8', // Light gray for background buildings
     backgroundCloud: '#e8e8e8', // Slightly darker gray for background clouds
   },
 
@@ -66,10 +75,10 @@ export const ColorConfig = {
   // ============================================
   elements: {
     // Background
-    background: 'white',
+    background: 'gameBackground',
     
     // Ground
-    ground: 'black',
+    ground: 'groundColor',
     
     // Deadline
     deadline: 'black',
@@ -99,8 +108,10 @@ export const ColorConfig = {
     messageStrokeNormal: 'black',
     messageStrokeSpecial: 'white',
     
-    // Sprint Mode
+    // Sprint Mode / Combo Rush
     sprintGlow: 'yellow',
+    comboRushBackground: 'comboRush',
+    comboRushProgressBar: 'comboRushBar',
     
     // Particle Effects
     confettiRed: 'red',

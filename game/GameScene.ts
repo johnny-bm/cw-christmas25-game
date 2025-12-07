@@ -5,12 +5,45 @@ import {
   getElementColorPhaser, 
   getElementColor,
   getColorTokenPhaser,
+  getColorToken,
   regularCollectibleColors,
   specialCollectibleColors,
   confettiColors,
   explosionColors
 } from './colorConfig';
 
+// Collectible-specific messages
+const COLLECTIBLE_MESSAGES: Record<string, string[]> = {
+  'Collectible-01': [ // Sugar Cane
+    'Sweet speed boost!',
+    'Run like you\'re late for Christmas Eve!',
+    'Sugar rush activated'
+  ],
+  'Collectible-03': [ // Star
+    'Star power!',
+    'Twinkle twinkle, big turbo!',
+    'Shine bright!',
+    'A little stardust goes a long way, speed up!',
+    'Wish granted: sprint mode unlocked.',
+    'North Pole energy acquired.'
+  ],
+  'Collectible-02': [ // Santa's Hat
+    'Ho-ho-go!',
+    'Borrowing Santa\'s delivery pace.',
+    'Festive fast track!',
+    'Santa\'s speed boost!',
+    'Holiday spirit detected.'
+  ],
+  'Collectible-04': [ // Gift
+    'Surprise boost!',
+    'Bonus unlocked!',
+    'Unwrap a speed boost. No receipts needed.',
+    'Suprise! Here\'s a little boost!',
+    'Consider this your early present, run like you mean it.'
+  ]
+};
+
+// Fallback messages for collectibles without specific messages
 const COLLECT_MESSAGES = [
   'Creative spark\'s back!',
   'That\'s the good stuff.',
@@ -34,6 +67,20 @@ const HIT_MESSAGES = [
   'Client feedback hit!',
   'Creative crash!'
 ];
+
+// Ground obstacle-specific messages
+const GROUND_OBSTACLE_MESSAGES: Record<string, string[]> = {
+  'Obstacle-01': [
+    'The Grinch blocked my path. Typical.',
+    'Log jam. Deadline endangered.',
+    'Tree trap! Someone\'s trying to ruin Christmas.'
+  ],
+  'Obstacle-02': [
+    'The Grinch blocked my path. Typical.',
+    'Log jam. Deadline endangered.',
+    'Tree trap! Someone\'s trying to ruin Christmas.'
+  ]
+};
 
 const LOW_ENERGY_MESSAGES = [
   'Running on coffee fumes.',
@@ -60,6 +107,34 @@ const EASTER_EGG_MESSAGES = [
   'If The Deadline wins, it does my timesheet.'
 ];
 
+// Combo messages
+const COMBO_MESSAGES = [
+  'Santa just handed you the express lane. GO.',
+  'You\'re sprinting. The Grinch is trembling.',
+  'North Pole turbo unlocked, outrun every deadline.',
+  'Combo cracked! You\'re faster than Santa on the 24th.',
+  'Holiday hyper-speed: engaged. The Grinch can\'t keep up.',
+  'Your momentum just got wrapped and delivered.',
+  'Elf-powered boost activated.',
+  'Combo miracle! Even Santa\'s impressed.',
+  'Festive frenzy mode: ON. Deadlines fear you now.',
+  'You hit 5. The universe rewards your chaos mastery.',
+  'You\'re officially on Santa\'s speed list!',
+  '5 collectibles?! Santa just promoted you to Senior Sleigh Driver.',
+  'You\'re running so fast the Grinch filed a complaint.',
+  'Combo unlocked! Santa said, "Finally, someone useful."',
+  'Your speed just made Rudolph insecure.',
+  'The elves can\'t keep up!',
+  'You hit x10. The Grinch is now questioning his life choices.',
+  'Turbo mode: You\'re basically Santa\'s Wi-Fi now.',
+  'Combo cracked, HR is drafting your "Elf of the Month" post.',
+  'You\'re sprinting. Even Santa\'s beard is blown back.',
+  'This speed is illegal in all North Pole districts.',
+  'Combo achieved! Make the Grinch rage-quit.',
+  'Santa saw your speed and whispered… "Ho-ho-HOLY MOLY!"',
+  'Boost activated. You\'re running like the deadline is watching!'
+];
+
 export class GameScene extends Phaser.Scene {
   private player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private ground!: Phaser.Physics.Arcade.StaticGroup;
@@ -68,8 +143,8 @@ export class GameScene extends Phaser.Scene {
   private projectileObstacles!: Phaser.GameObjects.Group;
   private collectibles!: Phaser.GameObjects.Group;
   private collectibleImageKeys: string[] = [];
-  private deadline!: Phaser.GameObjects.Rectangle;
-  private deadlineEdge!: Phaser.GameObjects.Rectangle;
+  private obstacleImageKeys: string[] = [];
+  private deadline!: Phaser.GameObjects.Image;
   
   private distance: number = 0;
   private energy: number = GameConfig.energy.initial;
@@ -91,14 +166,63 @@ export class GameScene extends Phaser.Scene {
   private isGameOver: boolean = false;
   private groundY: number = 0;
   
+  // Helper function to setup character physics body correctly - responsive
+  // CORRECT APPROACH: Manually align body bottom with sprite.y (feet position)
+  private setupCharacterBody() {
+    if (!this.player || !this.player.body) return;
+    
+    // Get current sprite dimensions (already scaled) - these are responsive
+    const spriteWidth = this.player.displayWidth;
+    const spriteHeight = this.player.displayHeight;
+    
+    // Body size - use actual sprite dimensions with slight reduction for tighter collision
+    // This ensures the collision box matches the visual sprite more closely
+    const bodyWidth = spriteWidth * 0.85; // 85% of sprite width for tighter collision
+    const bodyHeight = spriteHeight * 0.85; // 85% of sprite height for tighter collision
+    
+    // Set body size WITHOUT centering - we'll manually position it
+    this.player.body.setSize(bodyWidth, bodyHeight);
+    
+    // Calculate offset so body bottom aligns with sprite.y (feet position)
+    // With origin (0.5, 1), sprite.y is at the bottom center (feet)
+    // Body offset is relative to sprite's top-left corner
+    // We want body bottom = sprite.y, so body should extend UPWARD from feet
+    // 
+    // Sprite top-left: (sprite.x - spriteWidth/2, sprite.y - spriteHeight)
+    // Body top-left: (sprite.x - spriteWidth/2 + offsetX, sprite.y - spriteHeight + offsetY)
+    // Body bottom: sprite.y - spriteHeight + offsetY + bodyHeight
+    // 
+    // We want: body bottom = sprite.y
+    // So: sprite.y - spriteHeight + offsetY + bodyHeight = sprite.y
+    // Therefore: offsetY = spriteHeight - bodyHeight
+    
+    const offsetX = (spriteWidth - bodyWidth) / 2; // Center horizontally
+    const offsetY = spriteHeight - bodyHeight; // Align body bottom with sprite.y (feet)
+    
+    this.player.body.setOffset(offsetX, offsetY);
+    
+    // Debug: Log body setup values to verify alignment
+    console.log('=== CHARACTER BODY SETUP (CORRECTED) ===');
+    console.log('Sprite dimensions:', spriteWidth, 'x', spriteHeight);
+    console.log('Body size:', bodyWidth, 'x', bodyHeight);
+    console.log('Body offset:', offsetX, offsetY);
+    console.log('Sprite.y (feet position):', this.player.y);
+    console.log('Body.y:', this.player.body.y);
+    console.log('Body.height:', this.player.body.height);
+    console.log('Body bottom (body.y + body.height):', this.player.body.y + this.player.body.height);
+    console.log('Expected: body bottom = sprite.y =', this.player.y);
+    console.log('======================================');
+  }
+  
   private deadlineX: number = -100;
   
   private specialCollectibles: Phaser.GameObjects.Arc[] = [];
-  private obstaclesPassed: Set<Phaser.GameObjects.Rectangle> = new Set();
+  private obstaclesPassed: Set<Phaser.GameObjects.Image> = new Set();
   private messageBubbles: Array<{
     container: Phaser.GameObjects.Container;
-    bg: Phaser.GameObjects.Rectangle;
+    bg: Phaser.GameObjects.Graphics;
     text: Phaser.GameObjects.Text;
+    height: number;
     timer: number;
     id: number;
   }> = [];
@@ -116,6 +240,8 @@ export class GameScene extends Phaser.Scene {
   private collectibleTimer: number = GameConfig.timers.collectibleInitial;
   private specialCollectibleTimer: number = GameConfig.timers.specialCollectibleInitial;
   private messageTimer: number = 0; // Cooldown timer for messages
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys; // Cursor keys for jump controls
+  private pointerWasDown: boolean = false; // Track previous pointer state for justDown detection
   
   private backgroundMusic!: Phaser.Sound.BaseSound;
   private isMuted: boolean = false;
@@ -123,6 +249,7 @@ export class GameScene extends Phaser.Scene {
   private collectSound!: Phaser.Sound.BaseSound;
   private comboSound!: Phaser.Sound.BaseSound;
   private stumbleSound!: Phaser.Sound.BaseSound;
+  private skateboardSound!: Phaser.Sound.BaseSound;
   private currentMusicRate: number = 1.0; // Track current music playback rate
 
   constructor() {
@@ -138,16 +265,10 @@ export class GameScene extends Phaser.Scene {
     
     // Load collectible images
     const collectibleFiles = [
-      'Bow and Arrow',
-      'Bread',
-      'Chicken',
-      'Coin',
-      'Crown',
-      'Diamond',
-      'Emerald',
-      'Star',
-      'Trophy',
-      'Yellow Potion'
+      'Collectible-01',
+      'Collectible-02',
+      'Collectible-03',
+      'Collectible-04'
     ];
     
     collectibleFiles.forEach((name) => {
@@ -158,6 +279,26 @@ export class GameScene extends Phaser.Scene {
       this.load.image(key, path);
       this.collectibleImageKeys.push(key);
     });
+    
+    // Load obstacle images
+    const obstacleFiles = [
+      'Obstacle-01',
+      'Obstacle-02',
+      'Obstacle-03',
+      'Obstacle-04'
+    ];
+    
+    obstacleFiles.forEach((name) => {
+      const key = `obstacle-${name.toLowerCase().replace(/\s+/g, '-')}`;
+      // Encode spaces in URL path
+      const encodedName = encodeURIComponent(name);
+      const path = `/Assets/Obstacles/${encodedName}.png`;
+      this.load.image(key, path);
+      this.obstacleImageKeys.push(key);
+    });
+    
+    // Load deadline image
+    this.load.image('deadline', '/Assets/Obstacles/Deadline.png');
     
     // Load vignette image
     this.load.image('vignette', '/Assets/Vignet.png');
@@ -172,6 +313,7 @@ export class GameScene extends Phaser.Scene {
     this.load.audio('collectSound', '/Collect.mp3');
     this.load.audio('comboSound', '/Combo.wav');
     this.load.audio('stumbleSound', '/Stumble.wav');
+    this.load.audio('skateboardSound', '/skateboard.mp3');
     
     // Track loading progress
     this.load.on('progress', (progress: number) => {
@@ -203,10 +345,16 @@ export class GameScene extends Phaser.Scene {
     // Set physics world bounds to match canvas size
     this.physics.world.setBounds(0, 0, width, height);
     
+    // Configure physics for smooth, consistent updates
+    this.physics.world.timeScale = 1.0; // Normal time scale for consistent physics
+    
     // Scale gravity relative to screen height for responsive jump physics
+    // Reduced gravity for lighter, more responsive feel
     const isMobile = width <= 768 || height <= 768;
     const mobileGravityMultiplier = isMobile ? GameConfig.physics.mobileGravityMultiplier : 1.0;
-    const scaledGravity = GameConfig.physics.baseGravity * (height / GameConfig.physics.baseGravityHeight) * mobileGravityMultiplier;
+    // Use slightly lower base gravity (2200 instead of 2000) for better jump feel
+    const baseGravity = 2200;
+    const scaledGravity = baseGravity * (height / GameConfig.physics.baseGravityHeight) * mobileGravityMultiplier;
     this.physics.world.gravity.y = scaledGravity;
 
     // White game background
@@ -216,67 +364,94 @@ export class GameScene extends Phaser.Scene {
     // Parallax background
     this.createParallaxBackground();
 
-    // Position ground at bottom (80px from bottom)
-    this.groundY = height - 80;
-    const groundHeight = 80; // Fixed 80px height
-    const groundCenterY = this.groundY + (groundHeight / 2);
+    // Ground setup - responsive (same calculation as resize handler)
+    const groundHeightRatio = 100 / 1080; // Original ground height ratio
+    const groundHeight = height * groundHeightRatio; // Scale proportionally
+    this.groundY = height - groundHeight;
+    const groundWidth = width * 3;
     
-    // Ground width: 2x canvas width for scrolling
-    const groundWidth = width * 2;
     this.ground = this.physics.add.staticGroup();
     
-    // Create ground rectangle
-    const groundRect = this.add.rectangle(width / 2, groundCenterY, groundWidth, groundHeight, getElementColorPhaser('ground'));
-    groundRect.setDepth(10);
-    groundRect.setOrigin(0.5, 0.5);
-    groundRect.setVisible(true);
-    groundRect.setActive(true);
-    groundRect.setAlpha(1);
+    // Create ground rectangle at groundY
+    const groundRect = this.add.rectangle(0, this.groundY, groundWidth, groundHeight, getElementColorPhaser('ground'));
+    groundRect.setDepth(10); // Ground depth - character (20) will render above
+    groundRect.setOrigin(0, 0); // Top-left origin
     
-    // Add physics body to ground rectangle (static body)
+    // Add physics body and configure it
     this.physics.add.existing(groundRect, true);
-    
-    // Add to ground group
-    this.ground.add(groundRect);
-    
-    // Ensure physics body is properly configured
     if (groundRect.body) {
       const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
+      // Body matches sprite exactly - full width and height
       body.setSize(groundWidth, groundHeight);
-      body.setOffset(0, 0);
+      body.setOffset(0, 0); // No offset with (0,0) origin
+      // Static bodies are immovable by default in Phaser
     }
+    this.ground.add(groundRect);
 
-    // Position player at 20% from left, on ground
-    const playerX = width * 0.2;
-    const playerY = this.groundY - 50;
+    // Character setup with square bounding box - responsive
+    // Scale player - proportional to desktop for consistent feel, 10% bigger on mobile
+    const isMobilePlayer = width <= 768 || height <= 768;
+    const characterHeightRatio = isMobilePlayer ? 0.198 : 0.15; // 19.8% on mobile (10% bigger), 15% on desktop
+    const targetHeight = height * characterHeightRatio;
+    const scale = targetHeight / 160;
     
-    // Scale player size relative to screen height (8% of screen height)
-    const playerSize = height * 0.08;
-    const playerScale = playerSize / 50; // Base character size is ~50px
-    
-    this.player = this.physics.add.sprite(playerX, playerY, 'character-run-1');
-    this.player.setScale(playerScale);
+    this.player = this.physics.add.sprite(width * 0.25, 0, 'character-pushing-01');
     this.player.setDepth(20);
+    this.player.setScale(scale);
     
-    // Scale collision box relative to player size
-    const bodyWidth = 20 * playerScale;
-    const bodyHeight = 33 * playerScale;
-    this.player.body.setSize(bodyWidth, bodyHeight);
+    // Set origin to BOTTOM CENTER (0.5, 1) - sprite.y will be the bottom
+    this.player.setOrigin(0.5, 1);
+    
+    // STEP 1: Test with DEFAULT body size first (no setSize calls)
+    // Just position sprite.y = groundY and see if collision works correctly
+    // Uncomment setupCharacterBody() below if you need to adjust body size
+    // this.setupCharacterBody();
+    
+    // Position sprite at ground level - simple and correct
+    // With origin (0.5, 1), sprite.y is the bottom/feet position
+    // Position sprite.y = groundY to place feet at ground level
+    this.player.setPosition(width * 0.25, this.groundY);
+    
+    // Debug: Log positioning values to verify correct setup
+    const groundRectDebug = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
+    if (groundRectDebug && this.player.body) {
+      console.log('=== GROUND & CHARACTER POSITIONING DEBUG (create) ===');
+      console.log('Screen height:', height);
+      console.log('Ground height:', groundHeight);
+      console.log('groundY (top surface):', this.groundY);
+      console.log('Ground body.y:', groundRectDebug.body ? (groundRectDebug.body as Phaser.Physics.Arcade.StaticBody).y : 'N/A');
+      console.log('Character sprite.y (feet position):', this.player.y);
+      console.log('Character body.y:', this.player.body.y);
+      console.log('Character body.height:', this.player.body.height);
+      console.log('Character body bottom (body.y + body.height):', this.player.body.y + this.player.body.height);
+      console.log('Expected: sprite.y = body bottom = groundY =', this.groundY);
+      console.log('==================================================');
+    }
+    
+    // Physics properties - normal gravity on mobile to prevent floating feeling
+    const mobileGravityReduction = isMobilePlayer ? 0.98 : 1.0; // Slight reduction on mobile (2% less)
+    const playerBaseGravity = 2200;
+    const playerScaledGravity = playerBaseGravity * (height / GameConfig.physics.baseGravityHeight) * mobileGravityReduction;
+    this.player.body.setGravityY(playerScaledGravity);
+    this.player.body.setBounce(0, 0);
     this.player.body.setCollideWorldBounds(false);
     this.player.body.setAllowGravity(true);
-    this.player.body.enable = true;
-
-    // Add collider between player and ground
+    this.player.body.setMaxVelocityY(1400);
+    this.player.body.setDrag(200, 0);
+    
+    // Add collider - this is a COLLIDER (not overlap), so it will prevent penetration
+    // Arcade Physics will automatically keep player on top of ground
+    // The collider handles collision response, preventing character from sinking
     this.physics.add.collider(this.player, this.ground);
 
     // Setup animation
-    if (this.textures.exists('character-run-1') && this.textures.exists('character-run-2')) {
+    if (this.textures.exists('character-pushing-01') && this.textures.exists('character-ollie-01')) {
       this.setupCharacterAnimation();
     }
 
     // Sprint glow effect - scale relative to player size
-    const glowWidth = 60 * playerScale;
-    const glowHeight = 80 * playerScale;
+    const glowWidth = 60 * scale;
+    const glowHeight = 80 * scale;
     this.sprintGlow = this.add.rectangle(
       this.player.x, 
       this.player.y, 
@@ -287,13 +462,24 @@ export class GameScene extends Phaser.Scene {
     );
     this.sprintGlow.setDepth(19);
 
-    // Position deadline at center or relative to height
-    this.deadline = this.add.rectangle(-50, height * 0.5, 5000, height, getElementColorPhaser('deadline'));
-    this.deadline.setOrigin(1, 0.5);
+    // Create deadline using image asset - positioned at far left, will move right as energy decreases
+    // Start at far left (negative position off-screen) - will be repositioned after scaling
+    this.deadline = this.add.image(0, height * 0.1, 'deadline');
+    this.deadline.setOrigin(0, 0); // Top-left aligned
     this.deadline.setDepth(1);
+    // Scale deadline to full screen height (preserve aspect ratio)
+    if (this.deadline.texture && this.deadline.texture.source) {
+      const frame = this.deadline.frame;
+      const aspectRatio = frame.width / frame.height;
+      // Always use full height
+      const deadlineHeight = height;
+      const deadlineWidth = deadlineHeight * aspectRatio;
+      this.deadline.setDisplaySize(deadlineWidth, deadlineHeight);
+      // Position deadline far left (off-screen) after scaling
+      this.deadline.setPosition(-this.deadline.displayWidth - 200, 0);
+      this.deadlineX = this.deadline.x;
+    }
     
-    this.deadlineEdge = this.add.rectangle(-100, height * 0.5, 5, height, getElementColorPhaser('deadlineEdge'));
-    this.deadlineEdge.setDepth(2);
 
     // Create vignette effect using PNG image (starts invisible, will be shown when energy is low)
     if (this.textures.exists('vignette')) {
@@ -321,6 +507,9 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-SPACE', () => this.jump());
     this.input.keyboard!.on('keydown-UP', () => this.jump());
     this.input.on('pointerdown', () => this.jump());
+    
+    // Create cursors for jump controls in update()
+    this.cursors = this.input.keyboard!.createCursorKeys();
     
     // Initialize all sounds
     try {
@@ -372,6 +561,7 @@ export class GameScene extends Phaser.Scene {
         this.collectSound = this.sound.add('collectSound', { volume: soundVolume, ...soundConfig });
         this.comboSound = this.sound.add('comboSound', { volume: comboVolume, ...soundConfig });
         this.stumbleSound = this.sound.add('stumbleSound', { volume: soundVolume, ...soundConfig });
+        this.skateboardSound = this.sound.add('skateboardSound', { volume: soundVolume, loop: true, rate: 1.2, ...soundConfig });
       } catch (error) {
         console.warn('⚠️ Some sound effects may not be loaded yet:', error);
       }
@@ -471,18 +661,30 @@ export class GameScene extends Phaser.Scene {
       this.sound.unlock();
     }
     
-    const onGround = this.player.body.touching.down;
+    // Reliable ground detection - use collision flags with position fallback
+    // Check collision flags first, then check if very close to ground
+    const touchingGround = this.player.body.touching.down || this.player.body.blocked.down;
+    const nearGround = Math.abs(this.player.y - this.groundY) < 5; // Within 5px of ground
+    const onGround = touchingGround || (nearGround && this.player.body.velocity.y >= 0);
     
     // Scale jump velocity relative to screen height for responsive jump physics
-    // Base jump velocity is -800 for 1080px height, scale proportionally
+    // Stronger jump on mobile to allow clearing obstacles
     const { width, height } = this.scale;
-    const isMobile = width <= 768 || height <= 768;
-    const mobileJumpMultiplier = isMobile ? GameConfig.physics.mobileJumpMultiplier : 1.0;
-    const jumpVelocity = GameConfig.physics.baseJumpVelocity * (height / GameConfig.physics.baseGravityHeight) * mobileJumpMultiplier;
+    const isMobileJump = width <= 768 || height <= 768;
+    // Use config value for mobile jump multiplier (1.05 = 5% stronger on mobile)
+    const mobileJumpMultiplier = isMobileJump ? GameConfig.physics.mobileJumpMultiplier : 1.0;
+    // Use base velocity for consistent jump feel - increased for better obstacle clearance
+    const baseJumpVelocity = -1200;
+    const jumpVelocity = baseJumpVelocity * (height / GameConfig.physics.baseGravityHeight) * mobileJumpMultiplier;
     
     if (onGround) {
-      this.player.setVelocityY(jumpVelocity);
+      this.player.body.setVelocityY(jumpVelocity);
       this.jumpsRemaining = 1;
+      // Switch to ollie animation when jumping
+      const ollieAnim = this.getAnimationName(false);
+      if (this.anims.exists(ollieAnim)) {
+        this.player.play(ollieAnim);
+      }
       // Deduct energy for jumping (free during sprint mode)
       const jumpCost = this.sprintMode ? GameConfig.energy.jumpCostSprint : GameConfig.energy.jumpCost;
       this.energy = Math.max(0, this.energy - jumpCost);
@@ -500,8 +702,13 @@ export class GameScene extends Phaser.Scene {
         }
       }
     } else if (this.jumpsRemaining > 0) {
-      this.player.setVelocityY(jumpVelocity);
+      this.player.body.setVelocityY(jumpVelocity);
       this.jumpsRemaining = 0;
+      // Restart ollie animation for double jump
+      const ollieAnim = this.getAnimationName(false);
+      if (this.anims.exists(ollieAnim)) {
+        this.player.play(ollieAnim);
+      }
       // Deduct energy for jumping (free during sprint mode)
       const jumpCost = this.sprintMode ? GameConfig.energy.jumpCostSprint : GameConfig.energy.jumpCost;
       this.energy = Math.max(0, this.energy - jumpCost);
@@ -524,31 +731,56 @@ export class GameScene extends Phaser.Scene {
   spawnObstacle() {
     const { width, height } = this.scale;
     
-    // Scale obstacle sizes relative to screen
-    const baseSpeed = width / 1920;
-    const obstacleHeights = [
-      height * 0.04,  // 4% of screen height
-      height * 0.06,  // 6% of screen height
-      height * 0.08   // 8% of screen height
-    ];
-    const obstacleHeight = Phaser.Math.RND.pick(obstacleHeights);
-    const obstacleWidths = [
-      width * 0.013,  // ~1.3% of screen width
-      width * 0.016,  // ~1.6% of screen width
-      width * 0.021,  // ~2.1% of screen width
-      width * 0.026,  // ~2.6% of screen width
-      width * 0.031   // ~3.1% of screen width
-    ];
-    const obstacleWidth = Phaser.Math.RND.pick(obstacleWidths);
+    // Scale obstacle sizes relative to screen - ensure minimum speed on mobile
+    const isMobileSpeed = width <= 768 || height <= 768;
+    const baseSpeed = isMobileSpeed ? Math.max(width / 1920, 0.5) : width / 1920;
     
-    const obstacle = this.add.rectangle(
-      width + 50,
-      this.groundY - obstacleHeight / 2,
-      obstacleWidth,
-      obstacleHeight,
-      getElementColorPhaser('obstacleRegular')
+    // Pick a random obstacle image (only Obstacle-01 and Obstacle-02 for regular obstacles)
+    const regularObstacleKeys = this.obstacleImageKeys.filter(key => 
+      key.includes('obstacle-01') || key.includes('obstacle-02')
     );
+    const imageKey = Phaser.Math.RND.pick(regularObstacleKeys);
+    
+    // Extract obstacle name from key (e.g., "obstacle-obstacle-01" -> "Obstacle-01")
+    // The key format is "obstacle-{name-lowercase-with-dashes}"
+    const keyNameLower = imageKey.replace('obstacle-', '');
+    // Convert back to original name format (e.g., "obstacle-01" -> "Obstacle-01")
+    // Split by hyphen, capitalize first letter of each part, then join
+    const obstacleName = keyNameLower.split('-').map(part => 
+      part.charAt(0).toUpperCase() + part.slice(1)
+    ).join('-');
+    
+    // Scale obstacle size relative to screen height - 5% bigger on mobile
+    const isMobile = width <= 768 || height <= 768;
+    const baseObstacleSize = isMobile ? height * 0.0735 : height * 0.06; // 7.35% on mobile (5% bigger), 6% on desktop
+    const maxObstacleSize = isMobile ? 105 : 80; // Proportional cap on mobile (105px, 5% bigger) vs desktop (80px)
+    const obstacleSize = Math.min(baseObstacleSize, maxObstacleSize);
+    
+    // Create obstacle image
+    const obstacle = this.add.image(width + 50, 0, imageKey);
+    
+    // Scale obstacle image relative to screen height (assuming base image is ~100px, scale to obstacleSize)
+    const imageScale = obstacleSize / 100;
+    obstacle.setScale(imageScale);
+    // Ensure minimum visibility
+    if (imageScale < 0.3) {
+      obstacle.setScale(0.3);
+    }
+    
+    // Match player origin - bottom-center (same as character)
+    // This makes obstacle.y represent the bottom of the obstacle (like character.y represents feet)
+    obstacle.setOrigin(0.5, 1);
+    
+    // Position obstacle on ground - simple and correct
+    // With origin (0.5, 1), obstacle.y is the bottom
+    // Position obstacle.y = groundY to place bottom on ground surface (same as character)
+    obstacle.setPosition(width + 50, this.groundY);
     obstacle.setDepth(10);
+    
+    // Note: Obstacles don't have physics bodies in this game (collision is checked via bounds)
+    
+    // Store obstacle name for collision messages
+    obstacle.setData('obstacleName', obstacleName);
     this.obstacles.add(obstacle);
     
     // Scale obstacle speed relative to screen width
@@ -565,8 +797,9 @@ export class GameScene extends Phaser.Scene {
   spawnFloatingObstacle() {
     const { width, height } = this.scale;
     
-    // Scale floating obstacle positions and sizes relative to screen
-    const baseSpeed = width / 1920;
+    // Scale floating obstacle positions and sizes relative to screen - ensure minimum speed on mobile
+    const isMobileSpeed = width <= 768 || height <= 768;
+    const baseSpeed = isMobileSpeed ? Math.max(width / 1920, 0.5) : width / 1920;
     const jumpHeight = height * 0.15; // Estimate max jump height as 15% of screen
     const heights = [
       this.groundY - jumpHeight * 0.7,
@@ -575,23 +808,47 @@ export class GameScene extends Phaser.Scene {
     ];
     const y = Phaser.Math.RND.pick(heights);
     
-    const obstacleWidths = [
-      width * 0.016,  // ~1.6% of screen width
-      width * 0.021,  // ~2.1% of screen width
-      width * 0.026,  // ~2.6% of screen width
-      width * 0.031,  // ~3.1% of screen width
-      width * 0.036   // ~3.6% of screen width
-    ];
-    const obstacleWidth = Phaser.Math.RND.pick(obstacleWidths);
-    const obstacleHeight = height * 0.023; // ~2.3% of screen height (thin horizontal obstacle)
+    // Use Obstacle-03 image for floating obstacles
+    const imageKey = this.obstacleImageKeys.find(key => key.includes('obstacle-03'));
+    if (!imageKey) {
+      console.warn('Obstacle-03 not found, falling back to rectangle');
+      // Fallback to rectangle if image not found
+      const obstacleWidth = width * 0.02;
+      const obstacleHeight = height * 0.023;
+      const obstacle = this.add.rectangle(
+        width + 50,
+        y,
+        obstacleWidth,
+        obstacleHeight,
+        getElementColorPhaser('obstacleFloating')
+      );
+      obstacle.setDepth(10);
+      this.floatingObstacles.add(obstacle);
+      const obstacleSpeed = -400 * baseSpeed;
+      obstacle.setData('speed', obstacleSpeed);
+      const minInterval = GameConfig.obstacles.floating.spawnIntervalMin;
+      const maxInterval = GameConfig.obstacles.floating.spawnIntervalMax;
+      this.floatingObstacleTimer = Phaser.Math.Between(minInterval, maxInterval);
+      return;
+    }
     
-    const obstacle = this.add.rectangle(
-      width + 50,
-      y,
-      obstacleWidth,
-      obstacleHeight,
-      getElementColorPhaser('obstacleFloating')
-    );
+    // Scale obstacle size relative to screen height - 10% bigger on mobile
+    const isMobile = width <= 768 || height <= 768;
+    const baseObstacleSize = isMobile ? height * 0.077 : height * 0.06; // 7.7% on mobile (10% bigger), 6% on desktop
+    const maxObstacleSize = isMobile ? 110 : 80; // Proportional cap on mobile (110px, 10% bigger) vs desktop (80px)
+    const obstacleSize = Math.min(baseObstacleSize, maxObstacleSize);
+    
+    // Create obstacle image
+    const obstacle = this.add.image(width + 50, y, imageKey);
+    
+    // Scale obstacle image relative to screen height (assuming base image is ~100px)
+    const imageScale = obstacleSize / 100;
+    obstacle.setScale(imageScale);
+    if (imageScale < 0.3) {
+      obstacle.setScale(0.3);
+    }
+    
+    obstacle.setOrigin(0.5, 0.5);
     obstacle.setDepth(10);
     this.floatingObstacles.add(obstacle);
     
@@ -606,7 +863,9 @@ export class GameScene extends Phaser.Scene {
 
   spawnProjectileObstacle() {
     const { width, height } = this.scale;
-    const baseSpeed = width / 1920;
+    // Ensure minimum speed on mobile
+    const isMobileSpeed = width <= 768 || height <= 768;
+    const baseSpeed = isMobileSpeed ? Math.max(width / 1920, 0.5) : width / 1920;
     
     // Always spawn from the right side of the screen (off-screen to the right)
     const startX = width + 50; // Right edge + 50 pixels
@@ -645,15 +904,50 @@ export class GameScene extends Phaser.Scene {
     // Calculate initial vertical velocity to reach target height at player position
     const vy = (targetYAtPlayer - startY - 0.5 * gravity * timeToPlayer * timeToPlayer) / timeToPlayer;
     
-    // Create projectile obstacle
-    const projectileSize = width * 0.02; // 2% of screen width
-    const projectile = this.add.rectangle(
-      startX,
-      startY,
-      projectileSize,
-      projectileSize,
-      getElementColorPhaser('obstacleProjectile') // Red color to distinguish from regular obstacles
-    );
+    // Use Obstacle-04 image for projectile obstacles
+    const imageKey = this.obstacleImageKeys.find(key => key.includes('obstacle-04'));
+    if (!imageKey) {
+      console.warn('Obstacle-04 not found, falling back to rectangle');
+      // Fallback to rectangle if image not found
+      const projectileSize = width * 0.02;
+      const projectile = this.add.rectangle(
+        startX,
+        startY,
+        projectileSize,
+        projectileSize,
+        getElementColorPhaser('obstacleProjectile')
+      );
+      projectile.setDepth(10);
+      this.projectileObstacles.add(projectile);
+      projectile.setData('startX', startX);
+      projectile.setData('startY', startY);
+      projectile.setData('elapsedTime', 0);
+      projectile.setData('gravity', gravity);
+      projectile.setData('velocityX', -Math.abs(horizontalSpeed));
+      projectile.setData('velocityY', vy);
+      const minInterval = GameConfig.obstacles.projectile.spawnIntervalMin;
+      const maxInterval = GameConfig.obstacles.projectile.spawnIntervalMax;
+      this.projectileObstacleTimer = Phaser.Math.Between(minInterval, maxInterval);
+      return;
+    }
+    
+    // Scale projectile size relative to screen height - 10% bigger on mobile
+    const isMobile = width <= 768 || height <= 768;
+    const baseObstacleSize = isMobile ? height * 0.077 : height * 0.06; // 7.7% on mobile (10% bigger), 6% on desktop
+    const maxObstacleSize = isMobile ? 110 : 80; // Proportional cap on mobile (110px, 10% bigger) vs desktop (80px)
+    const obstacleSize = Math.min(baseObstacleSize, maxObstacleSize);
+    
+    // Create projectile obstacle image
+    const projectile = this.add.image(startX, startY, imageKey);
+    
+    // Scale projectile image relative to screen height (assuming base image is ~100px)
+    const imageScale = obstacleSize / 100;
+    projectile.setScale(imageScale);
+    if (imageScale < 0.3) {
+      projectile.setScale(0.3);
+    }
+    
+    projectile.setOrigin(0.5, 0.5);
     projectile.setDepth(10);
     this.projectileObstacles.add(projectile);
     
@@ -677,13 +971,15 @@ export class GameScene extends Phaser.Scene {
   spawnCollectible() {
     const { width, height } = this.scale;
     
-    // Scale collectible positions and sizes relative to screen
-    const baseSpeed = width / 1920;
-    // Detect mobile - use larger size on mobile devices
+    // Scale collectible positions and sizes relative to screen - proportional to obstacles
+    // Ensure minimum speed on mobile
+    const isMobileSpeedCollectible = width <= 768 || height <= 768;
+    const baseSpeed = isMobileSpeedCollectible ? Math.max(width / 1920, 0.5) : width / 1920;
+    // Detect mobile - use appropriate size on mobile devices
     const isMobile = width <= 768 || height <= 768;
-    // Use larger percentage on mobile, smaller on desktop
-    const baseCollectibleSize = isMobile ? height * 0.008 : height * 0.004; // 0.8% on mobile, 0.4% on desktop
-    const maxCollectibleSize = isMobile ? 24 : 12; // Larger cap on mobile (24px) vs desktop (12px)
+    // Desktop: larger size for better visibility, Mobile: 10% bigger but still smaller than obstacles
+    const baseCollectibleSize = isMobile ? height * 0.0088 : height * 0.025; // 0.88% on mobile (10% bigger), 2.5% on desktop (larger)
+    const maxCollectibleSize = isMobile ? 27 : 60; // Mobile: 27px (10% bigger), Desktop: 60px (larger)
     const collectibleSize = Math.min(baseCollectibleSize, maxCollectibleSize);
     const heights = [
       this.groundY - height * 0.028,  // ~2.8% from ground
@@ -713,9 +1009,14 @@ export class GameScene extends Phaser.Scene {
     // Scale collectible image relative to screen height (assuming base image is ~50px, scale to collectibleSize)
     const imageScale = collectibleSize / 50;
     collectible.setScale(imageScale);
+    // Ensure minimum visibility - reduced threshold to allow smaller collectibles
+    if (imageScale < 0.3) {
+      collectible.setScale(0.3);
+    }
     collectible.setOrigin(0.5, 0.5);
-    // Store collectible type for collection logic
+    // Store collectible type and name for collection logic
     collectible.setData('isSpecial', isSpecial);
+    collectible.setData('collectibleName', matchingName || imageKey);
     this.collectibles.add(collectible);
     
     // Scale animation distance relative to screen height
@@ -744,13 +1045,14 @@ export class GameScene extends Phaser.Scene {
   spawnSpecialCollectible() {
     const { width, height } = this.scale;
     
-    // Scale special collectible positions and sizes relative to screen
-    const baseSpeed = width / 1920;
-    // Detect mobile - use larger size on mobile devices
+    // Scale special collectible positions and sizes relative to screen - ensure minimum speed on mobile
+    const isMobileSpeedSpecial = width <= 768 || height <= 768;
+    const baseSpeed = isMobileSpeedSpecial ? Math.max(width / 1920, 0.5) : width / 1920;
+    // Detect mobile - use appropriate size on mobile devices
     const isMobile = width <= 768 || height <= 768;
-    // Use larger percentage on mobile, smaller on desktop
-    const baseCollectibleRadius = isMobile ? height * 0.014 : height * 0.007; // 1.4% on mobile, 0.7% on desktop
-    const maxCollectibleRadius = isMobile ? 36 : 18; // Larger cap on mobile (36px) vs desktop (18px)
+    // Desktop: larger size for better visibility, Mobile: 10% bigger but still smaller than obstacles
+    const baseCollectibleRadius = isMobile ? height * 0.0044 : height * 0.012; // 0.44% on mobile (10% bigger), 1.2% on desktop (larger)
+    const maxCollectibleRadius = isMobile ? 14 : 30; // Mobile: 14px (10% bigger), Desktop: 30px (larger)
     const collectibleRadius = Math.min(baseCollectibleRadius, maxCollectibleRadius);
     const heights = [
       this.groundY - height * 0.028,  // ~2.8% from ground
@@ -798,7 +1100,7 @@ export class GameScene extends Phaser.Scene {
 
     // Check obstacles
     this.obstacles.children.iterate((child) => {
-      const obstacle = child as Phaser.GameObjects.Rectangle;
+      const obstacle = child as Phaser.GameObjects.Image;
       if (!obstacle || !obstacle.active) return false;
       
       const obstacleBounds = obstacle.getBounds();
@@ -812,7 +1114,16 @@ export class GameScene extends Phaser.Scene {
           this.energy -= GameConfig.obstacles.regular.damage;
           this.combo = 0;
           this.grinchScore += 1; // Increment Grinch score on obstacle hit
-          this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
+          this.elfScore = Math.max(0, this.elfScore - 1); // Decrement Elf score on obstacle hit (minimum 0)
+          
+          // Get obstacle name and show specific message
+          const obstacleName = obstacle.getData('obstacleName') || '';
+          const specificMessages = GROUND_OBSTACLE_MESSAGES[obstacleName];
+          const message = specificMessages && specificMessages.length > 0
+            ? Phaser.Math.RND.pick(specificMessages)
+            : Phaser.Math.RND.pick(HIT_MESSAGES);
+          
+          this.showMessage(message);
           this.cameras.main.shake(GameConfig.effects.cameraShakeDuration, GameConfig.effects.cameraShakeIntensity);
           this.createCollisionEffect(obstacle.x, obstacle.y);
           // Play stumble sound - ensure audio context is active
@@ -838,29 +1149,39 @@ export class GameScene extends Phaser.Scene {
         }
       } else if (!this.obstaclesPassed.has(obstacle) && obstacle.x < this.player.x) {
         this.obstaclesPassed.add(obstacle);
-        this.combo += 1;
         // Reward energy for successfully passing obstacle
         this.energy = Math.min(GameConfig.energy.max, this.energy + GameConfig.energy.obstaclePassReward);
         
-        if (this.combo % GameConfig.combo.sprintThreshold === 0 && this.combo >= GameConfig.combo.sprintThreshold && !this.sprintMode) {
-          this.activateSprintMode();
-        }
-        
-        if (this.combo === GameConfig.combo.milestone3) {
-          this.showMessage('🔥 3 in a row!');
-        } else if (this.combo % GameConfig.combo.sprintThreshold === 0 && this.combo >= GameConfig.combo.sprintThreshold) {
-          this.showMessage(`⚡ ON FIRE! ${this.combo} COMBO!`);
-        }
-        
-        if (this.combo > this.maxCombo) {
-          this.maxCombo = this.combo;
+        // Only accumulate combos when not in sprint mode
+        if (!this.sprintMode) {
+          this.combo += 1;
+          
+          if (this.combo % GameConfig.combo.sprintThreshold === 0 && this.combo >= GameConfig.combo.sprintThreshold && !this.sprintMode) {
+            this.activateSprintMode();
+          }
+          
+          // Show combo messages
+          if (this.combo >= 3) {
+            // Special message for x5 combo
+            if (this.combo === 5) {
+              this.showMessage('Five in a row? Santa calls that elite behavior.');
+            } else {
+              // Random combo message for other combos
+              const message = Phaser.Math.RND.pick(COMBO_MESSAGES);
+              this.showMessage(message);
+            }
+          }
+          
+          if (this.combo > this.maxCombo) {
+            this.maxCombo = this.combo;
+          }
         }
       }
     });
 
     // Check floating obstacles
     this.floatingObstacles.children.iterate((child) => {
-      const obstacle = child as Phaser.GameObjects.Rectangle;
+      const obstacle = child as Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
       if (!obstacle || !obstacle.active) return false;
       
       const obstacleBounds = obstacle.getBounds();
@@ -874,6 +1195,7 @@ export class GameScene extends Phaser.Scene {
           this.energy -= GameConfig.obstacles.floating.damage;
           this.combo = 0;
           this.grinchScore += 1; // Increment Grinch score on floating obstacle hit
+          this.elfScore = Math.max(0, this.elfScore - 1); // Decrement Elf score on floating obstacle hit (minimum 0)
           this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
           this.cameras.main.shake(GameConfig.effects.cameraShakeDuration, GameConfig.effects.cameraShakeIntensity);
           this.createCollisionEffect(obstacle.x, obstacle.y);
@@ -898,47 +1220,62 @@ export class GameScene extends Phaser.Scene {
             this.endGame();
           }
         }
-      } else if (!this.obstaclesPassed.has(obstacle) && obstacle.x < this.player.x) {
+      } else if (obstacle instanceof Phaser.GameObjects.Image && !this.obstaclesPassed.has(obstacle) && obstacle.x < this.player.x) {
         this.obstaclesPassed.add(obstacle);
-        this.combo += 1;
         // Reward energy for successfully passing floating obstacle
         this.energy = Math.min(GameConfig.energy.max, this.energy + GameConfig.energy.obstaclePassReward);
         
-        // Play combo sound for milestones - ensure audio context is active
-        if (this.comboSound && !this.isMuted) {
-          if (this.combo === GameConfig.combo.milestone3 || this.combo % GameConfig.combo.sprintThreshold === 0) {
-            try {
-              // Resume audio context if suspended (mobile requirement)
-              const audioContext = this.getAudioContext();
-              if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume();
+        // Only accumulate combos when not in sprint mode
+        if (!this.sprintMode) {
+          this.combo += 1;
+          
+          // Play combo sound for milestones - ensure audio context is active
+          if (this.comboSound && !this.isMuted) {
+            // Play sound for milestone3, milestone5, and sprint threshold
+            if (this.combo === GameConfig.combo.milestone3 || 
+                this.combo === GameConfig.combo.milestone5 || 
+                this.combo % GameConfig.combo.sprintThreshold === 0) {
+              try {
+                // Resume audio context if suspended (mobile requirement)
+                const audioContext = this.getAudioContext();
+                if (audioContext && audioContext.state === 'suspended') {
+                  audioContext.resume();
+                }
+                this.comboSound.play();
+              } catch (error) {
+                console.warn('⚠️ Failed to play combo sound:', error);
               }
-              this.comboSound.play();
-            } catch (error) {
-              console.warn('⚠️ Failed to play combo sound:', error);
             }
           }
-        }
-        
-        if (this.combo % GameConfig.combo.sprintThreshold === 0 && this.combo >= GameConfig.combo.sprintThreshold && !this.sprintMode) {
-          this.activateSprintMode();
-        }
-        
-        if (this.combo === GameConfig.combo.milestone3) {
-          this.showMessage('🔥 3 in a row!');
-        } else if (this.combo % GameConfig.combo.sprintThreshold === 0 && this.combo >= GameConfig.combo.sprintThreshold) {
-          this.showMessage(`⚡ ON FIRE! ${this.combo} COMBO!`);
-        }
-        
-        if (this.combo > this.maxCombo) {
-          this.maxCombo = this.combo;
+          
+          // Activate sprint mode at threshold
+          if (this.combo % GameConfig.combo.sprintThreshold === 0 && this.combo >= GameConfig.combo.sprintThreshold && !this.sprintMode) {
+            this.activateSprintMode();
+          }
+          
+          // Show combo messages with milestone rewards
+          if (this.combo === GameConfig.combo.milestone3) {
+            // First milestone - encouraging message
+            this.showMessage('🔥 3 in a row! You\'re getting the hang of this!');
+          } else if (this.combo === GameConfig.combo.milestone5) {
+            // Second milestone - special message
+            this.showMessage('Five in a row? Santa calls that elite behavior.');
+          } else if (this.combo >= 3 && this.combo < GameConfig.combo.sprintThreshold) {
+            // Random combo message for other combos before sprint
+            const message = Phaser.Math.RND.pick(COMBO_MESSAGES);
+            this.showMessage(message);
+          }
+          
+          if (this.combo > this.maxCombo) {
+            this.maxCombo = this.combo;
+          }
         }
       }
     });
 
     // Check projectile obstacles
     this.projectileObstacles.children.iterate((child) => {
-      const projectile = child as Phaser.GameObjects.Rectangle;
+      const projectile = child as Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
       if (!projectile || !projectile.active) return false;
       
       const projectileBounds = projectile.getBounds();
@@ -952,6 +1289,7 @@ export class GameScene extends Phaser.Scene {
           this.energy -= GameConfig.obstacles.projectile.damage;
           this.combo = 0;
           this.grinchScore += 1; // Increment Grinch score on projectile hit
+          this.elfScore = Math.max(0, this.elfScore - 1); // Decrement Elf score on projectile hit (minimum 0)
           this.showMessage(Phaser.Math.RND.pick(HIT_MESSAGES));
           this.cameras.main.shake(GameConfig.effects.cameraShakeProjectileDuration, GameConfig.effects.cameraShakeProjectileIntensity);
           this.createCollisionEffect(projectile.x, projectile.y);
@@ -996,11 +1334,24 @@ export class GameScene extends Phaser.Scene {
         this.energy = Math.min(GameConfig.energy.max, this.energy + energyGain);
         this.elfScore += 1; // Increment Elf score on collectible collection
         
+        // Get collectible name and show specific message
+        const collectibleName = collectible.getData('collectibleName') || '';
+        const specificMessages = COLLECTIBLE_MESSAGES[collectibleName];
+        let message: string;
+        
+        if (specificMessages && specificMessages.length > 0) {
+          message = Phaser.Math.RND.pick(specificMessages);
+        } else if (isSpecial) {
+          message = Phaser.Math.RND.pick(SPECIAL_COLLECT_MESSAGES);
+        } else {
+          message = Phaser.Math.RND.pick(COLLECT_MESSAGES);
+        }
+        
+        this.showMessage(message);
+        
         if (isSpecial) {
-          this.showMessage(Phaser.Math.RND.pick(SPECIAL_COLLECT_MESSAGES));
           this.createSpecialCollectEffect(collectible.x, collectible.y);
         } else {
-          this.showMessage(Phaser.Math.RND.pick(COLLECT_MESSAGES));
           // Use a default color for the effect (yellow/gold)
           this.createCollectEffect(collectible.x, collectible.y, getElementColorPhaser('collectibleRegular1'));
         }
@@ -1050,10 +1401,17 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // Check deadline
-    if (this.deadlineEdge.x >= this.player.x - 15) {
-      this.energy = 0;
-      this.endGame();
+    // Check deadline - deadline hits character in the MIDDLE
+    // Deadline's RIGHT edge (deadline.x + deadline.width) hits player's CENTER (player.x)
+    // Only check collision if deadline is actually to the left of player (deadline.x < player.x)
+    if (this.deadline.x < this.player.x) {
+      const deadlineRightEdge = this.deadline.x + this.deadline.displayWidth;
+      const playerCenter = this.player.x; // Character center (origin is 0.5, so x is center)
+      // Character loses when deadline's right edge reaches player's center
+      if (deadlineRightEdge >= playerCenter) {
+        this.energy = 0;
+        this.endGame();
+      }
     }
   }
 
@@ -1075,89 +1433,98 @@ export class GameScene extends Phaser.Scene {
       this.messageBubbles.shift();
     }
 
-    const isNegative = HIT_MESSAGES.includes(message);
+    // Determine message type for color coding
+    const isObstacleMessage = HIT_MESSAGES.includes(message) || 
+      Object.values(GROUND_OBSTACLE_MESSAGES).some(messages => messages.includes(message));
+    
+    const isComboMessage = COMBO_MESSAGES.includes(message) || message === 'Five in a row? Santa calls that elite behavior.';
+    
+    const isCollectibleMessage = COLLECT_MESSAGES.includes(message) || 
+      SPECIAL_COLLECT_MESSAGES.includes(message) ||
+      Object.values(COLLECTIBLE_MESSAGES).some(messages => messages.includes(message));
+    
     const isSpecial = isSpecialMessage;
     
-    // Responsive font size - smaller on mobile
+    // Responsive font size - same size for all messages
     const { width } = this.scale;
     const isMobile = width <= 768;
-    const baseFontSize = isMobile 
-      ? (isSpecial ? '16px' : '12px')  // Smaller on mobile
-      : (isSpecial ? '24px' : '18px'); // Normal on desktop
-    const bgColor = isNegative 
-      ? getElementColorPhaser('messageBubbleNegative') 
-      : (isSpecial ? getElementColorPhaser('messageBubbleSpecial') : getElementColorPhaser('messageBubbleNormal'));
-    const textColor = isSpecial ? getElementColor('messageTextSpecial') : getElementColor('messageTextNormal');
-    const strokeColor = isSpecial ? getElementColor('messageStrokeSpecial') : getElementColor('messageStrokeNormal');
+    const baseFontSize = isMobile ? '12px' : '18px'; // Same size for all messages
     
-    // Match text resolution to canvas resolution for crisp rendering
-    // Use device pixel ratio (same as canvas resolution) for crisp text
-    const textResolution = Math.max(window.devicePixelRatio || 1, 2); // At least 2x for quality
+    // Set background color based on message type (only difference)
+    let bgColor: number;
+    if (isObstacleMessage) {
+      // Red for obstacles
+      bgColor = getColorTokenPhaser('red');
+    } else if (isComboMessage) {
+      // Purple for combos
+      bgColor = getColorTokenPhaser('purple');
+    } else if (isCollectibleMessage || isSpecial) {
+      // Green for collectibles and positive messages
+      bgColor = getColorTokenPhaser('green');
+    } else {
+      // Default green for other positive messages (low energy, critical energy, etc.)
+      bgColor = getColorTokenPhaser('green');
+    }
+    
+    const textColor = getColorToken('white'); // White text for all messages
+    
+    // Match text resolution to canvas resolution for crisp rendering on mobile
+    // Use higher resolution on mobile to prevent pixelation
+    const textResolution = isMobile ? Math.max(window.devicePixelRatio || 1, 3) : Math.max(window.devicePixelRatio || 1, 2); // Higher on mobile (3x) for crisp text
+    
+    // Max width for text wrapping - responsive (increased)
+    const maxTextWidth = isMobile ? 280 : 400;
     
     const messageText = this.add.text(0, 0, message, {
       fontFamily: '"Urbanist", sans-serif',
       fontSize: baseFontSize,
       color: textColor,
       align: 'center',
-      stroke: strokeColor,
-      strokeThickness: isSpecial ? 2 : 1,
       resolution: textResolution, // Match canvas resolution for crisp text
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      wordWrap: { width: maxTextWidth }
     });
     messageText.setOrigin(0.5, 0.5); // Center the text
     messageText.setDepth(1001);
 
-    // Responsive padding - smaller on mobile
-    const padding = isMobile 
-      ? (isSpecial ? 6 : 5)  // Smaller padding on mobile
-      : (isSpecial ? 10 : 8); // Normal padding on desktop
-    const messageBg = this.add.rectangle(0, 0, messageText.width + (padding * 2), messageText.height + (padding * 2), bgColor);
-    messageBg.setStrokeStyle(isSpecial ? 2 : 1, getColorTokenPhaser('white'));
-    messageBg.setOrigin(0.5, 0.5); // Center the background
+    // Responsive padding - same padding for all messages
+    const horizontalPadding = isMobile ? 12 : 16; // Same padding for all messages
+    const verticalPadding = isMobile ? 4 : 8; // Same padding for all messages
+    
+    // Create rounded rectangle (pill shape) using graphics
+    const bgWidth = messageText.width + (horizontalPadding * 2);
+    const bgHeight = messageText.height + (verticalPadding * 2);
+    const borderRadius = bgHeight / 2; // Make it a pill shape (half the height)
+    
+    const messageBg = this.add.graphics();
+    messageBg.fillStyle(bgColor, 1);
+    messageBg.fillRoundedRect(-bgWidth / 2, -bgHeight / 2, bgWidth, bgHeight, borderRadius);
     messageBg.setDepth(1000);
     
     // Create container first
     const messageContainer = this.add.container(0, 0, [messageBg, messageText]);
     
-    // Add subtle glow effect for special messages
-    if (isSpecial) {
-      const glow = this.add.rectangle(0, 0, messageText.width + (padding * 2) + 6, messageText.height + (padding * 2) + 6, getElementColorPhaser('sprintGlow'), 0.3);
-      glow.setOrigin(0.5, 0.5); // Center the glow
-      glow.setDepth(999);
-      glow.setBlendMode(Phaser.BlendModes.ADD);
-      
-      // Pulsing glow animation
-      this.tweens.add({
-        targets: glow,
-        alpha: { from: 0.3, to: 0.6 },
-        duration: 800,
-        ease: 'Sine.easeInOut',
-        yoyo: true,
-        repeat: -1
-      });
-      
-      messageContainer.add(glow);
-    }
     messageContainer.setDepth(1002);
     messageContainer.setAlpha(0);
-    messageContainer.setScale(0.8); // Start slightly smaller for pop-in effect
+    messageContainer.setScale(0.784); // Start slightly smaller for pop-in effect (0.8 * 0.98 = 2% smaller)
 
     const bubbleData = {
       container: messageContainer,
       bg: messageBg,
       text: messageText,
+      height: bgHeight, // Store height for positioning
       timer: GameConfig.messages.displayDuration,
       id: this.messageIdCounter++
     };
     
     this.messageBubbles.push(bubbleData);
     
-    // Pop-in animation with scale
+    // Pop-in animation with scale (2% smaller than before)
     this.tweens.add({
       targets: messageContainer,
       alpha: 1,
-      scaleX: 1,
-      scaleY: 1,
+      scaleX: 0.98,
+      scaleY: 0.98,
       duration: 300,
       ease: 'Back.easeOut'
     });
@@ -1187,6 +1554,15 @@ export class GameScene extends Phaser.Scene {
     if (this.isGameOver) return;
     
     this.isGameOver = true;
+    
+    // Stop skateboard sound when game ends
+    if (this.skateboardSound && this.skateboardSound.isPlaying) {
+      try {
+        this.skateboardSound.stop();
+      } catch (error) {
+        console.warn('⚠️ Failed to stop skateboard sound on game over:', error);
+      }
+    }
     
     // Lower music volume for game over screen and reset speed
     if (this.backgroundMusic) {
@@ -1233,12 +1609,79 @@ export class GameScene extends Phaser.Scene {
     const mobileSpeedMultiplier = isMobile ? GameConfig.speed.mobileMultiplier : 1.0;
     
     // Scale base speed relative to screen width, then apply mobile multiplier
-    const baseSpeed = (canvasWidth / 1920) * mobileSpeedMultiplier;
+    // Ensure minimum speed on mobile for responsive feel
+    const rawBaseSpeed = canvasWidth / 1920;
+    const minBaseSpeed = isMobile ? 0.5 : rawBaseSpeed;
+    const baseSpeed = Math.max(rawBaseSpeed, minBaseSpeed) * mobileSpeedMultiplier;
 
-    // Check if on ground
-    const onGround = this.player.body.touching.down;
+    // Check if on ground - reliable detection with position fallback
+    const touchingGround = this.player.body.touching.down || this.player.body.blocked.down;
+    const nearGround = Math.abs(this.player.y - this.groundY) < 3; // Within 3px of ground
+    const onGround = touchingGround || (nearGround && this.player.body.velocity.y >= 0);
+    
+    // Jump handling is done in jump() method via event listeners
+    // No duplicate jump handling here to avoid inconsistency
+    this.pointerWasDown = this.input.activePointer.isDown;
+    
+    // Handle ground state
     if (onGround) {
       this.jumpsRemaining = 2;
+      
+      // Let Arcade Physics handle all position corrections
+      // Do NOT manually adjust Y position - it causes jittering and conflicts with physics
+      
+      // Switch to pushing animation when on ground
+      const pushingAnim = this.getAnimationName(true);
+      if (this.player.anims.currentAnim?.key !== pushingAnim) {
+        this.player.play(pushingAnim);
+        
+        // Play skateboard sound when pushing
+        if (this.skateboardSound && !this.isMuted && !this.skateboardSound.isPlaying) {
+          try {
+            const audioContext = this.getAudioContext();
+            if (audioContext && audioContext.state === 'suspended') {
+              audioContext.resume();
+            }
+            this.skateboardSound.play();
+            
+            // Set appropriate rate based on sprint mode
+            const skateboardRate = this.sprintMode ? 1.5 : 1.2;
+            if ('setRate' in this.skateboardSound) {
+              (this.skateboardSound as any).setRate(skateboardRate);
+            } else if ('rate' in this.skateboardSound) {
+              (this.skateboardSound as any).rate = skateboardRate;
+            }
+          } catch (error) {
+            console.warn('⚠️ Failed to play skateboard sound:', error);
+          }
+        } else if (this.skateboardSound && this.skateboardSound.isPlaying && this.sprintMode) {
+          // Update rate if sprint mode is active and sound is already playing
+          try {
+            if ('setRate' in this.skateboardSound) {
+              (this.skateboardSound as any).setRate(1.5);
+            } else if ('rate' in this.skateboardSound) {
+              (this.skateboardSound as any).rate = 1.5;
+            }
+          } catch (error) {
+            console.warn('⚠️ Failed to update skateboard sound rate:', error);
+          }
+        }
+      }
+    } else {
+      // Switch to ollie animation when in air
+      const ollieAnim = this.getAnimationName(false);
+      if (this.player.anims.currentAnim?.key !== ollieAnim) {
+        this.player.play(ollieAnim);
+        
+        // Stop skateboard sound when jumping
+        if (this.skateboardSound && this.skateboardSound.isPlaying) {
+          try {
+            this.skateboardSound.stop();
+          } catch (error) {
+            console.warn('⚠️ Failed to stop skateboard sound:', error);
+          }
+        }
+      }
     }
 
     // Increase speed over time
@@ -1269,7 +1712,7 @@ export class GameScene extends Phaser.Scene {
 
     // Move obstacles
     this.obstacles.children.iterate((child) => {
-      const obstacle = child as Phaser.GameObjects.Rectangle;
+      const obstacle = child as Phaser.GameObjects.Image;
       if (!obstacle || !obstacle.active) return false;
       
       obstacle.x -= currentSpeed * deltaSeconds;
@@ -1283,7 +1726,7 @@ export class GameScene extends Phaser.Scene {
 
     // Move floating obstacles
     this.floatingObstacles.children.iterate((child) => {
-      const obstacle = child as Phaser.GameObjects.Rectangle;
+      const obstacle = child as Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
       if (!obstacle || !obstacle.active) return false;
       
       obstacle.x -= currentSpeed * deltaSeconds;
@@ -1296,7 +1739,7 @@ export class GameScene extends Phaser.Scene {
 
     // Move projectile obstacles with parabolic trajectory
     this.projectileObstacles.children.iterate((child) => {
-      const projectile = child as Phaser.GameObjects.Rectangle;
+      const projectile = child as Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
       if (!projectile || !projectile.active) return false;
       
       const elapsedTime = projectile.getData('elapsedTime') + deltaSeconds;
@@ -1470,11 +1913,25 @@ export class GameScene extends Phaser.Scene {
       this.distanceTimer = 0;
     }
 
-    // Move deadline
-    const deadlineTargetX = -100 + ((GameConfig.energy.max - this.energy) / GameConfig.energy.max) * (this.player.x + GameConfig.deadline.offsetFromPlayer);
+    // Move deadline - starts far left, moves right as energy decreases
+    // When energy is max (100), deadline stays far left (off-screen)
+    // When energy is 0, deadline moves right toward player position
+    const { width } = this.scale;
+    const energyRatio = this.energy / GameConfig.energy.max; // 1.0 = full energy, 0.0 = no energy
+    
+    // Calculate start position based on deadline width to ensure it's fully off-screen
+    const deadlineWidth = this.deadline.displayWidth || 100; // Fallback if not set
+    const startX = -deadlineWidth - 200; // Start well off-screen (deadline width + buffer)
+    // End position: deadline's right edge should reach player's center
+    // deadline.x + deadlineWidth = player.x, so deadline.x = player.x - deadlineWidth
+    const endX = this.player.x - deadlineWidth; // Deadline's right edge reaches player center
+    
+    // Start far left, move right as energy decreases
+    // At full energy: deadline at startX (off-screen left)
+    // At zero energy: deadline at endX (approaches player from right)
+    const deadlineTargetX = startX + (1 - energyRatio) * (endX - startX);
     this.deadlineX = this.deadlineX + (deadlineTargetX - this.deadlineX) * deltaSeconds * GameConfig.deadline.movementSpeed;
     this.deadline.x = this.deadlineX;
-    this.deadlineEdge.x = this.deadlineX;
 
     // Check collisions
     this.checkCollisions();
@@ -1505,9 +1962,31 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.resetFX();
     this.cameras.main.setAlpha(1);
     
-    this.player.y = this.groundY - 50;
-    this.player.setVelocityY(0);
-    this.player.setVelocityX(0);
+    // Reset player position - simple and correct
+    // With origin (0.5, 1), sprite.y is the bottom/feet position
+    // Position sprite.y = groundY to place feet at ground level
+    if (this.player?.body) {
+      const { width: screenWidth } = this.cameras.main;
+      // Test with default body first - uncomment if you need custom body size
+      // this.setupCharacterBody();
+      // Position sprite at ground level - feet at groundY
+      this.player.setPosition(screenWidth * 0.25, this.groundY);
+      this.player.body.setVelocity(0, 0);
+      
+      // Debug positioning
+      const groundRectStart = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
+      if (groundRectStart) {
+        console.log('=== startGame() POSITIONING ===');
+        console.log('groundY:', this.groundY);
+        console.log('Character sprite.y (feet):', this.player.y);
+        console.log('Character body.y:', this.player.body.y);
+        console.log('Character body bottom:', this.player.body.y + this.player.body.height);
+        console.log('Ground body top:', groundRectStart.body ? (groundRectStart.body as Phaser.Physics.Arcade.StaticBody).y : 'N/A');
+        console.log('Expected: sprite.y = body bottom = groundY =', this.groundY);
+        console.log('==============================');
+      }
+    }
+    
     this.jumpsRemaining = 2;
     
     this.obstacles.clear(true, true);
@@ -1529,10 +2008,6 @@ export class GameScene extends Phaser.Scene {
     this.distanceTimer = 0;
     this.lowEnergyMessageTimer = 0;
     
-    this.deadlineX = -100;
-    this.deadline.x = -100;
-    this.deadlineEdge.x = -100;
-    
     this.sprintMode = false;
     this.sprintTimer = 0;
     this.sprintGlow.setAlpha(0);
@@ -1552,10 +2027,22 @@ export class GameScene extends Phaser.Scene {
     }
     
     // Increase music volume for gameplay and ensure it plays
-      // Higher volume on mobile for better audibility
-      const { width, height } = this.scale;
-      const isMobile = width <= 768 || height <= 768;
-      const gameplayVolume = isMobile ? GameConfig.audio.musicVolumeGameplayMobile : GameConfig.audio.musicVolumeGameplayDesktop;
+    // Higher volume on mobile for better audibility
+    const { width, height } = this.scale;
+    
+    // Initialize deadline at far left (off-screen) - position after scaling
+    if (this.deadline && this.deadline.displayWidth) {
+      this.deadlineX = -this.deadline.displayWidth - 200;
+      this.deadline.x = this.deadlineX;
+      this.deadline.y = 0;
+    } else {
+      // Fallback if deadline not scaled yet
+      this.deadlineX = -500;
+      this.deadline.x = -500;
+      this.deadline.y = 0;
+    }
+    const isMobile = width <= 768 || height <= 768;
+    const gameplayVolume = isMobile ? GameConfig.audio.musicVolumeGameplayMobile : GameConfig.audio.musicVolumeGameplayDesktop;
     if (this.backgroundMusic) {
       this.setMusicVolume(gameplayVolume);
       // Ensure audio context is resumed (required for mobile)
@@ -1571,7 +2058,10 @@ export class GameScene extends Phaser.Scene {
         } catch (error) {
           console.warn('⚠️ Failed to start music on game start:', error);
         }
+      } else {
       }
+    } else {
+      console.warn('⚠️ Background music not loaded');
     }
     
     this.updateGameData();
@@ -1622,11 +2112,23 @@ export class GameScene extends Phaser.Scene {
     this.specialCollectibles.forEach(obj => obj.destroy());
     this.specialCollectibles = [];
     
-    this.player.y = this.groundY - 50;
+    // Reset player position - simple and correct
+    // With origin (0.5, 1), sprite.y is the bottom/feet position
+    // Position sprite.y = groundY to place feet at ground level
+    if (this.player?.body) {
+      const { width: screenWidth } = this.cameras.main;
+      // Test with default body first - uncomment if you need custom body size
+      // this.setupCharacterBody();
+      // Position sprite at ground level - feet at groundY
+      this.player.setPosition(screenWidth * 0.25, this.groundY);
+      this.player.body.setVelocity(0, 0);
+    }
     
-    this.deadlineX = -100;
-    this.deadline.x = -100;
-    this.deadlineEdge.x = -100;
+    // Initialize deadline at top left
+    const { width, height } = this.scale;
+    this.deadlineX = width * 0.1;
+    this.deadline.x = width * 0.1;
+    this.deadline.y = height * 0.1;
     
     this.updateGameData();
   }
@@ -1731,12 +2233,28 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  // Helper method to get the correct animation name based on sprint mode and state
+  private getAnimationName(isOnGround: boolean): string {
+    if (this.sprintMode) {
+      return isOnGround ? 'sprint-pushing' : 'sprint-ollie';
+    } else {
+      return isOnGround ? 'pushing' : 'ollie';
+    }
+  }
+
   activateSprintMode() {
     this.sprintMode = true;
     this.sprintTimer = GameConfig.sprint.duration;
     this.energy = GameConfig.sprint.energyRestore;
     this.sprintGlow.setAlpha(0.5);
     this.showMessage('💨 SPRINT MODE! UNSTOPPABLE!');
+    
+    // Switch to sprint animations
+    const isOnGround = this.player.body.touching.down;
+    const animationName = this.getAnimationName(isOnGround);
+    if (this.anims.exists(animationName)) {
+      this.player.play(animationName);
+    }
     
     // Speed up music during sprint mode (overrides energy-based slowdown)
     if (this.backgroundMusic && !this.isMuted) {
@@ -1752,6 +2270,19 @@ export class GameScene extends Phaser.Scene {
         console.warn('⚠️ Failed to speed up music:', error);
       }
     }
+    
+    // Speed up skateboard sound during sprint mode
+    if (this.skateboardSound && this.skateboardSound.isPlaying) {
+      try {
+        if ('setRate' in this.skateboardSound) {
+          (this.skateboardSound as any).setRate(1.5); // Faster during sprint
+        } else if ('rate' in this.skateboardSound) {
+          (this.skateboardSound as any).rate = 1.5;
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to speed up skateboard sound:', error);
+      }
+    }
   }
 
   updateSprintMode(delta: number) {
@@ -1760,6 +2291,13 @@ export class GameScene extends Phaser.Scene {
       if (this.sprintTimer <= 0) {
         this.sprintMode = false;
         this.sprintGlow.setAlpha(0);
+        
+        // Switch back to regular animations
+        const isOnGround = this.player.body.touching.down;
+        const animationName = this.getAnimationName(isOnGround);
+        if (this.anims.exists(animationName)) {
+          this.player.play(animationName);
+        }
         
         // Reset music speed back to normal (will be adjusted by energy-based slowdown if needed)
         if (this.backgroundMusic && !this.isMuted) {
@@ -1775,39 +2313,112 @@ export class GameScene extends Phaser.Scene {
             console.warn('⚠️ Failed to reset music speed:', error);
           }
         }
+        
+        // Reset skateboard sound rate back to normal
+        if (this.skateboardSound && this.skateboardSound.isPlaying) {
+          try {
+            if ('setRate' in this.skateboardSound) {
+              (this.skateboardSound as any).setRate(1.2); // Back to normal faster rate
+            } else if ('rate' in this.skateboardSound) {
+              (this.skateboardSound as any).rate = 1.2;
+            }
+          } catch (error) {
+            console.warn('⚠️ Failed to reset skateboard sound rate:', error);
+          }
+        }
       }
     }
   }
 
   private setupCharacterAnimation() {
-    if (this.anims.exists('run')) {
-      this.anims.remove('run');
+    // Remove old animations if they exist
+    if (this.anims.exists('pushing')) {
+      this.anims.remove('pushing');
+    }
+    if (this.anims.exists('ollie')) {
+      this.anims.remove('ollie');
+    }
+    if (this.anims.exists('sprint-pushing')) {
+      this.anims.remove('sprint-pushing');
+    }
+    if (this.anims.exists('sprint-ollie')) {
+      this.anims.remove('sprint-ollie');
+    }
+    
+    // Create pushing animation (10 frames)
+    const pushingFrames = [];
+    for (let i = 1; i <= 10; i++) {
+      const frameNumber = i.toString().padStart(2, '0');
+      pushingFrames.push({ key: `character-pushing-${frameNumber}`, frame: 0 });
     }
     
     this.anims.create({
-      key: 'run',
-      frames: [
-        { key: 'character-run-1', frame: 0 },
-        { key: 'character-run-2', frame: 0 }
-      ],
-      frameRate: 6,
+      key: 'pushing',
+      frames: pushingFrames,
+      frameRate: 12, // Adjust speed as needed
       repeat: -1
     });
     
-    this.player.setTexture('character-run-1');
-    this.player.setScale(0.8);
-    this.player.play('run');
+    // Create ollie animation (10 frames)
+    const ollieFrames = [];
+    for (let i = 1; i <= 10; i++) {
+      const frameNumber = i.toString().padStart(2, '0');
+      ollieFrames.push({ key: `character-ollie-${frameNumber}`, frame: 0 });
+    }
+    
+    this.anims.create({
+      key: 'ollie',
+      frames: ollieFrames,
+      frameRate: 15, // Slightly faster for jump animation
+      repeat: 0 // Don't loop - play once per jump
+    });
+    
+    // Create sprint pushing animation (10 frames)
+    const sprintPushingFrames = [];
+    for (let i = 1; i <= 10; i++) {
+      const frameNumber = i.toString().padStart(2, '0');
+      sprintPushingFrames.push({ key: `sprint-character-pushing-${frameNumber}`, frame: 0 });
+    }
+    
+    this.anims.create({
+      key: 'sprint-pushing',
+      frames: sprintPushingFrames,
+      frameRate: 12, // Adjust speed as needed
+      repeat: -1
+    });
+    
+    // Create sprint ollie animation (10 frames)
+    const sprintOllieFrames = [];
+    for (let i = 1; i <= 10; i++) {
+      const frameNumber = i.toString().padStart(2, '0');
+      sprintOllieFrames.push({ key: `sprint-character-ollie-${frameNumber}`, frame: 0 });
+    }
+    
+    this.anims.create({
+      key: 'sprint-ollie',
+      frames: sprintOllieFrames,
+      frameRate: 15, // Slightly faster for jump animation
+      repeat: 0 // Don't loop - play once per jump
+    });
+    
+    // Set initial texture and start pushing animation
+    // Note: Scale is already set in create() method based on screen size
+    this.player.setTexture('character-pushing-01');
+    this.player.play('pushing');
   }
 
   private updateMessageBubblePositions() {
+    const { width } = this.scale;
+    const isMobile = width <= 768;
     const bubbleSpacing = 15; // Increased spacing
     this.messageBubbles.sort((a, b) => a.id - b.id);
     
-    let offsetY = -100; // Higher above player for better visibility
+    // Move bubbles higher on mobile for better visibility
+    let offsetY = isMobile ? -120 : -100; // Higher above player on mobile
     const offsetX = 50; // More to the right
     
     for (const bubble of this.messageBubbles) {
-      const bubbleHeight = bubble.bg.height;
+      const bubbleHeight = bubble.height || bubble.text.height + 16; // Use stored height or fallback
       
       bubble.container.setPosition(
         this.player.x + offsetX, 
@@ -1893,67 +2504,100 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleResize() {
-    const { width, height } = this.scale;
+    // With RESIZE mode, game world adapts to screen size
+    // Everything scales proportionally based on actual screen dimensions
+    const { width, height } = this.scale; // These are the actual game world dimensions (adapts to screen)
     
-    // Update camera bounds
+    // Update camera bounds to match game world
     if (this.cameras && this.cameras.main) {
       this.cameras.main.setBounds(0, 0, width, height);
       this.cameras.main.setBackgroundColor(getElementColorPhaser('background'));
     }
     
-    // Update gravity to scale with new screen height
-    const isMobile = width <= 768 || height <= 768;
-    const mobileGravityMultiplier = isMobile ? GameConfig.physics.mobileGravityMultiplier : 1.0;
-    const scaledGravity = GameConfig.physics.baseGravity * (height / GameConfig.physics.baseGravityHeight) * mobileGravityMultiplier;
-    this.physics.world.gravity.y = scaledGravity;
+    // Update gravity - scale based on actual screen height for consistent physics
+    // Use a reference height (1080) as base, then scale proportionally
+    // Lighter gravity on mobile for better jump feel
+    const isMobileResize = width <= 768 || height <= 768;
+    const mobileGravityMultiplier = isMobileResize ? 0.92 : 1.0; // 8% less gravity on mobile (more than config's 0.98)
+    const resizeBaseGravity = 2200;
+    // Scale gravity proportionally to screen height (maintains physics feel across screen sizes)
+    const resizeScaledGravity = resizeBaseGravity * (height / GameConfig.physics.baseGravityHeight) * mobileGravityMultiplier;
+    this.physics.world.gravity.y = resizeScaledGravity;
     
-    // Reposition ground at new bottom (80px from bottom)
-    this.groundY = height - 80;
-    const groundHeight = 80; // Fixed 80px height
-    const groundCenterY = this.groundY + (groundHeight / 2);
+    // Also update player body gravity if player exists
+    if (this.player && this.player.body) {
+      this.player.body.setGravityY(resizeScaledGravity);
+    }
     
-    // Update ground rectangle
+    // Reposition ground at new bottom - scale ground height proportionally
+    // Ground height scales with screen height (maintains visual proportion)
+    const groundHeightRatio = 100 / 1080; // Original ground height ratio
+    const groundHeight = height * groundHeightRatio; // Scale proportionally
+    this.groundY = height - groundHeight;
+    const groundWidth = width * 3; // Ground width extends 3x screen width
+    
+    // Update ground rectangle - MUST position at groundY (not groundCenterY) since origin is (0,0)
     if (this.ground) {
       const groundRect = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
       if (groundRect) {
-        groundRect.setPosition(width / 2, groundCenterY);
-        groundRect.setSize(width * 2, groundHeight);
+        // Position at groundY (top-left origin, so this is the top of the ground)
+        groundRect.setPosition(0, this.groundY);
+        groundRect.setSize(groundWidth, groundHeight);
         
-        // Update physics body size
+        // Update physics body - body should match sprite exactly (full height, no offset)
         if (groundRect.body) {
           const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
-          body.setSize(width * 2, groundHeight);
+          // Body matches sprite exactly - full height, no offset
+          body.setSize(groundWidth, groundHeight);
+          body.setOffset(0, 0); // No offset with (0,0) origin
         }
       }
     }
     
-    // Update player position (keep relative position)
+    // Update player position and scale - scale proportionally with screen size
     if (this.player) {
-      const playerX = width * 0.2; // Keep at 20% from left
-      const playerY = this.groundY - 50;
+      const playerX = width * 0.25; // Keep at 25% from left (proportional)
       
-      // Rescale player size relative to new screen height
-      const playerSize = height * 0.08;
-      const playerScale = playerSize / 50;
-      this.player.setPosition(playerX, playerY);
+      // Rescale player proportionally to screen height - 10% bigger on mobile
+      const isMobile = width <= 768 || height <= 768;
+      const characterHeightRatio = isMobile ? 0.198 : 0.15; // 19.8% on mobile (10% bigger), 15% on desktop
+      const targetHeight = height * characterHeightRatio;
+      const playerScale = targetHeight / 160; // 160 is the raw image height
       this.player.setScale(playerScale);
       
-      // Update collision box
-      const bodyWidth = 20 * playerScale;
-      const bodyHeight = 33 * playerScale;
-      this.player.body.setSize(bodyWidth, bodyHeight);
+      // Update physics body using helper function (must be called after scale change)
+      this.setupCharacterBody();
+      
+      // Recalculate player position - with origin (0.5, 1), sprite.y is the bottom
+      // Position at groundY to ensure feet align with ground surface
+      if (this.isGameStarted && !this.isGameOver) {
+        this.player.setPosition(playerX, this.groundY);
+        // Reset velocity to prevent sinking
+        if (this.player.body) {
+          this.player.body.setVelocityY(0);
+        }
+      }
     }
     
-    // Update deadline Y position
-    if (this.deadline) {
-      this.deadline.setPosition(-50, height * 0.5);
-      this.deadline.setSize(5000, height);
+    // Update deadline position and scale - far left, moves right as energy decreases
+    if (this.deadline && this.deadline.texture && this.deadline.frame) {
+      this.deadline.setOrigin(0, 0); // Top-left aligned
+      // Scale deadline to full screen height (preserve aspect ratio)
+      const frame = this.deadline.frame;
+      const aspectRatio = frame.width / frame.height;
+      // Always use full height
+      const deadlineHeight = height;
+      const deadlineWidth = deadlineHeight * aspectRatio;
+      this.deadline.setDisplaySize(deadlineWidth, deadlineHeight);
+      // Position deadline at top of screen (y = 0) and far left (or current position if game is running)
+      if (!this.isGameStarted || this.isGameOver) {
+        this.deadline.setPosition(-this.deadline.displayWidth - 200, 0);
+        this.deadlineX = this.deadline.x;
+      } else {
+        this.deadline.setPosition(this.deadlineX, 0);
+      }
     }
     
-    if (this.deadlineEdge) {
-      this.deadlineEdge.setPosition(-100, height * 0.5);
-      this.deadlineEdge.setSize(5, height);
-    }
     
     // Update vignette on resize
     if (this.vignette) {

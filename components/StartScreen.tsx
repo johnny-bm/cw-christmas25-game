@@ -1,7 +1,7 @@
-import { Zap, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Leaderboard } from './Leaderboard';
 import { formatNumber } from '../lib/formatNumber';
+import { getElementColor } from '../game/colorConfig';
 
 interface StartScreenProps {
   onStart: () => void;
@@ -53,33 +53,51 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
     }
   };
 
+  const gameBackgroundColor = getElementColor('background');
+  
   return (
-    <div className="w-full h-full flex items-center justify-center bg-white overflow-hidden relative">
+    <div className="w-full h-full flex items-center justify-center overflow-hidden relative" style={{ backgroundColor: gameBackgroundColor }}>
+      {/* CW Logo - Top Center */}
+      <div
+        className="absolute z-20 left-1/2 transform -translate-x-1/2"
+        style={{
+          top: 'max(1rem, calc(env(safe-area-inset-top, 0.5rem) + 0.5rem))',
+        }}
+      >
+        <img 
+          src="/Assets/CW-Logo.svg" 
+          alt="Crackwits Logo" 
+          className="h-6 sm:h-8 md:h-10"
+        />
+      </div>
+      
       {/* Mute/Unmute Button - Top Right */}
       <button
         onClick={handleToggleMute}
-        className="absolute z-20 pointer-events-auto bg-black/80 border-2 border-white hover:bg-black/90 active:scale-95 transition-all duration-150 touch-target rounded"
+        className="absolute z-20 pointer-events-auto bg-white rounded-lg sm:rounded-xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
         style={{
           top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
           right: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
-          padding: 'clamp(0.75rem, 2vw, 1rem)',
-          minWidth: '44px',
-          minHeight: '44px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
         }}
         aria-label={isMuted ? 'Unmute' : 'Mute'}
       >
         {isMuted ? (
-          <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          <img 
+            src="/Assets/Mute.svg" 
+            alt="Muted" 
+            className="w-6 h-6 sm:w-7 sm:h-7"
+          />
         ) : (
-          <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          <img 
+            src="/Assets/Unmute.svg" 
+            alt="Unmuted" 
+            className="w-6 h-6 sm:w-7 sm:h-7"
+          />
         )}
       </button>
 
       {/* Desktop/Tablet Portrait: Vertical Layout */}
-      <div className="max-md:landscape:hidden text-center space-y-2 sm:space-y-4 md:space-y-6 px-3 py-3 sm:px-4 sm:py-4 w-full max-w-4xl overflow-y-auto max-h-full">
+      <div className="max-md:landscape:hidden text-center space-y-2 sm:space-y-4 md:space-y-6 px-3 py-3 sm:px-4 sm:py-4 w-full max-w-4xl overflow-y-auto max-h-full pt-16 sm:pt-20 md:pt-24">
         <div className="space-y-1 sm:space-y-2 md:space-y-3">
           <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl text-black tracking-tight leading-tight">
             ESCAPE THE DEADLINE

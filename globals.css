@@ -224,6 +224,23 @@
   .animate-spin-slow {
     animation: spin-slow 3s linear infinite;
   }
+
+  /* Phone rotation animation */
+  @keyframes phone-rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    50% {
+      transform: rotate(-90deg);
+    }
+    100% {
+      transform: rotate(-90deg);
+    }
+  }
+
+  .animate-phone-rotate {
+    animation: phone-rotate 1.5s ease-in-out infinite alternate;
+  }
 }
 
 /**
@@ -325,5 +342,27 @@ html {
     button, a, [role="button"] {
       min-height: 44px;
     }
+  }
+
+  /* Deadline indicator positioning: top left on mobile devices, middle left on desktop */
+  .deadline-indicator {
+    top: 0.5rem !important;
+    top: max(0.5rem, env(safe-area-inset-top, 0.5rem)) !important;
+    transform: none !important;
+  }
+
+  /* Make deadline indicator 5% smaller on mobile devices */
+  .deadline-indicator-content {
+    transform: scale(0.95);
+  }
+
+  /* Desktop: Center positioning for non-mobile devices (detected via user agent) */
+  body:not(.is-mobile-device) .deadline-indicator {
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+  }
+
+  body:not(.is-mobile-device) .deadline-indicator-content {
+    transform: none;
   }
 }

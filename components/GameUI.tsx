@@ -1,4 +1,4 @@
-import { ArrowLeft, Zap, Trophy, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { GameData } from '../App';
 import { formatNumber } from '../lib/formatNumber';
@@ -48,11 +48,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
     return energy > slotThreshold;
   });
 
-  // Determine deadline text color based on proximity
-  const getDeadlineTextColor = () => {
-    if (deadlineProximity > 70) return 'text-red-600';
-    if (deadlineProximity > 40) return 'text-orange-500';
-    return 'text-yellow-500';
+  // Determine deadline background color based on proximity (matching bubble style)
+  const getDeadlineBgColor = () => {
+    if (deadlineProximity > 70) return '#d7586c'; // red
+    if (deadlineProximity > 40) return '#ff9c81'; // orange
+    return '#ff9c81'; // yellow/orange
   };
 
   // Convert deadline proximity to meters (higher proximity = closer = fewer meters)
@@ -70,6 +70,30 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
     }
   };
 
+  // Deadline Indicator Component - Named variable for easy reference
+  // Position: Top left on mobile, middle left on desktop
+  const deadlineIndicator = (
+    <div 
+      className="deadline-indicator absolute left-2 sm:left-4 md:left-6 flex items-center gap-1.5 sm:gap-2"
+      style={{
+        left: 'max(0.5rem, env(safe-area-inset-left, 0.5rem))',
+      }}
+    >
+      <div 
+        className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-2 rounded-full transition-colors deadline-indicator-content"
+        style={{ 
+          backgroundColor: getDeadlineBgColor(),
+          fontFamily: '"Urbanist", sans-serif'
+        }}
+      >
+        <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+        <span className="text-white text-xs sm:text-lg font-bold whitespace-nowrap">
+          DEADLINE {getDeadlineDistance()}m
+        </span>
+      </div>
+    </div>
+  );
+
   return (
     <div className="absolute inset-0 pointer-events-none z-10 flex flex-col">
       {/* Distance Counter - Top Center, no box - Better mobile sizing - Safe area support */}
@@ -84,7 +108,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         </div>
       </div>
 
-      {/* Character Scores - Below Distance Counter - Responsive */}
+      {/* Character Scores - Below Distance Counter - Responsive - Bigger on mobile */}
       <div 
         className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 sm:gap-4 md:gap-6"
         style={{
@@ -94,12 +118,18 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         {/* Grinch Score */}
         <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
           <img 
-            src="/Assets/Characters/Grinch.svg" 
+            src={
+              grinchScore > elfScore 
+                ? "/Assets/Characters/Grinch-Happy.svg"
+                : grinchScore < elfScore
+                ? "/Assets/Characters/Grinch-Sad.svg"
+                : "/Assets/Characters/Grinch.svg"
+            }
             alt="Grinch" 
-            className="w-6 h-6 max-md:landscape:w-5 max-md:landscape:h-5 sm:w-8 sm:h-8 md:w-10 md:h-10"
+            className="w-8 h-8 max-md:landscape:w-7 max-md:landscape:h-7 sm:w-10 sm:h-10 md:w-10 md:h-10"
             style={{ objectFit: 'contain' }}
           />
-          <span className="text-lg max-md:landscape:text-base sm:text-2xl md:text-3xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+          <span className="text-xl max-md:landscape:text-lg sm:text-2xl md:text-3xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
             {grinchScore}
           </span>
         </div>
@@ -107,115 +137,125 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         {/* Elf Score */}
         <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
           <img 
-            src="/Assets/Characters/Elf.svg" 
+            src={
+              elfScore > grinchScore 
+                ? "/Assets/Characters/Elf-Happy-Color.svg"
+                : elfScore < grinchScore
+                ? "/Assets/Characters/Elf-Sad-Grey.svg"
+                : "/Assets/Characters/Elf.svg"
+            }
             alt="Elf" 
-            className="w-6 h-6 max-md:landscape:w-5 max-md:landscape:h-5 sm:w-8 sm:h-8 md:w-10 md:h-10"
+            className="w-8 h-8 max-md:landscape:w-7 max-md:landscape:h-7 sm:w-10 sm:h-10 md:w-10 md:h-10"
             style={{ objectFit: 'contain' }}
           />
-          <span className="text-lg max-md:landscape:text-base sm:text-2xl md:text-3xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+          <span className="text-xl max-md:landscape:text-lg sm:text-2xl md:text-3xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
             {elfScore}
           </span>
         </div>
       </div>
 
-      {/* Top HUD - Responsive Layout - Smaller on mobile landscape - Safe area support */}
+      {/* Top HUD - Figma Design - Safe area support */}
       <div 
-        className="max-md:landscape:p-1 sm:p-3 md:p-4 flex justify-between items-start gap-1 sm:gap-2 flex-wrap"
+        className="absolute top-0 right-0 flex flex-col gap-2 sm:gap-3"
         style={{
-          paddingTop: 'max(0.375rem, env(safe-area-inset-top, 0.375rem))',
-          paddingRight: 'max(0.375rem, env(safe-area-inset-right, 0.375rem))',
-          paddingLeft: 'max(0.375rem, env(safe-area-inset-left, 0.375rem))',
-          paddingBottom: '0.375rem'
+          paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
+          paddingRight: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
         }}
       >
-        {/* Combo Counter - Only show when combo >= 2 - No box - Better mobile sizing */}
-        {combo >= 2 && (
-          <div className="px-2 py-1 max-md:landscape:px-1.5 max-md:landscape:py-0.5 sm:px-3 sm:py-2">
-            <div className="flex items-center gap-1 sm:gap-2 text-yellow-400 text-xs max-md:landscape:text-[10px] sm:text-sm mb-0.5 font-semibold">
-              <Zap className="w-3 h-3 max-md:landscape:w-2.5 max-md:landscape:h-2.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-              <span>COMBO</span>
+        {/* Energy Bar and Mute Button - Top Right Row */}
+        <div className="flex items-center justify-end gap-2 sm:gap-3">
+          {/* Energy Bar - White background, teal progress */}
+          <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 w-[120px] sm:w-[160px] flex flex-col justify-between">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <img 
+                  src="/Assets/Energy.svg" 
+                  alt="Energy" 
+                  className="w-3 h-3 sm:w-4 sm:h-4"
+                />
+                <span className="text-[#312f31] text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  ENERGY
+                </span>
+              </div>
+              <span className="text-[#312f31] text-[10px] sm:text-xs font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                {Math.round(energy)}%
+              </span>
             </div>
-            <div className="text-2xl max-md:landscape:text-xl sm:text-4xl md:text-5xl text-yellow-400 animate-pulse font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>{combo}x</div>
-          </div>
-        )}
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Energy Bar and Mute Button - Top Right - Simplified single bar - Compact on mobile landscape */}
-        <div className="flex items-start gap-1 sm:gap-2">
-          {/* Energy Bar - Better mobile sizing */}
-          <div className="bg-black/80 border-2 border-white px-2 py-1.5 max-md:landscape:px-1.5 max-md:landscape:py-1 sm:px-3 sm:py-2 min-w-[90px] max-md:landscape:min-w-[80px] sm:min-w-[140px] rounded">
-            <div className="flex items-center gap-1 sm:gap-2 text-white text-[9px] max-md:landscape:text-[8px] sm:text-xs mb-1 sm:mb-1 font-semibold">
-              <Trophy className="w-2.5 h-2.5 max-md:landscape:w-2 max-md:landscape:h-2 sm:w-3 sm:h-3 md:w-4 md:h-4" />
-              <span>ENERGY</span>
-              <span className="ml-auto font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>{Math.round(energy)}%</span>
-            </div>
-            <div className="w-full h-2 max-md:landscape:h-1.5 sm:h-2.5 bg-gray-800 border border-white rounded">
+            <div className="relative h-2.5 sm:h-3.5 w-full rounded-full border border-[#00a994]">
               <div 
-                className="h-full bg-white transition-all duration-200"
+                className="absolute h-full bg-[#00a994] rounded-full transition-all duration-200"
                 style={{ width: `${energy}%` }}
               />
             </div>
           </div>
           
-          {/* Mute/Unmute Button - Next to Energy Bar */}
+          {/* Mute/Unmute Button - White square */}
           <button
             onClick={handleToggleMute}
-            className="pointer-events-auto bg-black/80 border-2 border-white hover:bg-black/90 active:scale-95 transition-all duration-150 touch-target rounded"
-            style={{
-              padding: 'clamp(0.75rem, 2vw, 1rem)',
-              minWidth: '44px',
-              minHeight: '44px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
+            className="pointer-events-auto bg-white rounded-lg sm:rounded-xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
             aria-label={isMuted ? 'Unmute' : 'Mute'}
           >
             {isMuted ? (
-              <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <img 
+                src="/Assets/Mute.svg" 
+                alt="Muted" 
+                className="w-6 h-6 sm:w-7 sm:h-7"
+              />
             ) : (
-              <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <img 
+                src="/Assets/Unmute.svg" 
+                alt="Unmuted" 
+                className="w-6 h-6 sm:w-7 sm:h-7"
+              />
             )}
           </button>
         </div>
-      </div>
 
-      {/* Spacer to push deadline indicator to middle */}
-      <div className="flex-1" />
-
-      {/* Deadline Distance with Arrow - Left side, better mobile sizing - Safe area support */}
-      <div 
-        className="absolute left-2 sm:left-4 md:left-6 top-[35%] sm:top-[40%] flex items-center gap-1.5 sm:gap-2"
-        style={{
-          left: 'max(0.5rem, env(safe-area-inset-left, 0.5rem))'
-        }}
-      >
-        <ArrowLeft className={`w-4 h-4 max-md:landscape:w-3 max-md:landscape:h-3 sm:w-5 sm:h-5 md:w-6 md:h-6 ${getDeadlineTextColor()} transition-colors`} />
-        <div className={`text-xs max-md:landscape:text-[10px] sm:text-base md:text-lg font-semibold ${getDeadlineTextColor()} transition-colors`} style={{ fontFamily: '"Urbanist", sans-serif' }}>
-          DEADLINE {getDeadlineDistance()}m
-        </div>
-      </div>
-
-      {/* Sprint Mode Timer - Only show when active - Centered - Simple without box - Safe area support */}
-      {sprintMode && sprintTimer && sprintTimer > 0 && (
-        <div 
-          className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse"
-          style={{
-            top: 'calc(50% + env(safe-area-inset-top, 0px) / 2)'
-          }}
-        >
-          <div className="text-center">
-            <div className="text-yellow-400 text-sm max-md:landscape:text-xs sm:text-lg md:text-xl mb-1 sm:mb-2 whitespace-nowrap" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-              ⚡ SPRINT MODE ⚡
+        {/* Combo Counter - Purple background - Only show when combo >= 2 */}
+        {combo >= 2 && (
+          <div className="bg-[#645290] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 w-[184px] sm:w-[236px] flex items-center justify-between">
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              <img 
+                src="/Assets/Combo.svg" 
+                alt="Combo" 
+                className="w-3 h-3 sm:w-4 sm:h-4"
+              />
+              <span className="text-white text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                COMBO
+              </span>
             </div>
-            <div className="text-4xl max-md:landscape:text-3xl sm:text-6xl md:text-7xl text-yellow-400" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-              {Math.ceil(sprintTimer / 1000)}s
+            <span className="text-white text-3xl sm:text-5xl font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+              {combo}x
+            </span>
+          </div>
+        )}
+
+        {/* Combo Rush - Only show when active - Under combo counter */}
+        {sprintMode && sprintTimer !== undefined && sprintTimer > 0 && (
+          <div className="bg-[#F6A288] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 w-[184px] sm:w-[236px] flex flex-col justify-between">
+            <div className="flex items-center justify-between w-full">
+              <span className="text-white text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                COMBO RUSH
+              </span>
+              <span className="text-white text-[10px] sm:text-xs font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                {Math.ceil(sprintTimer / 1000)}s
+              </span>
+            </div>
+            <div className="relative h-2.5 sm:h-3.5 w-full rounded-full border border-white bg-white/20 overflow-hidden">
+              <div 
+                key={`progress-${Math.floor(sprintTimer)}`}
+                className="absolute h-full bg-white rounded-full"
+                style={{ 
+                  width: `${Math.max(0, Math.min(100, (sprintTimer / GameConfig.sprint.duration) * 100))}%`
+                }}
+              />
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Deadline Indicator - Top left on mobile, middle left on desktop */}
+      {deadlineIndicator}
 
       {/* Mobile Jump Hint - Bottom right - Better mobile sizing - Safe area support */}
       <div 

@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { scoreService, ScoreEntry } from '../lib/scoreService';
 import { formatNumber } from '../lib/formatNumber';
-import { Zap } from 'lucide-react';
 
 interface LeaderboardProps {
   className?: string;
@@ -212,7 +211,6 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
   const isLightMode = className?.includes('text-black') ?? false;
   const bgClass = isLightMode ? 'bg-gray-100' : 'bg-black/80';
   const borderClass = isLightMode ? 'border-gray-300' : 'border-white/30';
-  const headerBgClass = isLightMode ? 'bg-gray-200' : 'bg-black/90';
   const headerBorderClass = isLightMode ? 'border-gray-400' : 'border-white/20';
   const rowBorderClass = isLightMode ? 'border-gray-300' : 'border-white/10';
   const textClass = isLightMode ? 'text-black' : 'text-white';
@@ -228,13 +226,15 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
         className={`overflow-y-auto custom-scrollbar ${compact ? 'max-h-[200px] sm:max-h-[300px]' : 'max-h-[250px] sm:max-h-[350px] md:max-h-[400px]'}`}
       >
         <table className="w-full">
-          <thead className={`sticky top-0 ${headerBgClass} backdrop-blur-sm z-10`}>
+          <thead className={`sticky top-0 z-10 ${bgClass}`}>
             <tr 
               className={`border-b ${headerBorderClass}`}
               style={{ fontFamily: '"Urbanist", sans-serif' }}>
               <th className={`text-left ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm pb-2 sm:pb-3 pr-2 sm:pr-3'}`}>#</th>
               <th className={`text-left ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm pb-2 sm:pb-3 pr-2 sm:pr-3'}`}>Name</th>
-              <th className={`text-right ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2' : 'text-xs sm:text-sm pb-2 sm:pb-3'}`}>Distance</th>
+              <th className={`text-right ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm pb-2 sm:pb-3 pr-2 sm:pr-3'}`}>Distance</th>
+              <th className={`text-right ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm pb-2 sm:pb-3 pr-2 sm:pr-3'}`}>Combo</th>
+              <th className={`text-right ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2' : 'text-xs sm:text-sm pb-2 sm:pb-3'}`}>Elf vs Grinch</th>
             </tr>
           </thead>
           <tbody>
@@ -265,34 +265,44 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
                   <td className={`text-left ${rowTextClass} ${compact ? 'text-[10px] sm:text-xs py-1 sm:py-2 pr-1 sm:pr-2 max-w-[80px] sm:max-w-[120px] truncate' : 'text-xs sm:text-sm py-2 sm:py-3 pr-2 sm:pr-3'}`}>
                     {score.player_name}
                   </td>
+                  <td className={`text-right ${rowTextClass} ${compact ? 'text-[10px] sm:text-xs py-1 sm:py-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm py-2 sm:py-3 pr-2 sm:pr-3'}`}>
+                    {formatNumber(score.distance)}m
+                  </td>
+                  <td className={`text-right ${rowTextClass} ${compact ? 'text-[10px] sm:text-xs py-1 sm:py-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm py-2 sm:py-3 pr-2 sm:pr-3'}`}>
+                    {score.max_combo && score.max_combo > 0 ? (
+                      <div className="flex items-center justify-end gap-0.5 sm:gap-1">
+                        <img 
+                          src="/Assets/Combo.svg" 
+                          alt="Combo" 
+                          className="w-2 h-2 sm:w-2.5 sm:h-2.5"
+                        />
+                        <span className={`${isLightMode ? 'text-yellow-600' : 'text-yellow-400'}`}>
+                          {score.max_combo}x
+                        </span>
+                      </div>
+                    ) : (
+                      <span className={mutedTextClass}>-</span>
+                    )}
+                  </td>
                   <td className={`text-right ${rowTextClass} ${compact ? 'text-[10px] sm:text-xs py-1 sm:py-2' : 'text-xs sm:text-sm py-2 sm:py-3'}`}>
-                    <div className="flex flex-col items-end gap-0.5 sm:gap-1">
+                    {(score.elf_score !== undefined && score.elf_score > 0) || (score.grinch_score !== undefined && score.grinch_score > 0) ? (
                       <div className="flex items-center justify-end gap-1 sm:gap-1.5">
-                        <span>{formatNumber(score.distance)}m</span>
-                        {score.max_combo > 0 && (
-                          <span className={`flex items-center gap-0.5 ${isLightMode ? 'text-yellow-600' : 'text-yellow-400'} opacity-70`}>
-                            <Zap className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
-                            {score.max_combo}x
+                        {score.elf_score !== undefined && score.elf_score > 0 && (
+                          <span className={`flex items-center gap-0.5 ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-sm'}`}>
+                            <img src="/Assets/Characters/Elf.svg" alt="Elf" className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                            {score.elf_score}
+                          </span>
+                        )}
+                        {score.grinch_score !== undefined && score.grinch_score > 0 && (
+                          <span className={`flex items-center gap-0.5 ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-sm'}`}>
+                            <img src="/Assets/Characters/Grinch.svg" alt="Grinch" className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                            {score.grinch_score}
                           </span>
                         )}
                       </div>
-                      {(score.grinch_score !== undefined && score.grinch_score > 0) || (score.elf_score !== undefined && score.elf_score > 0) ? (
-                        <div className="flex items-center justify-end gap-1 sm:gap-1.5 opacity-70">
-                          {score.grinch_score !== undefined && score.grinch_score > 0 && (
-                            <span className={`flex items-center gap-0.5 ${mutedTextClass} ${compact ? 'text-[8px] sm:text-[9px]' : 'text-[9px] sm:text-[10px]'}`}>
-                              <img src="/Assets/Characters/Grinch.svg" alt="Grinch" className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                              {score.grinch_score}
-                            </span>
-                          )}
-                          {score.elf_score !== undefined && score.elf_score > 0 && (
-                            <span className={`flex items-center gap-0.5 ${mutedTextClass} ${compact ? 'text-[8px] sm:text-[9px]' : 'text-[9px] sm:text-[10px]'}`}>
-                              <img src="/Assets/Characters/Elf.svg" alt="Elf" className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                              {score.elf_score}
-                            </span>
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
+                    ) : (
+                      <span className={mutedTextClass}>-</span>
+                    )}
                   </td>
                 </tr>
               );

@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { StartScreen } from './components/StartScreen';
 import { Game } from './components/Game';
 import { GameUI } from './components/GameUI';
 import { GameOver } from './components/GameOver';
-import { RotateCw } from 'lucide-react';
+import { getElementColor } from './game/colorConfig';
 
 export type GameState = 'start' | 'playing' | 'gameover';
 
@@ -27,7 +28,107 @@ function isMobileDevice(): boolean {
     (window.innerWidth <= 768 && 'ontouchstart' in window);
 }
 
+// Portrait blocker component
+function PortraitBlocker({ gameBackgroundColor }: { gameBackgroundColor: string }) {
+  return (
+    <div 
+      className="absolute inset-0 z-[9999] flex flex-col"
+      style={{ backgroundColor: gameBackgroundColor }}
+    >
+      {/* Header - Logo at top */}
+      <div 
+        className="flex flex-col items-center justify-center w-full shrink-0"
+        style={{ 
+          paddingTop: '24px',
+          paddingBottom: '24px',
+          paddingLeft: '16px',
+          paddingRight: '16px'
+        }}
+      >
+        <div className="h-10 w-[209px] max-w-full flex items-center justify-center">
+          <img 
+            src="/Assets/CW-Logo.svg" 
+            alt="Crackwits Logo" 
+            className="h-full w-auto max-w-full"
+          />
+        </div>
+      </div>
+      
+      {/* Content - Phone and text in the middle */}
+      <div 
+        className="flex flex-col items-center justify-center w-full flex-1 px-4"
+        style={{ 
+          paddingTop: '32px',
+          paddingBottom: '32px',
+          gap: '48px',
+          color: getElementColor('uiText'),
+          minHeight: 0
+        }}
+      >
+        {/* Phone icon with rotation animation */}
+        <div 
+          className="animate-phone-rotate shrink-0"
+          style={{
+            width: '60px',
+            height: '100px',
+            border: `3px solid ${getElementColor('uiText')}`,
+            borderRadius: '8px',
+          }}
+        />
+        
+        {/* Text content */}
+        <div 
+          className="flex flex-col items-center w-full max-w-md text-center"
+          style={{ gap: '16px' }}
+        >
+          <h2 
+            className="text-3xl sm:text-4xl font-bold leading-[1.1] w-full" 
+            style={{ fontFamily: '"Urbanist", sans-serif' }}
+          >
+            Please Rotate Your Device
+          </h2>
+          <div 
+            className="text-base sm:text-lg leading-[1.1] w-full" 
+            style={{ fontFamily: '"Urbanist", sans-serif' }}
+          >
+            <p className="mb-0">This game is for landscape mode.</p>
+            <p className="mb-0">&nbsp;</p>
+            <p className="mb-0">The game will load automatically once you rotate to landscape.</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Footer - Copyright at bottom */}
+      <div 
+        className="flex items-center justify-center w-full shrink-0"
+        style={{ 
+          padding: '8px',
+          paddingLeft: '16px',
+          paddingRight: '16px',
+          paddingBottom: 'max(8px, calc(env(safe-area-inset-bottom, 0px) + 8px))'
+        }}
+      >
+        <p 
+          className="text-center opacity-50"
+          style={{ 
+            color: getElementColor('uiText'),
+            fontFamily: '"Urbanist", sans-serif',
+            lineHeight: '1.1',
+            fontSize: '12px'
+          }}
+        >
+          <span>CRACKWITS</span>
+          <span style={{ fontSize: '7.74px' }}>™</span>
+          <span>{` 2025 - 2020. All Rights Reserved.`}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [gameState, setGameState] = useState<GameState>('start');
   const [gameReady, setGameReady] = useState(false); // Track if game is loaded
   const [loadingProgress, setLoadingProgress] = useState(0); // Track loading progress
@@ -43,10 +144,33 @@ export default function App() {
   const [finalDistance, setFinalDistance] = useState(0);
   const [finalMaxCombo, setFinalMaxCombo] = useState(0);
   const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showStartScreen, setShowStartScreen] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // On initial mount, redirect to landing if not already there
+  useEffect(() => {
+    if (!hasInitialized) {
+      setHasInitialized(true);
+      if (location.pathname !== '/landing' && location.pathname !== '/') {
+        navigate('/landing', { replace: true });
+      }
+    }
+  }, [hasInitialized, location.pathname, navigate]);
+
+  // Sync route with game state on initial load or direct navigation
+  // Only sync if gameState doesn't already match the route
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/landing' && gameState !== 'start') {
+      setGameState('start');
+    } else if (path === '/game' && gameState !== 'playing') {
+      setGameState('playing');
+    } else if (path === '/ending' && gameState !== 'gameover') {
+      setGameState('gameover');
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     // Load best distance from local storage
@@ -56,7 +180,20 @@ export default function App() {
     }
     
     // Detect mobile device
-    setIsMobile(isMobileDevice());
+    const mobile = isMobileDevice();
+    setIsMobile(mobile);
+    
+    // Add class to body for CSS-based responsive design
+    if (mobile) {
+      document.body.classList.add('is-mobile-device');
+    } else {
+      document.body.classList.remove('is-mobile-device');
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('is-mobile-device');
+    };
   }, []);
   
   useEffect(() => {
@@ -65,36 +202,6 @@ export default function App() {
       setShowStartScreen(true);
     }
   }, [gameReady]);
-
-  // Handle fullscreen state changes
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      const isFullscreenNow = !!(
-        document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).mozFullScreenElement ||
-        (document as any).msFullscreenElement
-      );
-      setIsFullscreen(isFullscreenNow);
-      
-      if (!isFullscreenNow && gameState === 'playing') {
-        // User exited fullscreen during gameplay - could pause game here if needed
-        console.log('📱 Fullscreen exited during gameplay');
-      }
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-    };
-  }, [gameState]);
 
   // Handle orientation changes
   useEffect(() => {
@@ -143,45 +250,6 @@ export default function App() {
       return;
     }
     
-    // Request fullscreen on mobile devices (moved to user gesture handler)
-    // This is now called from the button click, which is a user gesture
-    const requestFullscreen = () => {
-      if (window.innerWidth < 1024) {
-        const elem = document.documentElement;
-        
-        // Try standard fullscreen API
-        if (elem.requestFullscreen) {
-          elem.requestFullscreen().catch(err => {
-            console.log('Fullscreen request failed:', err);
-          });
-          return;
-        }
-        
-        // Try webkit fullscreen for iOS Safari
-        const webkitElem = elem as any;
-        if (webkitElem.webkitRequestFullscreen) {
-          webkitElem.webkitRequestFullscreen();
-          return;
-        }
-        
-        // Try moz fullscreen for Firefox
-        const mozElem = elem as any;
-        if (mozElem.mozRequestFullScreen) {
-          mozElem.mozRequestFullScreen();
-          return;
-        }
-        
-        // Try ms fullscreen for IE/Edge
-        const msElem = elem as any;
-        if (msElem.msRequestFullscreen) {
-          msElem.msRequestFullscreen();
-        }
-      }
-    };
-    
-    // Request fullscreen as part of user gesture
-    requestFullscreen();
-    
     setGameState('playing');
     setGameData({
       distance: 0,
@@ -191,6 +259,7 @@ export default function App() {
       messageTimer: 0,
       combo: 0
     });
+    navigate('/game');
   };
 
   const handleGameOver = useCallback((finalDist: number, maxCombo: number, grinchScore?: number, elfScore?: number) => {
@@ -211,7 +280,9 @@ export default function App() {
     if (elfScore !== undefined) {
       (window as any).__finalElfScore = elfScore;
     }
-  }, [bestDistance]);
+    
+    navigate('/ending');
+  }, [bestDistance, navigate]);
 
   const handleUpdateGameData = useCallback((data: GameData) => {
     setGameData(data);
@@ -238,6 +309,7 @@ export default function App() {
     // After a brief delay, transition to playing state to ensure game scene resets properly
     setTimeout(() => {
       setGameState('playing');
+      navigate('/game');
     }, 150);
     
     setLeaderboardRefresh(prev => prev + 1);
@@ -246,30 +318,16 @@ export default function App() {
   // Check if we should show portrait blocker
   const showPortraitBlocker = isMobile && isPortrait;
 
+  const gameBackgroundColor = getElementColor('background');
+  
   return (
-    <div className="w-full h-[100dvh] bg-white overflow-hidden relative" style={{ margin: 0, padding: 0, width: '100vw', height: '100vh' }}>
-      {/* Portrait orientation blocker - blocks everything on mobile portrait */}
-      {showPortraitBlocker && (
-        <div className="absolute inset-0 z-[9999] bg-black flex flex-col items-center justify-center px-4">
-          <div className="text-white text-center max-w-md">
-            <div className="mb-8 animate-spin-slow">
-              <RotateCw className="w-24 h-24 mx-auto text-white" />
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-              Please Rotate Your Device
-            </h2>
-            <p className="text-lg sm:text-xl opacity-80 mb-6" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-              This game is designed for landscape mode. Please rotate your phone to continue.
-            </p>
-            <div className="text-sm opacity-60" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-              The game will load automatically once you rotate to landscape.
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="w-full h-[100dvh] overflow-hidden relative" style={{ margin: 0, padding: 0, width: '100vw', height: '100vh', backgroundColor: gameBackgroundColor }}>
+      {/* Portrait orientation blocker - shared across all routes */}
+      {showPortraitBlocker && <PortraitBlocker gameBackgroundColor={gameBackgroundColor} />}
       
       {/* Game canvas - always rendered so it can initialize, but hidden when not playing */}
-      <div className={`absolute inset-0 z-0 ${gameState !== 'playing' ? 'opacity-0 pointer-events-none' : ''}`}>
+      {/* Keep it visible during loading so it can initialize properly */}
+      <div className={`absolute inset-0 z-0 ${gameState !== 'playing' && gameReady ? 'opacity-0 pointer-events-none' : ''}`}>
         <Game
           onGameOver={handleGameOver}
           onUpdateGameData={handleUpdateGameData}
@@ -281,61 +339,116 @@ export default function App() {
       
       {/* Loading screen - show until all assets are loaded */}
       {!gameReady && !showPortraitBlocker && (
-        <div className="absolute inset-0 z-[100] bg-black flex flex-col items-center justify-center">
-          <div className="text-white text-center px-4 max-w-md">
-            <div className="mb-6">
-              <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto"></div>
+        <div 
+          className="absolute inset-0 z-[100] flex flex-col items-center"
+          style={{ backgroundColor: gameBackgroundColor }}
+        >
+          {/* CW Logo - Top Center */}
+          <div
+            className="absolute top-0 left-1/2 transform -translate-x-1/2 z-20"
+            style={{
+              top: 'max(1rem, calc(env(safe-area-inset-top, 0.5rem) + 0.5rem))',
+            }}
+          >
+            <img 
+              src="/Assets/CW-Logo.svg" 
+              alt="Crackwits Logo" 
+              className="h-6 sm:h-8 md:h-10"
+            />
+          </div>
+          
+          <div 
+            className="text-center px-4 max-w-md w-full flex flex-col items-center justify-center flex-1 mt-16 sm:mt-20 md:mt-24"
+            style={{ 
+              color: getElementColor('uiText')
+            }}
+          >
+            <div className="mb-6 sm:mb-8 flex justify-center">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 rounded-full animate-spin mx-auto" 
+                style={{ 
+                  borderColor: `${getElementColor('uiText')}20`,
+                  borderTopColor: getElementColor('uiText')
+                }}
+              ></div>
             </div>
-            <p className="text-base sm:text-lg mb-4" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+            <p 
+              className="text-base sm:text-lg md:text-xl mb-4 sm:mb-6 font-medium" 
+              style={{ fontFamily: '"Urbanist", sans-serif' }}
+            >
               Loading game...
             </p>
             {/* Progress bar */}
-            <div className="w-full max-w-xs h-2 bg-white/20 rounded-full overflow-hidden mx-auto mb-2">
+            <div 
+              className="w-full max-w-xs h-2 rounded-full overflow-hidden mx-auto mb-2 sm:mb-3"
+              style={{ backgroundColor: `${getElementColor('uiText')}20` }}
+            >
               <div 
-                className="h-full bg-white transition-all duration-300 ease-out"
-                style={{ width: `${Math.round(loadingProgress * 100)}%` }}
+                className="h-full transition-all duration-300 ease-out"
+                style={{ 
+                  width: `${Math.round(loadingProgress * 100)}%`,
+                  backgroundColor: getElementColor('uiText')
+                }}
               />
             </div>
-            <p className="text-sm sm:text-base opacity-60" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+            <p 
+              className="text-sm sm:text-base opacity-60" 
+              style={{ fontFamily: '"Urbanist", sans-serif' }}
+            >
               {Math.round(loadingProgress * 100)}%
             </p>
           </div>
         </div>
       )}
       
-      {/* Start screen - show when in start state, not blocked, and game is ready */}
-      {gameState === 'start' && !showPortraitBlocker && showStartScreen && (
-        <div className="absolute inset-0 z-50 bg-white">
-          <StartScreen 
-            onStart={handleStartGame} 
-            bestDistance={bestDistance} 
-            leaderboardRefresh={leaderboardRefresh}
-            gameReady={gameReady}
-          />
-        </div>
-      )}
-      
-      {gameState === 'playing' && !showPortraitBlocker && (
-        <div className="absolute inset-0 z-10 pointer-events-none">
-          <GameUI 
-            gameData={gameData} 
-            bestDistance={bestDistance}
-          />
-        </div>
-      )}
-      
-      {gameState === 'gameover' && !showPortraitBlocker && (
-        <div className="absolute inset-0 z-50 bg-white">
-          <GameOver
-            distance={finalDistance}
-            bestDistance={bestDistance}
-            maxCombo={finalMaxCombo}
-            grinchScore={(window as any).__finalGrinchScore}
-            elfScore={(window as any).__finalElfScore}
-            onRestart={handleRestart}
-          />
-        </div>
-      )}
+      <Routes>
+        {/* Root redirect to landing */}
+        <Route path="/" element={<Navigate to="/landing" replace />} />
+        
+        {/* Landing route */}
+        <Route path="/landing" element={
+          !showPortraitBlocker && showStartScreen ? (
+            <div className="absolute inset-0 z-50" style={{ backgroundColor: gameBackgroundColor }}>
+              <StartScreen 
+                onStart={handleStartGame} 
+                bestDistance={bestDistance} 
+                leaderboardRefresh={leaderboardRefresh}
+                gameReady={gameReady}
+              />
+            </div>
+          ) : null
+        } />
+        
+        {/* Game route */}
+        <Route path="/game" element={
+          !showPortraitBlocker ? (
+            <div className="absolute inset-0 z-10 pointer-events-none">
+              <GameUI 
+                gameData={gameData} 
+                bestDistance={bestDistance}
+              />
+            </div>
+          ) : null
+        } />
+        
+        {/* Ending route */}
+        <Route path="/ending" element={
+          !showPortraitBlocker ? (
+            <div className="absolute inset-0 z-50" style={{ backgroundColor: gameBackgroundColor }}>
+              <GameOver
+                distance={finalDistance}
+                bestDistance={bestDistance}
+                maxCombo={finalMaxCombo}
+                grinchScore={(window as any).__finalGrinchScore}
+                elfScore={(window as any).__finalElfScore}
+                onRestart={handleRestart}
+              />
+            </div>
+          ) : null
+        } />
+        
+        {/* Catch-all route - redirect any unknown routes to landing */}
+        <Route path="*" element={<Navigate to="/landing" replace />} />
+      </Routes>
     </div>
   );
 }
