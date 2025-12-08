@@ -173,6 +173,7 @@ export class GameScene extends Phaser.Scene {
   private groundStateFrames: number = 0; // Counter for stable ground state detection
   private visualViewportResizeTimer: NodeJS.Timeout | null = null; // Timer for visual viewport resize debouncing
   private visualViewportResizeHandler: (() => void) | null = null; // Handler for visual viewport resize events
+  private isInitializing: boolean = true; // Flag to prevent visual viewport resize during initialization
   
   // Helper function to setup character physics body correctly - responsive
   // CRITICAL FIX for Safari Mobile: Ensure body bottom aligns with sprite.y (feet position)
@@ -376,6 +377,12 @@ export class GameScene extends Phaser.Scene {
   private handleVisualViewportResize() {
     if (!window.visualViewport) return;
     
+    // CRITICAL: Don't resize during initialization - wait until create() is complete
+    if (this.isInitializing) {
+      console.log('📱 Visual viewport resize ignored during initialization');
+      return;
+    }
+    
     // Get actual visible viewport dimensions (accounts for Safari UI)
     const visibleWidth = window.visualViewport.width;
     const visibleHeight = window.visualViewport.height;
@@ -483,6 +490,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    // CRITICAL: Mark as initializing to prevent visual viewport resize during create()
+    this.isInitializing = true;
+    
     // Get actual canvas dimensions (no fixed 1920x1080)
     // CRITICAL FIX for Safari Mobile: Use visualViewport to account for Safari UI
     // When Safari has multiple tabs, the UI takes up more space, reducing visible viewport
@@ -495,7 +505,11 @@ export class GameScene extends Phaser.Scene {
       const visibleHeight = window.visualViewport.height;
       
       // Use visual viewport dimensions if they're significantly different (Safari UI visible)
-      if (Math.abs(width - visibleWidth) > 10 || Math.abs(height - visibleHeight) > 10) {
+      // CRITICAL: Only use visualViewport if it's reasonable (not too small)
+      // Safari with multiple tabs can have very small viewport, but we need minimum dimensions
+      const minReasonableHeight = 300; // Minimum height to ensure game is playable
+      if ((Math.abs(width - visibleWidth) > 10 || Math.abs(height - visibleHeight) > 10) &&
+          visibleHeight >= minReasonableHeight) {
         console.log('📱 Using visual viewport (Safari UI detected):', {
           scaleWidth: Math.round(width),
           scaleHeight: Math.round(height),
@@ -506,6 +520,13 @@ export class GameScene extends Phaser.Scene {
         height = visibleHeight;
         // Resize game to match visible viewport
         this.scale.resize(width, height);
+      } else if (visibleHeight < minReasonableHeight) {
+        console.warn('⚠️ Visual viewport too small, using scale dimensions:', {
+          visualHeight: Math.round(visibleHeight),
+          scaleHeight: Math.round(height),
+          minReasonableHeight
+        });
+        // Don't use visualViewport if it's too small - use scale dimensions instead
       }
     }
     
@@ -1149,6 +1170,10 @@ export class GameScene extends Phaser.Scene {
     
     // Don't emit ready here - wait for assets to be loaded
     // The ready event will be emitted after assets are loaded
+    
+    // CRITICAL: Mark initialization as complete to allow visual viewport resize
+    // This prevents visual viewport resize from interfering during create()
+    this.isInitializing = false;
   }
   
   // Helper function to safely get audio context
@@ -3597,7 +3622,11 @@ export class GameScene extends Phaser.Scene {
       const visibleHeight = window.visualViewport.height;
       
       // Use visual viewport if it's significantly different (Safari UI visible)
-      if (Math.abs(width - visibleWidth) > 10 || Math.abs(height - visibleHeight) > 10) {
+      // CRITICAL: Only use visualViewport if it's reasonable (not too small)
+      // Safari with multiple tabs can have very small viewport, but we need minimum dimensions
+      const minReasonableHeight = 300; // Minimum height to ensure game is playable
+      if ((Math.abs(width - visibleWidth) > 10 || Math.abs(height - visibleHeight) > 10) &&
+          visibleHeight >= minReasonableHeight) {
         console.log('📱 Resize: Using visual viewport (Safari UI detected):', {
           scaleWidth: Math.round(width),
           scaleHeight: Math.round(height),
@@ -3608,6 +3637,13 @@ export class GameScene extends Phaser.Scene {
         height = visibleHeight;
         // Resize game to match visible viewport
         this.scale.resize(width, height);
+      } else if (visibleHeight < minReasonableHeight) {
+        console.warn('⚠️ Resize: Visual viewport too small, using scale dimensions:', {
+          visualHeight: Math.round(visibleHeight),
+          scaleHeight: Math.round(height),
+          minReasonableHeight
+        });
+        // Don't use visualViewport if it's too small - use scale dimensions instead
       }
     }
     
