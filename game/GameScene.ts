@@ -426,14 +426,10 @@ export class GameScene extends Phaser.Scene {
     // Set origin to BOTTOM CENTER (0.5, 1) - sprite.y will be the bottom
     this.player.setOrigin(0.5, 1);
     
-    // Setup character body with correct size and offset
-    // This must be called after scaling to ensure body matches sprite size
-    this.setupCharacterBody();
-    
     // Position sprite at ground level - simple and correct
     // With origin (0.5, 1), sprite.y is the bottom/feet position
     // Position sprite.y = groundY to place feet at ground level
-    // The body offset (set in setupCharacterBody) ensures body bottom aligns with sprite.y
+    // Phaser's default body will be centered on sprite, and the collider will keep player on ground
     const playerX = width * 0.25; // 25% from left edge
     this.player.setPosition(playerX, this.groundY);
     
@@ -2051,20 +2047,13 @@ export class GameScene extends Phaser.Scene {
       const playerScale = targetHeight / 160;
       this.player.setScale(playerScale);
       
-      // Setup character body AFTER scaling (body size depends on sprite size)
-      this.setupCharacterBody();
-      
       // Position sprite at ground level - with origin (0.5, 1), sprite.y is the bottom/feet
       // Setting sprite.y = groundY places feet exactly on ground surface
-      // The body offset (set in setupCharacterBody) ensures body bottom aligns with sprite.y
+      // Phaser's collider will automatically keep the player on the ground
       this.player.setPosition(playerX, this.groundY);
       
       // Reset all velocities to prevent falling or movement
       this.player.body.setVelocity(0, 0);
-      
-      // Force a physics update to ensure body position is correct
-      // The collider will keep the player on the ground
-      this.physics.world.step(0);
     }
     
     this.jumpsRemaining = 2;
@@ -2663,18 +2652,13 @@ export class GameScene extends Phaser.Scene {
       const playerScale = targetHeight / 160; // 160 is the raw image height
       this.player.setScale(playerScale);
       
-      // Update physics body using helper function (must be called after scale change)
-      this.setupCharacterBody();
-      
       // Recalculate player position - with origin (0.5, 1), sprite.y is the bottom
       // Position at groundY to ensure feet align with ground surface
       // Always update position, even if game hasn't started, to ensure visibility
+      // Phaser's collider will automatically keep the player on the ground
       this.player.setPosition(playerX, this.groundY);
       
       // Reset velocity to prevent sinking
-      // Don't manually set body.y - the body offset (set in setupCharacterBody) 
-      // automatically positions the body correctly relative to sprite.y
-      // The collider will keep the player on the ground
       if (this.player.body) {
         this.player.body.setVelocityY(0);
         this.player.body.setVelocityX(0);
