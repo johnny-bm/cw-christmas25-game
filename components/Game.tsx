@@ -53,8 +53,20 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     
     // Use RESIZE mode to make the game world adapt to screen size
     // Get initial container dimensions for responsive game world
-    const initialWidth = container.clientWidth || window.innerWidth || 1920;
-    const initialHeight = container.clientHeight || window.innerHeight || 1080;
+    // Use visual viewport if available (accounts for Safari browser UI like tabs/address bar)
+    // This is critical for mobile Safari where browser UI takes up significant space
+    let initialWidth: number;
+    let initialHeight: number;
+    
+    if (window.visualViewport) {
+      // Visual viewport gives us the actual visible area (excluding browser UI)
+      initialWidth = window.visualViewport.width;
+      initialHeight = window.visualViewport.height;
+    } else {
+      // Fallback to container or window dimensions
+      initialWidth = container.clientWidth || window.innerWidth || 1920;
+      initialHeight = container.clientHeight || window.innerHeight || 1080;
+    }
     
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.CANVAS,

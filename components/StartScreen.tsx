@@ -15,6 +15,11 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
     // Check localStorage for saved mute state
     return localStorage.getItem('escapeTheDeadline_muted') === 'true';
   });
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+  
+  // Detect if we're on mobile Safari
+  const isMobileSafari = /iPhone|iPad|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -41,6 +46,65 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
     const interval = setInterval(checkMuteState, 500);
     return () => clearInterval(interval);
   }, []);
+
+  // Check fullscreen state
+  useEffect(() => {
+    const checkFullscreen = () => {
+      const isFullscreenNow = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      setIsFullscreen(isFullscreenNow);
+    };
+
+    document.addEventListener('fullscreenchange', checkFullscreen);
+    document.addEventListener('webkitfullscreenchange', checkFullscreen);
+    document.addEventListener('mozfullscreenchange', checkFullscreen);
+    document.addEventListener('MSFullscreenChange', checkFullscreen);
+
+    checkFullscreen();
+
+    return () => {
+      document.removeEventListener('fullscreenchange', checkFullscreen);
+      document.removeEventListener('webkitfullscreenchange', checkFullscreen);
+      document.removeEventListener('mozfullscreenchange', checkFullscreen);
+      document.removeEventListener('MSFullscreenChange', checkFullscreen);
+    };
+  }, []);
+
+  // Show fullscreen prompt for mobile Safari on first load
+  useEffect(() => {
+    if (isMobileSafari && !isFullscreen && !localStorage.getItem('fullscreenPromptDismissed')) {
+      setShowFullscreenPrompt(true);
+    }
+  }, [isMobileSafari, isFullscreen]);
+
+  const handleRequestFullscreen = async () => {
+    try {
+      const elem = document.documentElement;
+      
+      // Try standard fullscreen API
+      if (elem.requestFullscreen) {
+        await elem.requestFullscreen();
+      }
+      // Try webkit (Safari)
+      else if ((elem as any).webkitRequestFullscreen) {
+        (elem as any).webkitRequestFullscreen();
+      }
+      // Try moz (Firefox)
+      else if ((elem as any).mozRequestFullScreen) {
+        (elem as any).mozRequestFullScreen();
+      }
+      // Try ms (IE/Edge)
+      else if ((elem as any).msRequestFullscreen) {
+        (elem as any).msRequestFullscreen();
+      }
+    } catch (error) {
+      console.warn('Fullscreen request failed:', error);
+    }
+  };
 
   const handleToggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -95,6 +159,52 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
           />
         )}
       </button>
+
+      {/* Fullscreen Prompt for Mobile Safari */}
+      {showFullscreenPrompt && isMobileSafari && !isFullscreen && (
+        <div className="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm text-center space-y-4">
+            <h3 className="text-lg font-bold">Fullscreen Recommended</h3>
+            <p className="text-sm text-gray-600">
+              For the best experience on Safari, tap the fullscreen button below to hide browser tabs and get more screen space.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleRequestFullscreen}
+                className="flex-1 bg-black text-white px-4 py-2 rounded font-medium"
+              >
+                Go Fullscreen
+              </button>
+              <button
+                onClick={() => {
+                  setShowFullscreenPrompt(false);
+                  localStorage.setItem('fullscreenPromptDismissed', 'true');
+                }}
+                className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded font-medium"
+              >
+                Skip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Button for Mobile Safari */}
+      {isMobileSafari && !isFullscreen && (
+        <button
+          onClick={handleRequestFullscreen}
+          className="absolute z-20 pointer-events-auto bg-white rounded-lg sm:rounded-xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
+          style={{
+            bottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))',
+            right: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
+          }}
+          aria-label="Enter Fullscreen"
+        >
+          <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+        </button>
+      )}
 
       {/* Desktop/Tablet Portrait: Vertical Layout */}
       <div className="max-md:landscape:hidden text-center space-y-2 sm:space-y-4 md:space-y-6 px-3 py-3 sm:px-4 sm:py-4 w-full max-w-4xl overflow-y-auto max-h-full pt-16 sm:pt-20 md:pt-24">

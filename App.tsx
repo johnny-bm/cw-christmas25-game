@@ -336,6 +336,33 @@ export default function App() {
 
   const gameBackgroundColor = getElementColor('background');
   
+  // Use visual viewport height if available (accounts for Safari browser UI)
+  const [viewportHeight, setViewportHeight] = useState<string>('100dvh');
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (window.visualViewport) {
+        // Use visual viewport height (excludes browser UI) for Safari
+        setViewportHeight(`${window.visualViewport.height}px`);
+      } else {
+        // Fallback to dvh for other browsers
+        setViewportHeight('100dvh');
+      }
+    };
+
+    // Initial update
+    updateHeight();
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateHeight);
+      window.visualViewport.addEventListener('scroll', updateHeight);
+      return () => {
+        window.visualViewport!.removeEventListener('resize', updateHeight);
+        window.visualViewport!.removeEventListener('scroll', updateHeight);
+      };
+    }
+  }, []);
+
   return (
     <div 
       className="w-full overflow-hidden relative" 
@@ -343,7 +370,7 @@ export default function App() {
         margin: 0, 
         padding: 0, 
         width: '100vw', 
-        height: '100dvh', // Use dvh for better mobile support
+        height: viewportHeight, // Use visual viewport height for Safari, dvh for others
         minHeight: '100vh', // Fallback for browsers without dvh support
         backgroundColor: gameBackgroundColor,
         boxSizing: 'border-box', // Ensure padding/margins don't affect sizing
