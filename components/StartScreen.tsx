@@ -230,7 +230,8 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
       )}
 
       {/* Desktop/Tablet Portrait: Vertical Layout */}
-      <div className="max-md:landscape:hidden text-center space-y-2 sm:space-y-4 md:space-y-6 px-3 py-3 sm:px-4 sm:py-4 w-full max-w-4xl overflow-y-auto max-h-full pt-16 sm:pt-20 md:pt-24">
+      {/* RESPONSIVE: Use viewport-relative padding-top instead of fixed rem values for better mobile support */}
+      <div className="max-md:landscape:hidden text-center space-y-2 sm:space-y-4 md:space-y-6 px-3 py-3 sm:px-4 sm:py-4 w-full max-w-4xl overflow-y-auto max-h-full" style={{ paddingTop: 'max(4rem, calc(env(safe-area-inset-top, 0.5rem) + 0.5rem + 3rem))' }}>
         <div className="space-y-1 sm:space-y-2 md:space-y-3">
           <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl text-black tracking-tight leading-tight">
             ESCAPE THE DEADLINE
@@ -305,8 +306,9 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
         </div>
 
         {/* Right Column: Leaderboard */}
-        <div className="flex items-center justify-center overflow-hidden">
-          <div className="w-full max-w-md h-full flex items-center">
+        {/* RESPONSIVE: Ensure leaderboard container adapts to available space */}
+        <div className="flex items-center justify-center overflow-hidden min-h-0">
+          <div className="w-full max-w-md h-full flex items-center min-h-0">
             <LeaderboardWrapper refresh={leaderboardRefresh} compact={true} />
           </div>
         </div>

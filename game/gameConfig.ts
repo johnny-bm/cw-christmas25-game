@@ -152,6 +152,8 @@ export const GameConfig = {
   // ============================================
   physics: {
     baseGravity: 2000,          // Base gravity value (scaled by screen height)
+    // RESPONSIVE: 1080 is a reference height for proportional scaling, not a fixed size
+    // Game world scales to match actual viewport dimensions via Phaser RESIZE mode
     baseGravityHeight: 1080,    // Reference screen height for gravity scaling
     baseJumpVelocity: -800,      // Base jump velocity (scaled by screen height)
     mobileGravityMultiplier: 0.98, // Gravity multiplier on mobile (0.98 = 2% less)

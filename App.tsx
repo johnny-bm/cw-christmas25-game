@@ -459,10 +459,12 @@ export default function App() {
             />
           </div>
           
+          {/* RESPONSIVE: Use viewport-relative margin-top instead of fixed rem values */}
           <div 
-            className="text-center px-4 max-w-md w-full flex flex-col items-center justify-center flex-1 mt-16 sm:mt-20 md:mt-24"
+            className="text-center px-4 max-w-md w-full flex flex-col items-center justify-center flex-1"
             style={{ 
-              color: getElementColor('uiText')
+              color: getElementColor('uiText'),
+              marginTop: 'max(4rem, calc(env(safe-area-inset-top, 0.5rem) + 0.5rem + 3rem))'
             }}
           >
             <div className="mb-6 sm:mb-8 flex justify-center">

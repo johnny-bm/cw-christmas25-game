@@ -342,6 +342,8 @@ export class GameScene extends Phaser.Scene {
     // Validate and correct dimensions if invalid (prevents issues on iPhone Pro Max)
     if (width <= 0 || height <= 0 || !isFinite(width) || !isFinite(height)) {
       console.warn('⚠️ Invalid game dimensions detected, using fallback:', width, height);
+      // RESPONSIVE: 1920x1080 used as fallback reference only, not a fixed size
+      // Actual game world will scale to match container dimensions via RESIZE mode
       width = window.innerWidth || 1920;
       height = window.innerHeight || 1080;
       // Force resize to valid dimensions
@@ -2637,6 +2639,8 @@ export class GameScene extends Phaser.Scene {
     // Validate dimensions - ensure they're valid (prevents issues on iPhone Pro Max)
     if (width <= 0 || height <= 0 || !isFinite(width) || !isFinite(height)) {
       console.warn('⚠️ Invalid dimensions in handleResize, using fallback:', width, height);
+      // RESPONSIVE: 1920x1080 used as fallback reference only, not a fixed size
+      // Actual game world will scale to match container dimensions via RESIZE mode
       width = window.innerWidth || width || 1920;
       height = window.innerHeight || height || 1080;
       // Force resize to valid dimensions

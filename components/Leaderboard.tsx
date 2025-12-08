@@ -221,9 +221,10 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
   return (
     <div className={`${bgClass} rounded border ${borderClass} ${compact ? 'p-2 sm:p-3' : 'p-3 sm:p-4 md:p-5'} backdrop-blur-sm`}>
       {/* Table */}
+      {/* RESPONSIVE: Use viewport-relative units (vh) instead of fixed pixels for better mobile support */}
       <div 
         ref={scrollContainerRef}
-        className={`overflow-y-auto custom-scrollbar ${compact ? 'max-h-[200px] sm:max-h-[300px]' : 'max-h-[250px] sm:max-h-[350px] md:max-h-[400px]'}`}
+        className={`overflow-y-auto custom-scrollbar ${compact ? 'max-h-[25vh] sm:max-h-[30vh] md:max-h-[35vh]' : 'max-h-[30vh] sm:max-h-[35vh] md:max-h-[40vh]'}`}
       >
         <table className="w-full">
           <thead className={`sticky top-0 z-10 ${bgClass}`}>
@@ -262,7 +263,8 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
                     {index === 2 && '🥉'}
                     {index > 2 && `${index + 1}.`}
                   </td>
-                  <td className={`text-left ${rowTextClass} ${compact ? 'text-[10px] sm:text-xs py-1 sm:py-2 pr-1 sm:pr-2 max-w-[80px] sm:max-w-[120px] truncate' : 'text-xs sm:text-sm py-2 sm:py-3 pr-2 sm:pr-3'}`}>
+                  {/* RESPONSIVE: Use percentage-based max-width instead of fixed pixels */}
+                  <td className={`text-left ${rowTextClass} ${compact ? 'text-[10px] sm:text-xs py-1 sm:py-2 pr-1 sm:pr-2 max-w-[20vw] sm:max-w-[15vw] truncate' : 'text-xs sm:text-sm py-2 sm:py-3 pr-2 sm:pr-3'}`}>
                     {score.player_name}
                   </td>
                   <td className={`text-right ${rowTextClass} ${compact ? 'text-[10px] sm:text-xs py-1 sm:py-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm py-2 sm:py-3 pr-2 sm:pr-3'}`}>

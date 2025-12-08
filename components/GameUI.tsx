@@ -165,7 +165,8 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         {/* Energy Bar and Mute Button - Top Right Row */}
         <div className="flex items-center justify-end gap-2 sm:gap-3">
           {/* Energy Bar - White background, teal progress */}
-          <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 w-[120px] sm:w-[160px] flex flex-col justify-between">
+          {/* RESPONSIVE: Use min-width with responsive scaling instead of fixed pixels */}
+          <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 min-w-[120px] sm:min-w-[140px] md:min-w-[160px] w-auto flex flex-col justify-between">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-0.5 sm:gap-1">
                 <img 
@@ -212,8 +213,9 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         </div>
 
         {/* Combo Counter - Purple background - Only show when combo >= 2 */}
+        {/* RESPONSIVE: Use min-width with responsive scaling instead of fixed pixels */}
         {combo >= 2 && (
-          <div className="bg-[#645290] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 w-[184px] sm:w-[236px] flex items-center justify-between">
+          <div className="bg-[#645290] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 min-w-[184px] sm:min-w-[210px] md:min-w-[236px] w-auto flex items-center justify-between">
             <div className="flex items-center gap-0.5 sm:gap-1">
               <img 
                 src="/Assets/Combo.svg" 
@@ -231,8 +233,9 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         )}
 
         {/* Combo Rush - Only show when active - Under combo counter */}
+        {/* RESPONSIVE: Use min-width with responsive scaling instead of fixed pixels */}
         {sprintMode && sprintTimer !== undefined && sprintTimer > 0 && (
-          <div className="bg-[#F6A288] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 w-[184px] sm:w-[236px] flex flex-col justify-between">
+          <div className="bg-[#F6A288] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 min-w-[184px] sm:min-w-[210px] md:min-w-[236px] w-auto flex flex-col justify-between">
             <div className="flex items-center justify-between w-full">
               <span className="text-white text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
                 COMBO RUSH
