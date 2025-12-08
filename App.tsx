@@ -406,7 +406,11 @@ export default function App() {
         top: 0,
         left: 0,
         right: 0,
-        bottom: 0
+        bottom: 0,
+        // CRITICAL for Safari Mobile: Ensure container fills viewport exactly
+        // This ensures the game container gets proper dimensions
+        display: 'flex',
+        flexDirection: 'column'
         // Note: Safe areas are handled by individual UI components (GameUI, etc.)
         // The game canvas should fill the entire container to ensure proper scaling
       }}
