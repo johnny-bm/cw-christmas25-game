@@ -132,7 +132,8 @@
 
   /* Root body: Use dvh (dynamic viewport height) for better mobile support.
    * dvh accounts for browser UI (address bar) changes, ensuring the game
-   * always fills the visible viewport on mobile devices. */
+   * always fills the visible viewport on mobile devices.
+   * CRITICAL FIX for iPhone Pro Max: Ensure proper viewport sizing */
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -142,21 +143,26 @@
     width: 100vw !important;
     height: 100dvh; /* Use dvh for better mobile support - accounts for browser UI */
     min-height: 100vh; /* Fallback for browsers without dvh support */
+    max-height: 100vh; /* Prevent exceeding viewport on any device */
     margin: 0 !important;
     padding: 0 !important;
     -webkit-overflow-scrolling: touch;
     touch-action: none;
     overscroll-behavior: none;
     box-sizing: border-box;
+    /* Ensure content respects safe areas (notches, etc.) */
+    /* Note: Safe areas are handled by individual components, not body padding */
   }
   
   /* Prevent pull-to-refresh and overscroll */
+  /* CRITICAL FIX for iPhone Pro Max: Ensure proper viewport sizing */
   html {
     overflow: hidden;
     position: fixed;
     width: 100vw !important;
     height: 100dvh; /* Use dvh for better mobile support */
     min-height: 100vh; /* Fallback for browsers without dvh support */
+    max-height: 100vh; /* Prevent exceeding viewport on any device */
     margin: 0 !important;
     padding: 0 !important;
     overscroll-behavior: none;

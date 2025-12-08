@@ -336,7 +336,17 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     // Get actual canvas dimensions (no fixed 1920x1080)
-    const { width, height } = this.scale;
+    // CRITICAL FIX for iPhone Pro Max: Ensure dimensions are valid
+    let { width, height } = this.scale;
+    
+    // Validate and correct dimensions if invalid (prevents issues on iPhone Pro Max)
+    if (width <= 0 || height <= 0 || !isFinite(width) || !isFinite(height)) {
+      console.warn('⚠️ Invalid game dimensions detected, using fallback:', width, height);
+      width = window.innerWidth || 1920;
+      height = window.innerHeight || 1080;
+      // Force resize to valid dimensions
+      this.scale.resize(width, height);
+    }
 
     // Set camera bounds to match actual canvas size
     // With RESIZE mode, the camera automatically shows the full game world (0, 0, width, height)
@@ -372,26 +382,39 @@ export class GameScene extends Phaser.Scene {
     this.createParallaxBackground();
 
     // Ground setup - responsive to aspect ratio
+    // CRITICAL FIX for iPhone Pro Max: Ensure ground is always within visible bounds
     // Ensure ground is always visible by using a minimum ground height ratio
     // On very wide screens (high aspect ratio), use larger ratio to keep ground visible
     // Safari on iPhone may need slightly larger ratios for proper visibility
     const aspectRatio = width / height;
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isIPhoneProMax = /iPhone/.test(navigator.userAgent) && (window.screen.height >= 926 || window.screen.width >= 926);
     
     // For very wide screens (aspect ratio > 2.2), use 22% ground height
     // For wide screens (aspect ratio > 1.8), use 18% ground height  
     // For normal screens, use 15% ground height
-    // Safari may need slightly larger ratios (add 2% for Safari)
+    // Safari and iPhone Pro Max may need slightly larger ratios for proper visibility
     let groundHeightRatio = 0.15; // Default 15%
     if (aspectRatio > 2.2) {
-      groundHeightRatio = isSafari ? 0.24 : 0.22; // 24% on Safari, 22% otherwise
+      groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.24 : 0.22; // 24% on Safari/Pro Max, 22% otherwise
     } else if (aspectRatio > 1.8) {
-      groundHeightRatio = isSafari ? 0.20 : 0.18; // 20% on Safari, 18% otherwise
-    } else if (isSafari) {
-      groundHeightRatio = 0.17; // 17% on Safari for normal screens
+      groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.20 : 0.18; // 20% on Safari/Pro Max, 18% otherwise
+    } else if (isSafari || isIPhoneProMax) {
+      groundHeightRatio = 0.17; // 17% on Safari/Pro Max for normal screens
     }
     const groundHeight = height * groundHeightRatio; // Scale proportionally
     this.groundY = height - groundHeight; // Ground top edge at this Y position
+    
+    // CRITICAL: Ensure groundY is within valid bounds (0 to height)
+    // This prevents ground from being positioned off-screen on iPhone Pro Max
+    if (this.groundY < 0) {
+      console.warn('⚠️ Ground Y position is negative, adjusting:', this.groundY);
+      this.groundY = Math.max(0, height * 0.85); // Ensure ground is at least 15% from bottom
+    }
+    if (this.groundY >= height) {
+      console.warn('⚠️ Ground Y position exceeds height, adjusting:', this.groundY, height);
+      this.groundY = height * 0.85; // Ensure ground is at least 15% from bottom
+    }
     const groundWidth = width * 3;
     
     this.ground = this.physics.add.staticGroup();
@@ -433,12 +456,45 @@ export class GameScene extends Phaser.Scene {
     const playerX = width * 0.25; // 25% from left edge
     this.player.setPosition(playerX, this.groundY);
     
-    // Ensure player is fully visible - verify character fits in visible area
+    // CRITICAL FIX for iPhone Pro Max: Ensure player is fully visible
+    // Verify character fits in visible area and adjust if necessary
     const playerHeight = this.player.displayHeight || targetHeight;
-    if (this.groundY - playerHeight < 0) {
-      // Character would be cut off at top - this shouldn't happen with proper ratios
-      // but log a warning for debugging
-      console.warn('⚠️ Character positioning check: groundY', this.groundY, 'playerHeight', playerHeight);
+    const playerTopY = this.groundY - playerHeight; // Top of character sprite
+    
+    if (playerTopY < 0) {
+      // Character would be cut off at top - adjust ground position or character scale
+      console.warn('⚠️ Character would be cut off at top, adjusting:', {
+        groundY: this.groundY,
+        playerHeight: playerHeight,
+        playerTopY: playerTopY,
+        screenHeight: height
+      });
+      
+      // Option 1: Move ground down slightly (reduce ground height ratio)
+      const minGroundY = playerHeight + 10; // Leave 10px margin at top
+      if (minGroundY < height * 0.9) {
+        // Only adjust if it doesn't make ground too small
+        this.groundY = minGroundY;
+        // Update ground position
+        const groundRect = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
+        if (groundRect) {
+          const newGroundHeight = height - this.groundY;
+          groundRect.setPosition(0, this.groundY);
+          groundRect.setSize(width * 3, newGroundHeight);
+          if (groundRect.body) {
+            const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
+            body.setSize(width * 3, newGroundHeight);
+          }
+        }
+        // Reposition player at new ground level
+        this.player.setPosition(playerX, this.groundY);
+      } else {
+        // Option 2: Reduce character scale if ground adjustment isn't possible
+        const maxPlayerHeight = height * 0.8; // Max 80% of screen height
+        const adjustedScale = (maxPlayerHeight / 160);
+        this.player.setScale(adjustedScale);
+        console.warn('⚠️ Reduced character scale to fit screen:', adjustedScale);
+      }
     }
     
     // Debug: Log positioning values to verify correct setup
@@ -2574,8 +2630,18 @@ export class GameScene extends Phaser.Scene {
 
   private handleResize() {
     // With RESIZE mode, game world adapts to screen size
+    // CRITICAL FIX for iPhone Pro Max: Validate dimensions before use
     // Everything scales proportionally based on actual screen dimensions
-    const { width, height } = this.scale; // These are the actual game world dimensions (adapts to screen)
+    let { width, height } = this.scale; // These are the actual game world dimensions (adapts to screen)
+    
+    // Validate dimensions - ensure they're valid (prevents issues on iPhone Pro Max)
+    if (width <= 0 || height <= 0 || !isFinite(width) || !isFinite(height)) {
+      console.warn('⚠️ Invalid dimensions in handleResize, using fallback:', width, height);
+      width = window.innerWidth || width || 1920;
+      height = window.innerHeight || height || 1080;
+      // Force resize to valid dimensions
+      this.scale.resize(width, height);
+    }
     
     // Update camera bounds to match game world
     // With RESIZE mode, camera automatically shows full world - viewport is managed by scale manager
@@ -2602,25 +2668,39 @@ export class GameScene extends Phaser.Scene {
     }
     
     // Reposition ground at new bottom - responsive to aspect ratio
+    // CRITICAL FIX for iPhone Pro Max: Ensure ground is always within visible bounds
     // Ensure ground is always visible by using adaptive ground height ratio
     // Safari on iPhone may need slightly larger ratios for proper visibility
     const aspectRatio = width / height;
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isIPhoneProMax = /iPhone/.test(navigator.userAgent) && (window.screen.height >= 926 || window.screen.width >= 926);
     
     // For very wide screens (aspect ratio > 2.2), use 22% ground height
     // For wide screens (aspect ratio > 1.8), use 18% ground height  
     // For normal screens, use 15% ground height
-    // Safari may need slightly larger ratios (add 2% for Safari)
+    // Safari and iPhone Pro Max may need slightly larger ratios for proper visibility
     let groundHeightRatio = 0.15; // Default 15%
     if (aspectRatio > 2.2) {
-      groundHeightRatio = isSafari ? 0.24 : 0.22; // 24% on Safari, 22% otherwise
+      groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.24 : 0.22; // 24% on Safari/Pro Max, 22% otherwise
     } else if (aspectRatio > 1.8) {
-      groundHeightRatio = isSafari ? 0.20 : 0.18; // 20% on Safari, 18% otherwise
-    } else if (isSafari) {
-      groundHeightRatio = 0.17; // 17% on Safari for normal screens
+      groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.20 : 0.18; // 20% on Safari/Pro Max, 18% otherwise
+    } else if (isSafari || isIPhoneProMax) {
+      groundHeightRatio = 0.17; // 17% on Safari/Pro Max for normal screens
     }
     const groundHeight = height * groundHeightRatio; // Scale proportionally
     this.groundY = height - groundHeight; // Ground top edge at this Y position
+    
+    // CRITICAL: Ensure groundY is within valid bounds (0 to height)
+    // This prevents ground from being positioned off-screen on iPhone Pro Max
+    if (this.groundY < 0) {
+      console.warn('⚠️ Ground Y position is negative in resize, adjusting:', this.groundY);
+      this.groundY = Math.max(0, height * 0.85); // Ensure ground is at least 15% from bottom
+    }
+    if (this.groundY >= height) {
+      console.warn('⚠️ Ground Y position exceeds height in resize, adjusting:', this.groundY, height);
+      this.groundY = height * 0.85; // Ensure ground is at least 15% from bottom
+    }
+    
     const groundWidth = width * 3; // Ground width extends 3x screen width
     
     // Update ground rectangle - MUST position at groundY (not groundCenterY) since origin is (0,0)
@@ -2657,6 +2737,46 @@ export class GameScene extends Phaser.Scene {
       // Always update position, even if game hasn't started, to ensure visibility
       // Phaser's collider will automatically keep the player on the ground
       this.player.setPosition(playerX, this.groundY);
+      
+      // CRITICAL FIX for iPhone Pro Max: Verify player is fully visible after resize
+      const playerHeight = this.player.displayHeight || targetHeight;
+      const playerTopY = this.groundY - playerHeight;
+      
+      if (playerTopY < 0) {
+        // Character would be cut off at top - adjust position or scale
+        console.warn('⚠️ Character would be cut off after resize, adjusting:', {
+          groundY: this.groundY,
+          playerHeight: playerHeight,
+          playerTopY: playerTopY,
+          screenHeight: height
+        });
+        
+        // Adjust ground position if possible
+        const minGroundY = playerHeight + 10; // Leave 10px margin
+        if (minGroundY < height * 0.9) {
+          this.groundY = minGroundY;
+          // Update ground
+          const groundRect = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
+          if (groundRect) {
+            const newGroundHeight = height - this.groundY;
+            groundRect.setPosition(0, this.groundY);
+            groundRect.setSize(width * 3, newGroundHeight);
+            if (groundRect.body) {
+              const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
+              body.setSize(width * 3, newGroundHeight);
+            }
+          }
+          // Reposition player
+          this.player.setPosition(playerX, this.groundY);
+        } else {
+          // Reduce character scale if needed
+          const maxPlayerHeight = height * 0.8;
+          const adjustedScale = (maxPlayerHeight / 160);
+          this.player.setScale(adjustedScale);
+          // Reposition at adjusted scale
+          this.player.setPosition(playerX, this.groundY);
+        }
+      }
       
       // Reset velocity to prevent sinking
       if (this.player.body) {

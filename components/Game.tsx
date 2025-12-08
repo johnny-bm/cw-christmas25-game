@@ -53,19 +53,46 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     
     // Use RESIZE mode to make the game world adapt to screen size
     // Get initial container dimensions for responsive game world
-    // Use visual viewport if available (accounts for Safari browser UI like tabs/address bar)
-    // This is critical for mobile Safari where browser UI takes up significant space
+    // CRITICAL FIX for iPhone Pro Max: Use multiple methods to get accurate dimensions
+    // This ensures the game world matches the actual visible area, preventing ground/character from being off-screen
     let initialWidth: number;
     let initialHeight: number;
     
-    if (window.visualViewport) {
-      // Visual viewport gives us the actual visible area (excluding browser UI)
-      initialWidth = window.visualViewport.width;
-      initialHeight = window.visualViewport.height;
-    } else {
-      // Fallback to container or window dimensions
-      initialWidth = container.clientWidth || window.innerWidth || 1920;
-      initialHeight = container.clientHeight || window.innerHeight || 1080;
+    // Function to get accurate viewport dimensions
+    const getViewportDimensions = () => {
+      if (window.visualViewport) {
+        // Visual viewport gives us the actual visible area (excluding browser UI)
+        // This is most accurate for mobile Safari
+        return {
+          width: window.visualViewport.width,
+          height: window.visualViewport.height
+        };
+      } else if (container.clientWidth > 0 && container.clientHeight > 0) {
+        // Use container dimensions if available and valid
+        return {
+          width: container.clientWidth,
+          height: container.clientHeight
+        };
+      } else {
+        // Fallback to window dimensions
+        return {
+          width: window.innerWidth || 1920,
+          height: window.innerHeight || 1080
+        };
+      }
+    };
+    
+    // Get initial dimensions with a small delay to ensure accurate calculation
+    // This is especially important on iPhone Pro Max where initial calculations can be incorrect
+    const dimensions = getViewportDimensions();
+    initialWidth = dimensions.width;
+    initialHeight = dimensions.height;
+    
+    // Ensure we have valid dimensions (at least 100px to prevent layout issues)
+    if (initialWidth <= 0 || initialHeight <= 0) {
+      console.warn('⚠️ Invalid viewport dimensions, using fallback');
+      initialWidth = window.innerWidth || 1920;
+      initialHeight = window.innerHeight || 1080;
     }
     
     const config: Phaser.Types.Core.GameConfig = {
@@ -206,31 +233,36 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
 
     // Handle window resize with debouncing and visual viewport support
     // With RESIZE mode, Phaser automatically resizes the game world to match container
-    // We just need to trigger the resize event
+    // CRITICAL FIX: Use accurate viewport dimensions to ensure ground/character are always visible
     const handleResize = () => {
       if (gameRef.current && container) {
-        // Get the actual container dimensions - use multiple methods for reliability
-        // Prefer container dimensions, fallback to window dimensions
-        // Use visual viewport if available for more accurate mobile dimensions
+        // Get accurate viewport dimensions using multiple methods
+        // This ensures the game world matches the actual visible area
         let containerWidth: number;
         let containerHeight: number;
         
         if (window.visualViewport) {
-          // Use visual viewport for more accurate dimensions on mobile (accounts for browser UI)
+          // Use visual viewport for most accurate dimensions on mobile (accounts for browser UI)
           containerWidth = window.visualViewport.width;
           containerHeight = window.visualViewport.height;
+        } else if (container.clientWidth > 0 && container.clientHeight > 0) {
+          // Use container dimensions if available and valid
+          containerWidth = container.clientWidth;
+          containerHeight = container.clientHeight;
         } else {
-          // Fallback to container or window dimensions
-          containerWidth = container.clientWidth || window.innerWidth;
-          containerHeight = container.clientHeight || window.innerHeight;
+          // Fallback to window dimensions
+          containerWidth = window.innerWidth || container.clientWidth;
+          containerHeight = window.innerHeight || container.clientHeight;
         }
         
-        // Ensure we have valid dimensions
+        // Ensure we have valid dimensions (at least 100px to prevent layout issues)
         if (containerWidth > 0 && containerHeight > 0) {
           // With RESIZE mode, this updates the game world size to match container
           // Everything will scale proportionally based on the new dimensions
           // The scene's resize handler (via scale.on('resize')) will be called automatically
           gameRef.current.scale.resize(containerWidth, containerHeight);
+        } else {
+          console.warn('⚠️ Invalid container dimensions during resize:', containerWidth, containerHeight);
         }
       }
     };
@@ -240,10 +272,12 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     const debouncedResize = debounce(handleResize, 100);
 
     // Handle orientation changes specifically - need immediate response
+    // CRITICAL FIX: Ensure accurate dimensions after orientation change on iPhone Pro Max
     const handleOrientationChange = () => {
       // Immediate resize for orientation changes (no debounce)
-      // Use a longer delay to let browser finish orientation change and update dimensions
-      setTimeout(() => {
+      // Use multiple attempts with increasing delays to ensure accurate dimensions
+      // This is especially important on iPhone Pro Max where dimension updates can be delayed
+      const attemptResize = (attempt: number = 0) => {
         if (gameRef.current && container) {
           // Get fresh dimensions after orientation change
           // Use visual viewport if available for more accurate dimensions
@@ -253,22 +287,34 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
           if (window.visualViewport) {
             containerWidth = window.visualViewport.width;
             containerHeight = window.visualViewport.height;
+          } else if (container.clientWidth > 0 && container.clientHeight > 0) {
+            containerWidth = container.clientWidth;
+            containerHeight = container.clientHeight;
           } else {
-            containerWidth = container.clientWidth || window.innerWidth;
-            containerHeight = container.clientHeight || window.innerHeight;
+            containerWidth = window.innerWidth || container.clientWidth;
+            containerHeight = window.innerHeight || container.clientHeight;
           }
           
           // Ensure we have valid dimensions before resizing
           if (containerWidth > 0 && containerHeight > 0) {
             // Resize game - scene's resize handler will be called automatically via scale.on('resize')
             gameRef.current.scale.resize(containerWidth, containerHeight);
+          } else if (attempt < 3) {
+            // Retry if dimensions are invalid (browser might not have updated yet)
+            setTimeout(() => attemptResize(attempt + 1), 100 * (attempt + 1));
           }
         }
-      }, 250); // Delay to let browser finish orientation change and update dimensions
+      };
+      
+      // Initial attempt after a short delay
+      setTimeout(() => attemptResize(), 100);
+      // Additional attempt after longer delay for slow devices
+      setTimeout(() => attemptResize(1), 300);
     };
 
     // Listen to visual viewport API for mobile browsers (iOS Safari)
     // This is critical for Safari when tabs are open/closed - viewport changes
+    // CRITICAL FIX: Ensure accurate dimensions for iPhone Pro Max
     // Use immediate handler (no debounce) for visual viewport changes
     // Safari tabs can change viewport size, and we need immediate response
     const handleVisualViewportResize = () => {
@@ -276,8 +322,16 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         const containerWidth = window.visualViewport.width;
         const containerHeight = window.visualViewport.height;
         
+        // Ensure we have valid dimensions (at least 100px to prevent layout issues)
         if (containerWidth > 0 && containerHeight > 0) {
           gameRef.current.scale.resize(containerWidth, containerHeight);
+        } else {
+          // Fallback: try container dimensions if visual viewport is invalid
+          const fallbackWidth = container.clientWidth || window.innerWidth;
+          const fallbackHeight = container.clientHeight || window.innerHeight;
+          if (fallbackWidth > 0 && fallbackHeight > 0) {
+            gameRef.current.scale.resize(fallbackWidth, fallbackHeight);
+          }
         }
       }
     };

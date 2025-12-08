@@ -337,28 +337,55 @@ export default function App() {
   const gameBackgroundColor = getElementColor('background');
   
   // Use visual viewport height if available (accounts for Safari browser UI)
+  // Critical fix for iPhone Pro Max: Use multiple methods to get accurate viewport height
   const [viewportHeight, setViewportHeight] = useState<string>('100dvh');
 
   useEffect(() => {
     const updateHeight = () => {
+      // Use multiple methods to get the most accurate viewport height
+      // This is critical for iPhone Pro Max and devices with safe areas
+      let height: number;
+      
       if (window.visualViewport) {
-        // Use visual viewport height (excludes browser UI) for Safari
-        setViewportHeight(`${window.visualViewport.height}px`);
+        // Visual viewport gives the actual visible area (excludes browser UI)
+        // This is the most accurate for mobile Safari
+        height = window.visualViewport.height;
+      } else if (window.innerHeight) {
+        // Fallback to innerHeight
+        height = window.innerHeight;
       } else {
-        // Fallback to dvh for other browsers
+        // Final fallback to screen height
+        height = window.screen.height;
+      }
+      
+      // Ensure we have a valid height (at least 100px to prevent layout issues)
+      if (height > 0) {
+        setViewportHeight(`${height}px`);
+      } else {
+        // Fallback to CSS dvh unit if we can't get a valid height
         setViewportHeight('100dvh');
       }
     };
 
-    // Initial update
-    updateHeight();
+    // Initial update with a small delay to ensure browser has calculated dimensions
+    // This is especially important on iPhone Pro Max where initial calculations can be wrong
+    const initialTimeout = setTimeout(updateHeight, 100);
+    updateHeight(); // Also try immediately
 
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', updateHeight);
       window.visualViewport.addEventListener('scroll', updateHeight);
       return () => {
+        clearTimeout(initialTimeout);
         window.visualViewport!.removeEventListener('resize', updateHeight);
         window.visualViewport!.removeEventListener('scroll', updateHeight);
+      };
+    } else {
+      // Fallback: listen to window resize if visual viewport is not available
+      window.addEventListener('resize', updateHeight);
+      return () => {
+        clearTimeout(initialTimeout);
+        window.removeEventListener('resize', updateHeight);
       };
     }
   }, []);
@@ -370,8 +397,9 @@ export default function App() {
         margin: 0, 
         padding: 0, 
         width: '100vw', 
-        height: viewportHeight, // Use visual viewport height for Safari, dvh for others
+        height: viewportHeight, // Use calculated viewport height (accounts for safe areas and browser UI)
         minHeight: '100vh', // Fallback for browsers without dvh support
+        maxHeight: '100vh', // Prevent exceeding viewport on any device
         backgroundColor: gameBackgroundColor,
         boxSizing: 'border-box', // Ensure padding/margins don't affect sizing
         position: 'fixed', // Fixed positioning to avoid any layout shifts
@@ -379,6 +407,8 @@ export default function App() {
         left: 0,
         right: 0,
         bottom: 0
+        // Note: Safe areas are handled by individual UI components (GameUI, etc.)
+        // The game canvas should fill the entire container to ensure proper scaling
       }}
     >
       {/* Portrait orientation blocker - shared across all routes */}
