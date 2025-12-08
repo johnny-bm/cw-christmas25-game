@@ -540,21 +540,24 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
   return (
     <>
       {/* Visual debug indicator - shows game dimensions (visible on screen for debugging) */}
+      {/* CRITICAL: Very high z-index to appear above all game UI elements */}
       <div 
         id="game-debug"
         style={{
           position: 'fixed',
           top: '10px',
           left: '10px',
-          zIndex: 99999,
-          backgroundColor: 'rgba(255,0,0,0.8)',
+          zIndex: 999999, // Increased to be above all UI elements (GameUI uses z-10, z-50, etc.)
+          backgroundColor: 'rgba(255,0,0,0.9)',
           color: 'white',
-          padding: '6px 10px',
-          fontSize: '12px',
+          padding: '8px 12px',
+          fontSize: '14px',
           fontFamily: 'monospace',
-          borderRadius: '4px',
+          borderRadius: '6px',
           pointerEvents: 'none',
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+          border: '2px solid white'
         }}
       >
         Loading...
