@@ -59,18 +59,21 @@ export const GameConfig = {
       damage: 12,               // Energy cost when hitting regular obstacle (more punishing = skill matters)
       spawnIntervalMin: 700,    // Minimum milliseconds between spawns (more frequent = more challenging)
       spawnIntervalMax: 2200,    // Maximum milliseconds between spawns (more frequent = more challenging)
+      difficultyRampDistance: 1000, // Distance (meters) to reach full difficulty (gradual ramp - longer = easier start)
     },
     floating: {
       damage: 12,               // Energy cost when hitting floating obstacle (more punishing = skill matters)
       spawnIntervalMin: 1200,   // Minimum milliseconds between spawns (more frequent = more challenging)
       spawnIntervalMax: 3200,   // Maximum milliseconds between spawns (more frequent = more challenging)
       unlockDistance: 3000,      // Distance (meters) before floating obstacles appear (earlier = more challenge)
+      difficultyRampDistance: 1000, // Distance (meters) after unlock to reach full difficulty (longer = easier start)
     },
     projectile: {
       damage: 18,               // Energy cost when hitting projectile (high risk = high skill requirement)
       spawnIntervalMin: 1500,   // Minimum milliseconds between spawns (more frequent = more challenging)
       spawnIntervalMax: 4500,   // Maximum milliseconds between spawns (more frequent = more challenging)
       unlockDistance: 2000,      // Distance (meters) before projectile obstacles appear (earlier = more challenge)
+      difficultyRampDistance: 1000, // Distance (meters) after unlock to reach full difficulty (longer = easier start)
     },
   },
 
@@ -140,9 +143,9 @@ export const GameConfig = {
   // ============================================
   timers: {
     distanceUpdateInterval: 100, // Milliseconds between distance updates
-    obstacleInitial: 1200,      // Initial obstacle spawn timer (faster start = more challenging)
-    floatingObstacleInitial: 2000, // Initial floating obstacle spawn timer (faster start)
-    projectileObstacleInitial: 2500, // Initial projectile obstacle spawn timer (faster start)
+    obstacleInitial: 10000,      // Initial obstacle spawn timer (much easier start = very forgiving)
+    floatingObstacleInitial: 12000, // Initial floating obstacle spawn timer (much easier start)
+    projectileObstacleInitial: 15000, // Initial projectile obstacle spawn timer (much easier start)
     collectibleInitial: 2000,   // Initial collectible spawn timer (balanced rewards)
     specialCollectibleInitial: 5000, // Initial special collectible spawn timer (rarer = more valuable)
   },

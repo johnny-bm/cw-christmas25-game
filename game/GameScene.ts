@@ -171,6 +171,8 @@ export class GameScene extends Phaser.Scene {
   private lastOnGroundState: boolean | null = null; // Track last ground state to detect changes
   private stableOnGroundState: boolean = false; // Stable ground state (debounced to prevent flickering)
   private groundStateFrames: number = 0; // Counter for stable ground state detection
+  private visualViewportResizeTimer: NodeJS.Timeout | null = null; // Timer for visual viewport resize debouncing
+  private visualViewportResizeHandler: (() => void) | null = null; // Handler for visual viewport resize events
   
   // Helper function to setup character physics body correctly - responsive
   // CRITICAL FIX for Safari Mobile: Ensure body bottom aligns with sprite.y (feet position)
@@ -353,6 +355,46 @@ export class GameScene extends Phaser.Scene {
 
   init() {
     this.scale.on('resize', this.handleResize, this);
+    
+    // CRITICAL FIX for Safari Mobile: Listen for visual viewport changes
+    // This handles Safari UI (address bar, tab bar) changes when multiple tabs are open
+    if (window.visualViewport) {
+      // Store the handler so we can remove it later
+      this.visualViewportResizeHandler = () => {
+        // Debounce resize to prevent excessive updates
+        if (this.visualViewportResizeTimer) {
+          clearTimeout(this.visualViewportResizeTimer);
+        }
+        this.visualViewportResizeTimer = setTimeout(() => {
+          this.handleVisualViewportResize();
+        }, 100);
+      };
+      window.visualViewport.addEventListener('resize', this.visualViewportResizeHandler);
+    }
+  }
+  
+  private handleVisualViewportResize() {
+    if (!window.visualViewport) return;
+    
+    // Get actual visible viewport dimensions (accounts for Safari UI)
+    const visibleWidth = window.visualViewport.width;
+    const visibleHeight = window.visualViewport.height;
+    
+    // Only resize if dimensions are valid and different from current
+    if (visibleWidth > 0 && visibleHeight > 0 && 
+        (Math.abs(this.scale.width - visibleWidth) > 5 || Math.abs(this.scale.height - visibleHeight) > 5)) {
+      console.log('📱 Visual viewport changed (Safari UI):', {
+        oldWidth: Math.round(this.scale.width),
+        oldHeight: Math.round(this.scale.height),
+        newWidth: Math.round(visibleWidth),
+        newHeight: Math.round(visibleHeight)
+      });
+      
+      // Resize game to match visible viewport
+      this.scale.resize(visibleWidth, visibleHeight);
+      // Trigger handleResize to update all game elements
+      this.handleResize();
+    }
   }
 
   preload() {
@@ -442,8 +484,30 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     // Get actual canvas dimensions (no fixed 1920x1080)
-    // CRITICAL FIX for Safari Mobile: Ensure dimensions are valid and reasonable
+    // CRITICAL FIX for Safari Mobile: Use visualViewport to account for Safari UI
+    // When Safari has multiple tabs, the UI takes up more space, reducing visible viewport
     let { width, height } = this.scale;
+    
+    // CRITICAL FIX for Safari Mobile: Use visualViewport if available (accounts for Safari UI)
+    // This ensures the game uses the actual visible area, not the full screen
+    if (window.visualViewport && window.visualViewport.width > 0 && window.visualViewport.height > 0) {
+      const visibleWidth = window.visualViewport.width;
+      const visibleHeight = window.visualViewport.height;
+      
+      // Use visual viewport dimensions if they're significantly different (Safari UI visible)
+      if (Math.abs(width - visibleWidth) > 10 || Math.abs(height - visibleHeight) > 10) {
+        console.log('📱 Using visual viewport (Safari UI detected):', {
+          scaleWidth: Math.round(width),
+          scaleHeight: Math.round(height),
+          visualWidth: Math.round(visibleWidth),
+          visualHeight: Math.round(visibleHeight)
+        });
+        width = visibleWidth;
+        height = visibleHeight;
+        // Resize game to match visible viewport
+        this.scale.resize(width, height);
+      }
+    }
     
     // CRITICAL FIX for Safari Mobile: Additional validation
     // Safari mobile sometimes reports incorrect dimensions initially
@@ -453,10 +517,14 @@ export class GameScene extends Phaser.Scene {
     // Validate and correct dimensions if invalid (prevents issues on iPhone Pro Max and Safari)
     if (width <= 0 || height <= 0 || !isFinite(width) || !isFinite(height)) {
       console.warn('⚠️ Invalid game dimensions detected, using fallback:', width, height);
-      // RESPONSIVE: 1920x1080 used as fallback reference only, not a fixed size
-      // Actual game world will scale to match container dimensions via RESIZE mode
-      width = window.innerWidth || 1920;
-      height = window.innerHeight || 1080;
+      // Use visualViewport as fallback if available, otherwise window dimensions
+      if (window.visualViewport && window.visualViewport.width > 0 && window.visualViewport.height > 0) {
+        width = window.visualViewport.width;
+        height = window.visualViewport.height;
+      } else {
+        width = window.innerWidth || 1920;
+        height = window.innerHeight || 1080;
+      }
       // Force resize to valid dimensions
       this.scale.resize(width, height);
     }
@@ -1308,11 +1376,28 @@ export class GameScene extends Phaser.Scene {
     const obstacleSpeed = -400 * baseSpeed;
     obstacle.setData('speed', obstacleSpeed);
     
+    // Calculate difficulty based on distance - start easy, gradually increase
     const minInterval = GameConfig.obstacles.regular.spawnIntervalMin;
     const maxInterval = GameConfig.obstacles.regular.spawnIntervalMax;
+    const rampDistance = GameConfig.obstacles.regular.difficultyRampDistance;
+    
+    // Start with intervals 6x longer than max, gradually decrease to configured values
+    const startMaxInterval = maxInterval * 6;
+    const startMinInterval = minInterval * 6;
+    
+    // Calculate difficulty progress (0 = start, 1 = full difficulty)
+    const difficultyProgress = Math.min(1, this.distance / rampDistance);
+    
+    // Interpolate between easy start and full difficulty
+    const currentMaxInterval = startMaxInterval - (difficultyProgress * (startMaxInterval - maxInterval));
+    const currentMinInterval = startMinInterval - (difficultyProgress * (startMinInterval - minInterval));
+    
+    // Also factor in game speed for additional challenge
     const speedFactor = Math.min(1, (this.gameSpeed - GameConfig.speed.initial) / GameConfig.speed.initial);
-    const baseInterval = maxInterval - (speedFactor * (maxInterval - minInterval));
-    this.obstacleTimer = Phaser.Math.Between(baseInterval * 0.5, baseInterval * 1.5);
+    const baseInterval = currentMaxInterval - (speedFactor * (currentMaxInterval - currentMinInterval));
+    
+    // Use a tighter range to avoid very short intervals at the start (0.8x to 1.2x instead of 0.5x to 1.5x)
+    this.obstacleTimer = Phaser.Math.Between(baseInterval * 0.8, baseInterval * 1.2);
   }
 
   spawnFloatingObstacle() {
@@ -1347,9 +1432,27 @@ export class GameScene extends Phaser.Scene {
       this.floatingObstacles.add(obstacle);
       const obstacleSpeed = -400 * baseSpeed;
       obstacle.setData('speed', obstacleSpeed);
+      
+      // Calculate difficulty based on distance - start easy, gradually increase
       const minInterval = GameConfig.obstacles.floating.spawnIntervalMin;
       const maxInterval = GameConfig.obstacles.floating.spawnIntervalMax;
-      this.floatingObstacleTimer = Phaser.Math.Between(minInterval, maxInterval);
+      const unlockDistance = GameConfig.obstacles.floating.unlockDistance;
+      const rampDistance = GameConfig.obstacles.floating.difficultyRampDistance;
+      
+      // Start with intervals 6x longer than max, gradually decrease to configured values
+      const startMaxInterval = maxInterval * 6;
+      const startMinInterval = minInterval * 6;
+      
+      // Calculate difficulty progress (0 = just unlocked, 1 = full difficulty)
+      const distanceSinceUnlock = Math.max(0, this.distance - unlockDistance);
+      const difficultyProgress = Math.min(1, distanceSinceUnlock / rampDistance);
+      
+      // Interpolate between easy start and full difficulty
+      const currentMaxInterval = startMaxInterval - (difficultyProgress * (startMaxInterval - maxInterval));
+      const currentMinInterval = startMinInterval - (difficultyProgress * (startMinInterval - minInterval));
+      
+      // Use a tighter range to avoid very short intervals at the start
+      this.floatingObstacleTimer = Phaser.Math.Between(currentMinInterval * 0.8, currentMaxInterval * 1.2);
       return;
     }
     
@@ -1377,9 +1480,27 @@ export class GameScene extends Phaser.Scene {
     const obstacleSpeed = -400 * baseSpeed;
     obstacle.setData('speed', obstacleSpeed);
     
+    // Calculate difficulty based on distance - start easy, gradually increase
     const minInterval = GameConfig.obstacles.floating.spawnIntervalMin;
     const maxInterval = GameConfig.obstacles.floating.spawnIntervalMax;
-    this.floatingObstacleTimer = Phaser.Math.Between(minInterval, maxInterval);
+    const unlockDistance = GameConfig.obstacles.floating.unlockDistance;
+    const rampDistance = GameConfig.obstacles.floating.difficultyRampDistance;
+    
+    // Start with intervals 6x longer than max, gradually decrease to configured values
+    const startMaxInterval = maxInterval * 6;
+    const startMinInterval = minInterval * 6;
+    
+    // Calculate difficulty progress (0 = just unlocked, 1 = full difficulty)
+    // Only start ramping after unlock distance
+    const distanceSinceUnlock = Math.max(0, this.distance - unlockDistance);
+    const difficultyProgress = Math.min(1, distanceSinceUnlock / rampDistance);
+    
+    // Interpolate between easy start and full difficulty
+    const currentMaxInterval = startMaxInterval - (difficultyProgress * (startMaxInterval - maxInterval));
+    const currentMinInterval = startMinInterval - (difficultyProgress * (startMinInterval - minInterval));
+    
+    // Use a tighter range to avoid very short intervals at the start
+    this.floatingObstacleTimer = Phaser.Math.Between(currentMinInterval * 0.8, currentMaxInterval * 1.2);
   }
 
   spawnProjectileObstacle() {
@@ -1446,9 +1567,27 @@ export class GameScene extends Phaser.Scene {
       projectile.setData('gravity', gravity);
       projectile.setData('velocityX', -Math.abs(horizontalSpeed));
       projectile.setData('velocityY', vy);
+      
+      // Calculate difficulty based on distance - start easy, gradually increase
       const minInterval = GameConfig.obstacles.projectile.spawnIntervalMin;
       const maxInterval = GameConfig.obstacles.projectile.spawnIntervalMax;
-      this.projectileObstacleTimer = Phaser.Math.Between(minInterval, maxInterval);
+      const unlockDistance = GameConfig.obstacles.projectile.unlockDistance;
+      const rampDistance = GameConfig.obstacles.projectile.difficultyRampDistance;
+      
+      // Start with intervals 6x longer than max, gradually decrease to configured values
+      const startMaxInterval = maxInterval * 6;
+      const startMinInterval = minInterval * 6;
+      
+      // Calculate difficulty progress (0 = just unlocked, 1 = full difficulty)
+      const distanceSinceUnlock = Math.max(0, this.distance - unlockDistance);
+      const difficultyProgress = Math.min(1, distanceSinceUnlock / rampDistance);
+      
+      // Interpolate between easy start and full difficulty
+      const currentMaxInterval = startMaxInterval - (difficultyProgress * (startMaxInterval - maxInterval));
+      const currentMinInterval = startMinInterval - (difficultyProgress * (startMinInterval - minInterval));
+      
+      // Use a tighter range to avoid very short intervals at the start
+      this.projectileObstacleTimer = Phaser.Math.Between(currentMinInterval * 0.8, currentMaxInterval * 1.2);
       return;
     }
     
@@ -1484,9 +1623,26 @@ export class GameScene extends Phaser.Scene {
     projectile.setData('velocityY', vy);
     
     // Set timer for next spawn
+    // Calculate difficulty based on distance - start easy, gradually increase
     const minInterval = GameConfig.obstacles.projectile.spawnIntervalMin;
     const maxInterval = GameConfig.obstacles.projectile.spawnIntervalMax;
-    this.projectileObstacleTimer = Phaser.Math.Between(minInterval, maxInterval);
+    const unlockDistance = GameConfig.obstacles.projectile.unlockDistance;
+    const rampDistance = GameConfig.obstacles.projectile.difficultyRampDistance;
+    
+    // Start with intervals 6x longer than max, gradually decrease to configured values
+    const startMaxInterval = maxInterval * 6;
+    const startMinInterval = minInterval * 6;
+    
+    // Calculate difficulty progress (0 = just unlocked, 1 = full difficulty)
+    const distanceSinceUnlock = Math.max(0, this.distance - unlockDistance);
+    const difficultyProgress = Math.min(1, distanceSinceUnlock / rampDistance);
+    
+    // Interpolate between easy start and full difficulty
+    const currentMaxInterval = startMaxInterval - (difficultyProgress * (startMaxInterval - maxInterval));
+    const currentMinInterval = startMinInterval - (difficultyProgress * (startMinInterval - minInterval));
+    
+    // Use a tighter range to avoid very short intervals at the start
+    this.projectileObstacleTimer = Phaser.Math.Between(currentMinInterval * 0.8, currentMaxInterval * 1.2);
   }
 
   spawnCollectible() {
@@ -3430,17 +3586,42 @@ export class GameScene extends Phaser.Scene {
 
   private handleResize() {
     // With RESIZE mode, game world adapts to screen size
-    // CRITICAL FIX for iPhone Pro Max: Validate dimensions before use
-    // Everything scales proportionally based on actual screen dimensions
+    // CRITICAL FIX for Safari Mobile: Use visualViewport to account for Safari UI changes
+    // When Safari has multiple tabs, the UI takes up more space, reducing visible viewport
     let { width, height } = this.scale; // These are the actual game world dimensions (adapts to screen)
+    
+    // CRITICAL FIX for Safari Mobile: Check if visualViewport is available and use it
+    // This ensures the game uses the actual visible area when Safari UI is expanded
+    if (window.visualViewport && window.visualViewport.width > 0 && window.visualViewport.height > 0) {
+      const visibleWidth = window.visualViewport.width;
+      const visibleHeight = window.visualViewport.height;
+      
+      // Use visual viewport if it's significantly different (Safari UI visible)
+      if (Math.abs(width - visibleWidth) > 10 || Math.abs(height - visibleHeight) > 10) {
+        console.log('📱 Resize: Using visual viewport (Safari UI detected):', {
+          scaleWidth: Math.round(width),
+          scaleHeight: Math.round(height),
+          visualWidth: Math.round(visibleWidth),
+          visualHeight: Math.round(visibleHeight)
+        });
+        width = visibleWidth;
+        height = visibleHeight;
+        // Resize game to match visible viewport
+        this.scale.resize(width, height);
+      }
+    }
     
     // Validate dimensions - ensure they're valid (prevents issues on iPhone Pro Max)
     if (width <= 0 || height <= 0 || !isFinite(width) || !isFinite(height)) {
       console.warn('⚠️ Invalid dimensions in handleResize, using fallback:', width, height);
-      // RESPONSIVE: 1920x1080 used as fallback reference only, not a fixed size
-      // Actual game world will scale to match container dimensions via RESIZE mode
-      width = window.innerWidth || width || 1920;
-      height = window.innerHeight || height || 1080;
+      // Use visualViewport as fallback if available, otherwise window dimensions
+      if (window.visualViewport && window.visualViewport.width > 0 && window.visualViewport.height > 0) {
+        width = window.visualViewport.width;
+        height = window.visualViewport.height;
+      } else {
+        width = window.innerWidth || width || 1920;
+        height = window.innerHeight || height || 1080;
+      }
       // Force resize to valid dimensions
       this.scale.resize(width, height);
     }
@@ -3636,5 +3817,22 @@ export class GameScene extends Phaser.Scene {
     
     // Update parallax buildings if needed
     // Buildings will reposition themselves during update loop
+  }
+  
+  shutdown() {
+    // Clean up visual viewport listener
+    if (window.visualViewport && this.visualViewportResizeHandler) {
+      window.visualViewport.removeEventListener('resize', this.visualViewportResizeHandler);
+      this.visualViewportResizeHandler = null;
+    }
+    
+    // Clear any pending timers
+    if (this.visualViewportResizeTimer) {
+      clearTimeout(this.visualViewportResizeTimer);
+      this.visualViewportResizeTimer = null;
+    }
+    
+    // Remove scale resize listener
+    this.scale.off('resize', this.handleResize, this);
   }
 }
