@@ -139,39 +139,55 @@
     font-family: 'Urbanist', sans-serif;
     overflow: hidden;
     position: fixed;
-    width: 100%;
+    width: 100vw !important;
     height: 100dvh; /* Use dvh for better mobile support - accounts for browser UI */
     min-height: 100vh; /* Fallback for browsers without dvh support */
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
     -webkit-overflow-scrolling: touch;
     touch-action: none;
     overscroll-behavior: none;
+    box-sizing: border-box;
   }
   
   /* Prevent pull-to-refresh and overscroll */
   html {
     overflow: hidden;
     position: fixed;
-    width: 100%;
+    width: 100vw !important;
     height: 100dvh; /* Use dvh for better mobile support */
     min-height: 100vh; /* Fallback for browsers without dvh support */
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
     overscroll-behavior: none;
+    box-sizing: border-box;
+  }
+  
+  /* Ensure root element has no margins/padding */
+  #root {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw !important;
+    height: 100% !important;
+    box-sizing: border-box;
   }
   
   /* Canvas: Phaser handles its own rendering and scaling via RESIZE mode.
    * Ensure it fills the container completely with no margins or padding. */
   canvas {
-    display: block;
+    display: block !important;
     width: 100% !important;
     height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: fill; /* Fill container completely */
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: fill !important; /* Fill container completely */
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
   }
   
   /* Safe area insets for notched devices */

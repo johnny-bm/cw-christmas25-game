@@ -268,10 +268,27 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     };
 
     // Listen to visual viewport API for mobile browsers (iOS Safari)
+    // This is critical for Safari when tabs are open/closed - viewport changes
+    // Use immediate handler (no debounce) for visual viewport changes
+    // Safari tabs can change viewport size, and we need immediate response
+    const handleVisualViewportResize = () => {
+      if (gameRef.current && container && window.visualViewport) {
+        const containerWidth = window.visualViewport.width;
+        const containerHeight = window.visualViewport.height;
+        
+        if (containerWidth > 0 && containerHeight > 0) {
+          gameRef.current.scale.resize(containerWidth, containerHeight);
+        }
+      }
+    };
+    
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', debouncedResize);
-      window.visualViewport.addEventListener('scroll', debouncedResize);
+      window.visualViewport.addEventListener('resize', handleVisualViewportResize);
+      window.visualViewport.addEventListener('scroll', handleVisualViewportResize);
     }
+    
+    // Also listen to window resize as fallback
+    window.addEventListener('resize', debouncedResize);
 
     // Listen to orientation changes specifically
     window.addEventListener('orientationchange', handleOrientationChange);
@@ -281,14 +298,13 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
       screen.orientation.addEventListener('change', handleOrientationChange);
     }
 
-    // Fallback to window resize for browsers without visual viewport API
-    window.addEventListener('resize', debouncedResize);
+    // Note: window resize listener is added above in visual viewport section
 
     return () => {
       // Clean up resize listeners
       if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', debouncedResize);
-        window.visualViewport.removeEventListener('scroll', debouncedResize);
+        window.visualViewport.removeEventListener('resize', handleVisualViewportResize);
+        window.visualViewport.removeEventListener('scroll', handleVisualViewportResize);
       }
       window.removeEventListener('orientationchange', handleOrientationChange);
       window.removeEventListener('resize', debouncedResize);
@@ -419,7 +435,12 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         height: '100%',
         minHeight: 0, // Allow flex shrinking in flex layouts
         display: 'block', // Use block instead of flex to avoid centering
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
       }} 
     />
   );
