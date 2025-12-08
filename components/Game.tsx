@@ -93,26 +93,38 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
       };
     };
     
-    // CRITICAL: Wait for container to have valid dimensions before initializing
-    // Safari mobile often reports 0x0 initially, so we need to wait
+    // CRITICAL FIX for Safari Mobile: Wait for container to have valid dimensions
+    // Safari mobile often reports 0x0 initially, so we need to wait and retry
     const waitForValidDimensions = (attempts = 0): void => {
-      const maxAttempts = 10;
+      const maxAttempts = 20; // Increased attempts for Safari
       const dimensions = getViewportDimensions();
       
-      // Check if we have valid dimensions
-      if (dimensions.width > 100 && dimensions.height > 100) {
+      // Check if we have valid dimensions (increased minimum to 200px for safety)
+      if (dimensions.width > 200 && dimensions.height > 200) {
         initialWidth = dimensions.width;
         initialHeight = dimensions.height;
-        console.log('✅ Game dimensions initialized:', initialWidth, 'x', initialHeight);
+        // Visual debug: Show dimensions on screen (remove in production if needed)
+        if (typeof document !== 'undefined') {
+          const debugEl = document.getElementById('game-debug');
+          if (debugEl) {
+            debugEl.textContent = `Game: ${Math.round(initialWidth)}x${Math.round(initialHeight)}`;
+          }
+        }
         initializeGame();
       } else if (attempts < maxAttempts) {
-        // Retry after a short delay
-        setTimeout(() => waitForValidDimensions(attempts + 1), 50);
+        // Retry after a delay (longer delay for Safari)
+        setTimeout(() => waitForValidDimensions(attempts + 1), 100);
       } else {
-        // Last resort: use window dimensions even if they seem wrong
-        console.warn('⚠️ Could not get valid container dimensions, using window dimensions');
+        // Last resort: use window dimensions
         initialWidth = window.innerWidth || window.screen.width || 1920;
         initialHeight = window.innerHeight || window.screen.height || 1080;
+        // Visual debug
+        if (typeof document !== 'undefined') {
+          const debugEl = document.getElementById('game-debug');
+          if (debugEl) {
+            debugEl.textContent = `Game (fallback): ${Math.round(initialWidth)}x${Math.round(initialHeight)}`;
+          }
+        }
         initializeGame();
       }
     };
@@ -524,26 +536,49 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
 
   // Game container: Uses flexible sizing to fill parent container completely.
   // Phaser's RESIZE mode will adapt the game world to match this container's dimensions exactly.
-  // No margins or padding to ensure full-width coverage.
+  // CRITICAL for Safari Mobile: Ensure container fills parent completely with visual debug
   return (
-    <div 
-      ref={containerRef} 
-      className="w-full h-full overflow-hidden" 
-      style={{ 
-        margin: 0, 
-        padding: 0,
-        width: '100%',
-        height: '100%',
-        minHeight: 0, // Allow flex shrinking in flex layouts
-        display: 'block', // Use block instead of flex to avoid centering
-        boxSizing: 'border-box',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0
-      }} 
-    />
+    <>
+      {/* Visual debug indicator - shows game dimensions (visible on screen for debugging) */}
+      <div 
+        id="game-debug"
+        style={{
+          position: 'fixed',
+          top: '10px',
+          left: '10px',
+          zIndex: 99999,
+          backgroundColor: 'rgba(255,0,0,0.8)',
+          color: 'white',
+          padding: '6px 10px',
+          fontSize: '12px',
+          fontFamily: 'monospace',
+          borderRadius: '4px',
+          pointerEvents: 'none',
+          fontWeight: 'bold'
+        }}
+      >
+        Loading...
+      </div>
+      <div 
+        ref={containerRef} 
+        className="w-full h-full overflow-hidden" 
+        style={{ 
+          margin: 0, 
+          padding: 0,
+          width: '100%',
+          height: '100%',
+          minHeight: '100%', // CRITICAL: Ensure minimum height fills container
+          minWidth: '100%', // CRITICAL: Ensure minimum width fills container
+          display: 'block',
+          boxSizing: 'border-box',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0
+        }} 
+      />
+    </>
   );
 }
 
