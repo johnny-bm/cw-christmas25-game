@@ -166,6 +166,11 @@ export class GameScene extends Phaser.Scene {
   private isGameOver: boolean = false;
   private groundY: number = 0;
   private assetsLoaded: boolean = false; // Track if assets are fully loaded
+  private lastAnimationKey: string = ''; // Track last animation we tried to play (not what's currently playing)
+  private animationSwitchCooldown: number = 0; // Cooldown to prevent rapid switching (in frames)
+  private lastOnGroundState: boolean | null = null; // Track last ground state to detect changes
+  private stableOnGroundState: boolean = false; // Stable ground state (debounced to prevent flickering)
+  private groundStateFrames: number = 0; // Counter for stable ground state detection
   
   // Helper function to setup character physics body correctly - responsive
   // CRITICAL FIX for Safari Mobile: Ensure body bottom aligns with sprite.y (feet position)
@@ -184,11 +189,6 @@ export class GameScene extends Phaser.Scene {
     // Set body size - CRITICAL: Use setSize to set both width and height
     this.player.body.setSize(bodyWidth, bodyHeight);
     
-    // CRITICAL FIX: Force body size directly - Phaser sometimes doesn't apply setSize correctly
-    // Set width and height directly on the body object
-    this.player.body.width = bodyWidth;
-    this.player.body.height = bodyHeight;
-    
     // CRITICAL FIX: Also update the body's size property directly
     // Phaser Arcade Physics uses these properties for collision detection
     if (this.player.body.setSize) {
@@ -205,6 +205,7 @@ export class GameScene extends Phaser.Scene {
         forcing: true
       });
       // Force directly - sometimes Phaser's setSize doesn't work
+      // Use type casting to access read-only properties
       (this.player.body as any).width = bodyWidth;
       (this.player.body as any).height = bodyHeight;
       (this.player.body as any).halfWidth = bodyWidth / 2;
@@ -264,8 +265,8 @@ export class GameScene extends Phaser.Scene {
         actual: actualBodyHeight.toFixed(1),
         correcting: true
       });
-      // Force correct body height
-      this.player.body.height = bodyHeight;
+      // Force correct body height using type casting (read-only property)
+      (this.player.body as any).height = bodyHeight;
       // Recalculate body position with correct height
       const correctedBodyY = spriteTopLeftY + offsetY;
       this.player.body.y = correctedBodyY;
@@ -417,7 +418,16 @@ export class GameScene extends Phaser.Scene {
     // Listen for load complete
     this.load.on('complete', () => {
       this.assetsLoaded = true; // Mark assets as loaded
-      console.log('✅ All assets loaded, game is ready to start');
+      
+      // CRITICAL: Set texture filtering for crisp rendering (prevents pixelation)
+      // Apply LINEAR filtering to all textures for smooth scaling
+      Object.keys(this.textures.list).forEach(key => {
+        const texture = this.textures.get(key);
+        if (texture) {
+          texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+        }
+      });
+      
       this.game.events.emit('assetsLoaded');
     });
     
@@ -477,8 +487,7 @@ export class GameScene extends Phaser.Scene {
       height: Math.round(height),
       aspectRatio: (width / height).toFixed(2),
       isSafari,
-      isMobile,
-      scaleManager: this.scale.manager?.getParentBounds ? 'available' : 'N/A'
+      isMobile
     });
 
     // Set camera bounds to match actual canvas size
@@ -504,30 +513,6 @@ export class GameScene extends Phaser.Scene {
       scroll: { x: this.cameras.main.scrollX, y: this.cameras.main.scrollY },
       viewport: { x: 0, y: 0, width, height },
       worldView: { x: this.cameras.main.worldView.x, y: this.cameras.main.worldView.y, width: this.cameras.main.worldView.width, height: this.cameras.main.worldView.height }
-    });
-    
-    // Visual debug: Add corner markers to verify camera viewport
-    // Top-left corner (should be visible) - GREEN
-    const topLeftMarker = this.add.rectangle(10, 10, 30, 30, 0x00ff00, 1.0);
-    topLeftMarker.setDepth(1000);
-    topLeftMarker.setOrigin(0, 0);
-    // Bottom-right corner (should be visible) - BLUE
-    // CRITICAL FIX for Safari: Ensure it's within visible bounds
-    const bottomRightX = Math.min(width - 10, width - 1);
-    const bottomRightY = Math.min(height - 10, height - 1);
-    const bottomRightMarker = this.add.rectangle(bottomRightX, bottomRightY, 30, 30, 0x0000ff, 1.0);
-    bottomRightMarker.setDepth(1000);
-    bottomRightMarker.setOrigin(1, 1); // Bottom-right origin
-    // Center marker - YELLOW
-    const centerMarker = this.add.rectangle(width / 2, height / 2, 30, 30, 0xffff00, 1.0);
-    centerMarker.setDepth(1000);
-    centerMarker.setOrigin(0.5, 0.5);
-    
-    console.log('📍 Debug markers positioned:', {
-      topLeft: { x: 10, y: 10 },
-      center: { x: width / 2, y: height / 2 },
-      bottomRight: { x: bottomRightX, y: bottomRightY },
-      viewport: { width, height }
     });
     
     // Set physics world bounds to match canvas size
@@ -610,20 +595,10 @@ export class GameScene extends Phaser.Scene {
     this.ground = this.physics.add.staticGroup();
     
     // Create ground rectangle at groundY
-    // CRITICAL: Make ground highly visible for debugging - use bright color
-    // Use a more visible color for debugging (darker gray with higher opacity)
-    const groundColor = 0x888888; // Bright gray for visibility
+    const groundColor = getElementColorPhaser('ground'); // Ground color from config (#DEDCDE)
     const groundRect = this.add.rectangle(0, this.groundY, groundWidth, groundHeight, groundColor, 1.0);
     groundRect.setDepth(10); // Ground depth - character (20) will render above
     groundRect.setOrigin(0, 0); // Top-left origin
-    
-    // Debug: Add a visible border to ground for testing (can remove later)
-    // This helps verify ground is positioned correctly - make it more visible
-    const groundDebug = this.add.rectangle(width / 2, this.groundY + groundHeight / 2, groundWidth, groundHeight, 0xff0000, 0.5);
-    groundDebug.setDepth(9);
-    groundDebug.setOrigin(0.5, 0.5);
-    
-    // Ground surface line will be created after character positioning to ensure correct position
     
     // Add physics body and configure it
     this.physics.add.existing(groundRect, true);
@@ -689,6 +664,12 @@ export class GameScene extends Phaser.Scene {
     // Set origin to BOTTOM CENTER (0.5, 1) - sprite.y will be the bottom
     this.player.setOrigin(0.5, 1);
     
+    // CRITICAL: Set texture filtering for crisp rendering (prevents pixelation)
+    // Use LINEAR filtering for smooth scaling without pixelation
+    if (this.player.texture) {
+      this.player.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    }
+    
     // Position sprite at ground level - CRITICAL FIX for Safari Mobile
     // With origin (0.5, 1), sprite.y is the bottom/feet position
     // Ground is at groundY (top of ground rectangle), so character feet should be AT groundY
@@ -703,15 +684,6 @@ export class GameScene extends Phaser.Scene {
     // Setup physics body BEFORE setting physics properties to ensure proper alignment
     this.setupCharacterBody();
     
-    // Debug: Log character positioning
-    console.log('👤 Character setup:', {
-      playerX: Math.round(playerX),
-      playerY: Math.round(this.groundY),
-      characterHeight: Math.round(targetHeight),
-      characterTop: Math.round(this.groundY - targetHeight),
-      groundY: Math.round(this.groundY),
-      worldHeight: height
-    });
     
     // CRITICAL FIX for iPhone Pro Max: Ensure player is fully visible
     // Verify character fits in visible area and adjust if necessary
@@ -787,6 +759,9 @@ export class GameScene extends Phaser.Scene {
     // CRITICAL: Reset velocity to 0 to prevent character from falling through ground
     this.player.body.setVelocity(0, 0);
     
+    // CRITICAL: Disable gravity initially since player starts on ground
+    this.player.body.setAllowGravity(false);
+    
     // CRITICAL FIX for Safari Mobile: Re-setup body after all physics properties are set
     // This ensures body is properly aligned with sprite position
     this.setupCharacterBody();
@@ -795,6 +770,19 @@ export class GameScene extends Phaser.Scene {
     // Arcade Physics will automatically keep player on top of ground
     // The collider handles collision response, preventing character from sinking
     this.physics.add.collider(this.player, this.ground);
+    
+    // CRITICAL: Final positioning check - ensure everything is aligned before game starts
+    // This prevents visible repositioning when startGame() is called
+    const finalPlayerX = width * 0.25;
+    if (Math.abs(this.player.x - finalPlayerX) > 1 || Math.abs(this.player.y - this.groundY) > 1) {
+      this.player.setPosition(finalPlayerX, this.groundY);
+      this.setupCharacterBody();
+      // Ensure body bottom aligns with ground
+      const bodyBottom = this.player.body.y + this.player.body.height;
+      if (Math.abs(bodyBottom - this.groundY) > 0.5) {
+        this.player.body.y += (this.groundY - bodyBottom);
+      }
+    }
     
     // CRITICAL: Final position adjustment - ensure character is exactly on ground surface
     // Position character so physics body bottom aligns with ground top surface
@@ -893,38 +881,6 @@ export class GameScene extends Phaser.Scene {
         this.setupCharacterBody();
       }
       
-      // Visual debug: Show character body outline (green = body, yellow = ground surface)
-      const bodyDebug = this.add.rectangle(
-        this.player.body.x + this.player.body.width / 2,
-        this.player.body.y + this.player.body.height / 2,
-        this.player.body.width,
-        this.player.body.height,
-        0x00ff00,
-        0.4
-      );
-      bodyDebug.setDepth(1001);
-      bodyDebug.setOrigin(0.5, 0.5);
-      
-      // Show ground surface line (yellow) - this is where character feet should be
-      // This line shows where the ground surface is - character feet should be at this line
-      const groundSurfaceLine = this.add.line(
-        0, this.groundY, 
-        0, this.groundY, 
-        width, this.groundY,
-        0xffff00, 1.0 // Bright yellow line
-      );
-      groundSurfaceLine.setDepth(1001);
-      groundSurfaceLine.setLineWidth(4);
-      
-      // Show body bottom line (cyan) - should align with yellow line
-      const bodyBottomLine = this.add.line(
-        0, this.player.body.y + this.player.body.height,
-        0, this.player.body.y + this.player.body.height,
-        width, this.player.body.y + this.player.body.height,
-        0x00ffff, 1
-      );
-      bodyBottomLine.setDepth(1001);
-      bodyBottomLine.setLineWidth(2);
     }
 
     // Setup animation
@@ -947,18 +903,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
     
-    // CRITICAL: Verify character is visible and positioned correctly
-    console.log('✅ Character creation complete:', {
-      playerExists: !!this.player,
-      playerX: this.player?.x?.toFixed(1),
-      playerY: this.player?.y?.toFixed(1),
-      playerVisible: this.player?.visible,
-      playerAlpha: this.player?.alpha,
-      playerScale: this.player?.scaleX,
-      groundY: this.groundY.toFixed(1),
-      screenHeight: height,
-      textureExists: this.textures.exists('character-pushing-01')
-    });
 
     // Sprint glow effect - scale relative to player size
     const glowWidth = 60 * scale;
@@ -1172,11 +1116,14 @@ export class GameScene extends Phaser.Scene {
       this.sound.unlock();
     }
     
-    // Reliable ground detection - use collision flags with position fallback
-    // Check collision flags first, then check if very close to ground
+    // Reliable ground detection - use collision flags ONLY for jump detection
+    // CRITICAL: Use both collision flags AND position-based detection for reliable ground detection
+    // Position-based detection is needed because collision flags can be unreliable
     const touchingGround = this.player.body.touching.down || this.player.body.blocked.down;
     const nearGround = Math.abs(this.player.y - this.groundY) < 5; // Within 5px of ground
-    const onGround = touchingGround || (nearGround && this.player.body.velocity.y >= 0);
+    const velocityDownward = this.player.body.velocity.y >= 0; // Not moving up
+    // Use collision OR (position near ground AND not moving up) for reliable detection
+    const onGround = touchingGround || (nearGround && velocityDownward);
     
     // Scale jump velocity relative to screen height for responsive jump physics
     // Stronger jump on mobile to allow clearing obstacles
@@ -1188,41 +1135,100 @@ export class GameScene extends Phaser.Scene {
     const baseJumpVelocity = -1200;
     const jumpVelocity = baseJumpVelocity * (height / GameConfig.physics.baseGravityHeight) * mobileJumpMultiplier;
     
+    // CRITICAL: Allow jumping immediately when on ground, regardless of jumpsRemaining
+    // This prevents delay when landing and trying to jump immediately
+    // Reset jumpsRemaining if on ground to ensure we can always jump from ground
     if (onGround) {
-      // CRITICAL: Re-enable gravity when jumping
-      this.player.body.setAllowGravity(true);
-      this.player.body.setVelocityY(jumpVelocity);
-      this.jumpsRemaining = 1;
-      // Switch to ollie animation when jumping
-      const ollieAnim = this.getAnimationName(false);
-      if (this.anims.exists(ollieAnim)) {
-        this.player.play(ollieAnim);
+      // Reset jumps immediately when on ground to allow instant jumping
+      if (this.jumpsRemaining <= 0) {
+        this.jumpsRemaining = 2;
       }
-      // Deduct energy for jumping (free during sprint mode)
-      const jumpCost = this.sprintMode ? GameConfig.energy.jumpCostSprint : GameConfig.energy.jumpCost;
-      this.energy = Math.max(0, this.energy - jumpCost);
-      // Play jump sound - ensure audio context is active
-      if (this.jumpSound && !this.isMuted) {
-        try {
-          // Resume audio context if suspended (mobile requirement)
-          const audioContext = this.getAudioContext();
-          if (audioContext && audioContext.state === 'suspended') {
-            audioContext.resume();
-          }
-          this.jumpSound.play();
-        } catch (error) {
-          console.warn('⚠️ Failed to play jump sound:', error);
+      
+      // Allow jump from ground - always allow first jump when on ground
+      if (this.jumpsRemaining > 0) {
+        console.log('🚀 JUMP (on ground):', {
+          onGround,
+          touchingGround,
+          nearGround,
+          velocityDownward,
+          jumpsRemaining: this.jumpsRemaining,
+          velocityY: jumpVelocity.toFixed(1),
+          gravityEnabled: this.player.body.allowGravity
+        });
+        
+        // CRITICAL: Re-enable gravity when jumping
+        this.player.body.setAllowGravity(true);
+        this.player.body.setVelocityY(jumpVelocity);
+        this.jumpsRemaining = 1;
+        // Switch to ollie animation when jumping
+        const ollieAnim = this.getAnimationName(false);
+        if (this.anims.exists(ollieAnim)) {
+          console.log('▶️ JUMP: Starting ollie animation:', ollieAnim);
+          this.player.play(ollieAnim, false); // Always restart from beginning
+          this.lastAnimationKey = ollieAnim;
+          this.animationSwitchCooldown = 0; // Reset cooldown
+          this.lastOnGroundState = false;
+          
+          // Verify animation started
+          const verifyAnim = this.player.anims.currentAnim;
+          console.log('✅ JUMP: Ollie animation started:', {
+            playing: verifyAnim?.key || 'none',
+            isPlaying: verifyAnim !== null
+          });
+        } else {
+          console.error('❌ JUMP: Ollie animation does not exist:', ollieAnim);
         }
+        // Deduct energy for jumping (free during sprint mode)
+        const jumpCost = this.sprintMode ? GameConfig.energy.jumpCostSprint : GameConfig.energy.jumpCost;
+        this.energy = Math.max(0, this.energy - jumpCost);
+        // Play jump sound - ensure audio context is active
+        if (this.jumpSound && !this.isMuted) {
+          try {
+            // Resume audio context if suspended (mobile requirement)
+            const audioContext = this.getAudioContext();
+            if (audioContext && audioContext.state === 'suspended') {
+              audioContext.resume();
+            }
+            this.jumpSound.play();
+          } catch (error) {
+            console.warn('⚠️ Failed to play jump sound:', error);
+          }
+        }
+        return; // Exit early after ground jump
       }
-    } else if (this.jumpsRemaining > 0) {
-      // CRITICAL: Ensure gravity is enabled for double jump
+    }
+    
+    // Double jump - only allow if in air and have jumps remaining
+    if (this.jumpsRemaining > 0 && !onGround) {
+      console.log('🚀 DOUBLE JUMP:', {
+        onGround,
+        jumpsRemaining: this.jumpsRemaining,
+        velocityY: jumpVelocity.toFixed(1),
+        gravityEnabled: this.player.body.allowGravity
+      });
+      
+      // CRITICAL: Double jump - only allow if not on ground and have jumps remaining
+      // Ensure gravity is enabled for double jump
       this.player.body.setAllowGravity(true);
       this.player.body.setVelocityY(jumpVelocity);
       this.jumpsRemaining = 0;
       // Restart ollie animation for double jump
       const ollieAnim = this.getAnimationName(false);
       if (this.anims.exists(ollieAnim)) {
-        this.player.play(ollieAnim);
+        console.log('▶️ DOUBLE JUMP: Starting ollie animation:', ollieAnim);
+        this.player.play(ollieAnim, false); // Always restart from beginning
+        this.lastAnimationKey = ollieAnim;
+        this.animationSwitchCooldown = 0; // Reset cooldown
+        this.lastOnGroundState = false;
+        
+        // Verify animation started
+        const verifyAnim = this.player.anims.currentAnim;
+        console.log('✅ DOUBLE JUMP: Ollie animation started:', {
+          playing: verifyAnim?.key || 'none',
+          isPlaying: verifyAnim !== null
+        });
+      } else {
+        console.error('❌ DOUBLE JUMP: Ollie animation does not exist:', ollieAnim);
       }
       // Deduct energy for jumping (free during sprint mode)
       const jumpCost = this.sprintMode ? GameConfig.energy.jumpCostSprint : GameConfig.energy.jumpCost;
@@ -2134,51 +2140,91 @@ export class GameScene extends Phaser.Scene {
     const nearGround = Math.abs(this.player.y - this.groundY) < 3; // Within 3px of ground
     const onGround = touchingGround || (nearGround && this.player.body.velocity.y >= 0);
     
-    // CRITICAL FIX: Ensure gravity is enabled when in air (not on ground)
-    // This ensures character falls back down after jumping
-    if (!onGround) {
-      this.player.body.setAllowGravity(true);
+    // CRITICAL: Stabilize ground state to prevent flickering
+    // Only change stable state after 3 consecutive frames of the same state
+    if (onGround === this.stableOnGroundState) {
+      this.groundStateFrames = 0; // Reset counter if state matches
+    } else {
+      this.groundStateFrames++;
+      if (this.groundStateFrames >= 3) {
+        // State has been consistent for 3 frames - update stable state
+        this.stableOnGroundState = onGround;
+        this.groundStateFrames = 0;
+      }
+    }
+    
+    // Use stable ground state for animation decisions
+    const stableOnGround = this.stableOnGroundState;
+    
+    // CRITICAL: Update animation switch cooldown
+    if (this.animationSwitchCooldown > 0) {
+      this.animationSwitchCooldown--;
     }
     
     // CRITICAL FIX: Prevent character from sinking below ground
-    // Completely disable safeguard when touching ground to prevent bouncing/wiggling
-    // Only check if character is significantly below ground AND not touching ground
-    if (!touchingGround && !onGround) {
-      // Character is not touching ground - check if sinking significantly
-      const spriteHeight = this.player.displayHeight;
-      const calculatedBodyHeight = spriteHeight * 0.85;
-      const reportedBodyHeight = this.player.body.height;
-      const reliableBodyHeight = Math.abs(reportedBodyHeight - calculatedBodyHeight) > 5 
-        ? calculatedBodyHeight 
-        : reportedBodyHeight;
+    // Check if character is below ground and correct immediately
+    const spriteY = this.player.y;
+    const distanceFromGround = spriteY - this.groundY;
+    
+    // Log ground collision state every 30 frames (once per second at 30fps)
+    if (Math.floor(time / 1000) % 1 === 0 && Math.floor((time % 1000) / 33) === 0) {
+      console.log('🔍 GROUND STATE:', {
+        spriteY: spriteY.toFixed(1),
+        groundY: this.groundY.toFixed(1),
+        distanceFromGround: distanceFromGround.toFixed(1),
+        onGround,
+        touchingGround,
+        stableOnGround,
+        velocityY: this.player.body.velocity.y.toFixed(1),
+        gravityEnabled: this.player.body.allowGravity,
+        jumpsRemaining: this.jumpsRemaining
+      });
+    }
+    
+    // CRITICAL FIX: Prevent character from sinking below ground
+    // Only correct if character is significantly below ground AND not touching ground
+    // This prevents the infinite correction loop
+    if (distanceFromGround > 5 && !touchingGround) {
+      console.log('⚠️ CHARACTER BELOW GROUND - CORRECTING:', {
+        spriteY: spriteY.toFixed(1),
+        groundY: this.groundY.toFixed(1),
+        distanceFromGround: distanceFromGround.toFixed(1),
+        velocityY: this.player.body.velocity.y.toFixed(1),
+        gravityEnabled: this.player.body.allowGravity,
+        touchingGround
+      });
       
-      const characterBodyBottom = this.player.body.y + reliableBodyHeight;
-      const spriteY = this.player.y;
+      // Character is below ground - correct it immediately
+      this.player.y = this.groundY;
       
-      // Only correct if character is significantly below ground (more than 20px)
-      // This prevents constant micro-adjustments that cause wiggling
-      const sinkingThreshold = 20; // Only correct if more than 20px below ground
-      if (characterBodyBottom > this.groundY + sinkingThreshold || spriteY > this.groundY + sinkingThreshold) {
-        // Character is sinking significantly - correct it
-        this.player.y = this.groundY;
-        
-        // Fix body position to align with sprite
-        const spriteTopLeftY = this.player.y - spriteHeight;
-        const offsetY = spriteHeight - reliableBodyHeight;
-        const correctBodyY = spriteTopLeftY + offsetY;
-        this.player.body.y = correctBodyY;
-        
-        // Reset vertical velocity
+      // Fix body position using setupCharacterBody logic
+      this.setupCharacterBody();
+      
+      // Reset vertical velocity and disable gravity when on ground
+      this.player.body.setVelocityY(0);
+      this.player.body.setAllowGravity(false);
+      
+      console.log('✅ CORRECTED POSITION:', {
+        newSpriteY: this.player.y.toFixed(1),
+        newBodyY: this.player.body.y.toFixed(1),
+        bodyHeight: this.player.body.height.toFixed(1),
+        gravityEnabled: this.player.body.allowGravity
+      });
+    }
+    
+    // CRITICAL FIX: Manage gravity based on ground state
+    // Only enable gravity when truly in air (not touching ground AND above ground)
+    const isAboveGround = distanceFromGround < -5; // At least 5px above ground
+    if (isAboveGround && !touchingGround && !onGround) {
+      if (!this.player.body.allowGravity) {
+        console.log('🔼 ENABLING GRAVITY (in air)');
+      }
+      this.player.body.setAllowGravity(true);
+    } else if (touchingGround || (distanceFromGround <= 5 && this.player.body.velocity.y >= 0)) {
+      // Disable gravity when on or near ground
+      if (this.player.body.allowGravity) {
+        this.player.body.setAllowGravity(false);
         this.player.body.setVelocityY(0);
-        
-        // Only log on mobile if sinking is severe
-        if (isMobile) {
-          console.warn('⚠️ Character sinking detected (mobile) - corrected:', {
-            bodyBottom: characterBodyBottom.toFixed(1),
-            spriteY: spriteY.toFixed(1),
-            groundY: this.groundY.toFixed(1)
-          });
-        }
       }
     }
     // When on ground or touching ground, let physics collider handle everything
@@ -2188,30 +2234,42 @@ export class GameScene extends Phaser.Scene {
     // No duplicate jump handling here to avoid inconsistency
     this.pointerWasDown = this.input.activePointer.isDown;
     
-    // Handle ground state
-    if (onGround) {
+    // Handle ground state - use stable ground state for animations
+    // CRITICAL: Reset jumpsRemaining when on ground (using position-based detection) AND not moving upward
+    // This prevents double jump from being disabled while still in the air or bouncing
+    const actuallyTouchingGround = this.player.body.touching.down || this.player.body.blocked.down;
+    const isMovingUpward = this.player.body.velocity.y < -50; // Moving up significantly
+    const isStable = Math.abs(this.player.body.velocity.y) < 10; // Velocity is near zero (stable on ground)
+    // Reset jumps when on ground (position-based) and stable (not bouncing), and not moving up
+    // Use onGround (position-based) instead of requiring actuallyTouchingGround for more reliable detection
+    if (stableOnGround && onGround && !isMovingUpward && isStable) {
       this.jumpsRemaining = 2;
       
       // CRITICAL FIX: Ensure body height is correct when on ground
       // Phaser sometimes resets body height, causing collider to fail
+      // Reduced frequency of checks on mobile to prevent bugging
       const spriteHeight = this.player.displayHeight;
       const expectedBodyHeight = spriteHeight * 0.85;
-      if (Math.abs(this.player.body.height - expectedBodyHeight) > 5) {
-        // Body height is wrong - force correct value
-        this.player.body.height = expectedBodyHeight;
-        this.player.body.width = spriteHeight * 0.85; // Also ensure width is correct
+      // Only check every few frames on mobile to reduce corrections
+      const shouldCheck = !isMobile || (Math.floor(time / 100) % 3 === 0); // Check every 3rd frame on mobile
+      if (shouldCheck && Math.abs(this.player.body.height - expectedBodyHeight) > 5) {
+        // Body height is wrong - force correct value using type casting (read-only properties)
+        (this.player.body as any).height = expectedBodyHeight;
+        (this.player.body as any).width = spriteHeight * 0.85; // Also ensure width is correct
         // Re-setup body to ensure offset is correct
         this.setupCharacterBody();
       }
       
       // CRITICAL FIX: Disable gravity when on ground to prevent constant sinking
       // Re-enable it when jumping
-      if (this.player.body.allowGravity) {
+      // Use onGround (position-based) for more reliable detection
+      if (onGround && this.player.body.allowGravity) {
         this.player.body.setAllowGravity(false);
       }
       
       // Reset velocity to prevent any downward movement
-      if (this.player.body.velocity.y > 0) {
+      // Use onGround (position-based) for more reliable detection
+      if (onGround && this.player.body.velocity.y > 0) {
         this.player.body.setVelocityY(0);
       }
       
@@ -2221,8 +2279,45 @@ export class GameScene extends Phaser.Scene {
       
       // Switch to pushing animation when on ground
       const pushingAnim = this.getAnimationName(true);
-      if (this.player.anims.currentAnim?.key !== pushingAnim) {
-        this.player.play(pushingAnim);
+      const currentAnim = this.player.anims.currentAnim;
+      const isCurrentlyPlayingPushing = currentAnim && (currentAnim.key === pushingAnim);
+      
+      // Log animation state every 30 frames
+      if (Math.floor(time / 1000) % 1 === 0 && Math.floor((time % 1000) / 33) === 0) {
+        console.log('🎬 ANIMATION STATE (on ground):', {
+          targetAnim: pushingAnim,
+          currentAnimKey: currentAnim?.key || 'none',
+          isCurrentlyPlaying: isCurrentlyPlayingPushing,
+          lastAnimationKey: this.lastAnimationKey,
+          cooldown: this.animationSwitchCooldown,
+          animExists: this.anims.exists(pushingAnim)
+        });
+      }
+      
+      // CRITICAL: Always ensure pushing animation is playing when on ground
+      // Only switch if animation is NOT currently playing AND cooldown has expired
+      if (!isCurrentlyPlayingPushing && this.animationSwitchCooldown === 0) {
+        console.log('▶️ SWITCHING TO PUSHING ANIMATION:', {
+          targetAnim: pushingAnim,
+          currentAnimKey: currentAnim?.key || 'none',
+          wasOllie: currentAnim && (currentAnim.key === 'ollie' || currentAnim.key === 'sprint-ollie'),
+          cooldown: this.animationSwitchCooldown,
+          animExists: this.anims.exists(pushingAnim)
+        });
+        
+        // Play the animation - restart from beginning when transitioning from ollie
+        const wasOllie = currentAnim && (currentAnim.key === 'ollie' || currentAnim.key === 'sprint-ollie');
+        this.player.play(pushingAnim, !wasOllie); // Restart if coming from ollie, otherwise ignoreIfPlaying
+        this.lastAnimationKey = pushingAnim;
+        this.animationSwitchCooldown = 10; // Cooldown to prevent rapid switching
+        this.lastOnGroundState = true;
+        
+        // Verify animation started
+        const verifyAnim = this.player.anims.currentAnim;
+        console.log('✅ PUSHING ANIMATION STARTED:', {
+          playing: verifyAnim?.key || 'none',
+          isPlaying: verifyAnim !== null
+        });
         
         // Play skateboard sound when pushing
         if (this.skateboardSound && !this.isMuted && !this.skateboardSound.isPlaying) {
@@ -2259,8 +2354,43 @@ export class GameScene extends Phaser.Scene {
     } else {
       // Switch to ollie animation when in air
       const ollieAnim = this.getAnimationName(false);
-      if (this.player.anims.currentAnim?.key !== ollieAnim) {
-        this.player.play(ollieAnim);
+      const currentAnim = this.player.anims.currentAnim;
+      const isCurrentlyPlayingOllie = currentAnim && (currentAnim.key === ollieAnim);
+      
+      // Log animation state every 30 frames
+      if (Math.floor(time / 1000) % 1 === 0 && Math.floor((time % 1000) / 33) === 0) {
+        console.log('🎬 ANIMATION STATE (in air):', {
+          targetAnim: ollieAnim,
+          currentAnimKey: currentAnim?.key || 'none',
+          isCurrentlyPlaying: isCurrentlyPlayingOllie,
+          lastAnimationKey: this.lastAnimationKey,
+          cooldown: this.animationSwitchCooldown,
+          animExists: this.anims.exists(ollieAnim)
+        });
+      }
+      
+      // CRITICAL: Always ensure ollie animation is playing when in air
+      // Only switch if animation is NOT currently playing AND cooldown has expired
+      if (!isCurrentlyPlayingOllie && this.animationSwitchCooldown === 0) {
+        console.log('▶️ SWITCHING TO OLLIE ANIMATION:', {
+          targetAnim: ollieAnim,
+          currentAnimKey: currentAnim?.key || 'none',
+          cooldown: this.animationSwitchCooldown,
+          animExists: this.anims.exists(ollieAnim)
+        });
+        
+        // Always restart ollie from beginning when jumping
+        this.player.play(ollieAnim, false);
+        this.lastAnimationKey = ollieAnim;
+        this.animationSwitchCooldown = 10; // Cooldown to prevent rapid switching
+        this.lastOnGroundState = false;
+        
+        // Verify animation started
+        const verifyAnim = this.player.anims.currentAnim;
+        console.log('✅ OLLIE ANIMATION STARTED:', {
+          playing: verifyAnim?.key || 'none',
+          isPlaying: verifyAnim !== null
+        });
         
         // Stop skateboard sound when jumping
         if (this.skateboardSound && this.skateboardSound.isPlaying) {
@@ -2535,6 +2665,12 @@ export class GameScene extends Phaser.Scene {
   startGame() {
     console.log('🎮 startGame() called');
     
+    // CRITICAL: Prevent double call to startGame() - if game is already started, don't reset
+    if (this.isGameStarted && !this.isGameOver) {
+      console.log('⚠️ startGame() called but game is already started, skipping to prevent reset');
+      return;
+    }
+    
     // CRITICAL: Don't start game until assets are fully loaded
     if (!this.assetsLoaded) {
       console.warn('⚠️ startGame() called before assets are loaded, waiting...');
@@ -2652,6 +2788,17 @@ export class GameScene extends Phaser.Scene {
     this.energy = GameConfig.energy.initial;
     this.combo = 0;
     
+    // CRITICAL: Reset animation state to ensure animations start playing
+    this.lastAnimationKey = ''; // Reset to allow initial animation to play
+    this.animationSwitchCooldown = 0; // Reset cooldown
+    this.lastOnGroundState = null; // Reset ground state tracking
+    
+    // CRITICAL: Start the pushing animation when game starts
+    if (this.player && this.anims.exists('pushing')) {
+      this.player.play('pushing', false); // Start from beginning
+      this.lastAnimationKey = 'pushing';
+    }
+    
     console.log('✅ Game started:', {
       isGameStarted: this.isGameStarted,
       isGameOver: this.isGameOver,
@@ -2659,7 +2806,8 @@ export class GameScene extends Phaser.Scene {
       playerExists: !!this.player,
       playerVisible: this.player?.visible,
       playerX: this.player?.x?.toFixed(1),
-      playerY: this.player?.y?.toFixed(1)
+      playerY: this.player?.y?.toFixed(1),
+      animationKey: this.lastAnimationKey
     });
     this.distance = 0;
     this.gameSpeed = GameConfig.speed.initial;
@@ -2670,92 +2818,26 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.resetFX();
     this.cameras.main.setAlpha(1);
     
-    // Reset player position - use actual game world width, not camera width
-    // With origin (0.5, 1), sprite.y is the bottom/feet position
-    // Position sprite.y = groundY to place feet at ground level
+    // CRITICAL: Player positioning is done in create() - don't reposition here
+    // This prevents visible repositioning when game starts
+    // Just ensure velocities are reset and gravity is disabled if on ground
     if (this.player?.body) {
-      const playerX = width * 0.25; // 25% from left edge
-      
-      // Ensure player scale is correct for current screen size
-      const isMobile = width <= 768 || height <= 768;
-      const characterHeightRatio = isMobile ? 0.198 : 0.15;
-      const targetHeight = height * characterHeightRatio;
-      const playerScale = targetHeight / 160;
-      this.player.setScale(playerScale);
-      
-      // Position sprite at ground level - with origin (0.5, 1), sprite.y is the bottom/feet
-      // Setting sprite.y = groundY places feet exactly on ground surface
-      // Phaser's collider will automatically keep the player on the ground
-      this.player.setPosition(playerX, this.groundY);
-      
-      // CRITICAL: Re-setup body after repositioning to ensure body bottom aligns with ground
-      this.setupCharacterBody();
-      
-      // CRITICAL FIX: After setting position and body, ensure sprite and body are aligned
-      // The sprite.y should be at groundY (feet position with origin 0.5, 1)
-      // The body bottom should also be at groundY
-      this.player.setPosition(playerX, this.groundY);
-      
-      // Re-setup body again after final position is set
-      this.setupCharacterBody();
-      
-      // CRITICAL FIX for Mobile: Verify body height is correct (Phaser sometimes reports wrong values)
-      const spriteHeight = this.player.displayHeight;
-      const expectedBodyHeight = spriteHeight * 0.85;
-      if (Math.abs(this.player.body.height - expectedBodyHeight) > 5) {
-        // Body height is wrong - force correct value
-        this.player.body.height = expectedBodyHeight;
-        // Recalculate body position with correct height
-        const spriteTopLeftY = this.player.y - spriteHeight;
-        const offsetY = spriteHeight - expectedBodyHeight;
-        this.player.body.y = spriteTopLeftY + offsetY;
-        console.warn('⚠️ Mobile: Corrected body height from', this.player.body.height.toFixed(1), 'to', expectedBodyHeight.toFixed(1));
-      }
-      
-      // Verify and fix body bottom alignment
-      const bodyBottom = this.player.body.y + this.player.body.height;
-      if (Math.abs(bodyBottom - this.groundY) > 0.5) {
-        // Calculate correct body position
-        const spriteHeight = this.player.displayHeight;
-        const bodyHeight = this.player.body.height;
-        const offsetY = this.player.body.offset.y;
-        const spriteTopLeftY = this.player.y - spriteHeight;
-        const correctBodyY = spriteTopLeftY + offsetY;
-        
-        // Set body position directly
-        this.player.body.y = correctBodyY;
-        
-        // Verify again
-        const newBodyBottom = this.player.body.y + this.player.body.height;
-        if (Math.abs(newBodyBottom - this.groundY) > 0.5) {
-          // Last resort: adjust body position to match groundY
-          this.player.body.y += (this.groundY - newBodyBottom);
-        }
-        
-        console.log('🔧 startGame() corrected body position:', {
-          oldBodyBottom: bodyBottom.toFixed(1),
-          newBodyBottom: (this.player.body.y + this.player.body.height).toFixed(1),
-          groundY: this.groundY.toFixed(1),
-          spriteY: this.player.y.toFixed(1)
-        });
-      }
-      
-      // CRITICAL: Ensure sprite position matches groundY (in case body adjustment moved things)
-      if (Math.abs(this.player.y - this.groundY) > 0.5) {
-        this.player.setPosition(playerX, this.groundY);
-        this.setupCharacterBody();
-      }
-      
       // Reset all velocities to prevent falling or movement
       this.player.body.setVelocity(0, 0);
       
-      console.log('✅ startGame() player repositioned:', {
+      // Ensure gravity is disabled when starting on ground
+      const touchingGround = this.player.body.touching.down || this.player.body.blocked.down;
+      if (touchingGround) {
+        this.player.body.setAllowGravity(false);
+      }
+      
+      console.log('✅ startGame() player ready:', {
         playerX: this.player.x.toFixed(1),
         playerY: this.player.y.toFixed(1),
         groundY: this.groundY.toFixed(1),
         bodyY: this.player.body.y.toFixed(1),
         bodyBottom: (this.player.body.y + this.player.body.height).toFixed(1),
-        match: Math.abs((this.player.body.y + this.player.body.height) - this.groundY) < 1 ? '✅' : '❌'
+        touchingGround: touchingGround
       });
     }
     
@@ -3025,7 +3107,9 @@ export class GameScene extends Phaser.Scene {
     const isOnGround = this.player.body.touching.down;
     const animationName = this.getAnimationName(isOnGround);
     if (this.anims.exists(animationName)) {
-      this.player.play(animationName);
+      this.player.play(animationName, false); // Always restart when switching to sprint mode
+      this.lastAnimationKey = animationName; // Update tracking
+      this.animationSwitchCooldown = 0; // Reset cooldown
     }
     
     // Speed up music during sprint mode (overrides energy-based slowdown)
@@ -3068,7 +3152,9 @@ export class GameScene extends Phaser.Scene {
         const isOnGround = this.player.body.touching.down;
         const animationName = this.getAnimationName(isOnGround);
         if (this.anims.exists(animationName)) {
-          this.player.play(animationName);
+          this.player.play(animationName, false); // Always restart when switching from sprint mode
+          this.lastAnimationKey = animationName; // Update tracking
+          this.animationSwitchCooldown = 0; // Reset cooldown
         }
         
         // Reset music speed back to normal (will be adjusted by energy-based slowdown if needed)
@@ -3117,66 +3203,133 @@ export class GameScene extends Phaser.Scene {
       this.anims.remove('sprint-ollie');
     }
     
+    // Detect mobile for frame rate adjustment
+    const { width, height } = this.scale;
+    const isMobile = width <= 768 || height <= 768;
+    
     // Create pushing animation (10 frames)
+    // CRITICAL: For individual image files, just use the key - don't specify frame: 0
     const pushingFrames = [];
     for (let i = 1; i <= 10; i++) {
       const frameNumber = i.toString().padStart(2, '0');
-      pushingFrames.push({ key: `character-pushing-${frameNumber}`, frame: 0 });
+      pushingFrames.push({ key: `character-pushing-${frameNumber}` });
     }
+    
+    // Slower frame rate on mobile to prevent animation from being too fast
+    const pushingFrameRate = isMobile ? 8 : 12;
+    
+    console.log('🎬 CREATING pushing animation:', {
+      frameCount: pushingFrames.length,
+      frameRate: pushingFrameRate,
+      frames: pushingFrames.map(f => f.key)
+    });
     
     this.anims.create({
       key: 'pushing',
       frames: pushingFrames,
-      frameRate: 12, // Adjust speed as needed
-      repeat: -1
+      frameRate: pushingFrameRate, // Slower on mobile (8) vs desktop (12)
+      repeat: -1 // Loop infinitely
     });
+    
+    console.log('✅ Pushing animation created:', this.anims.exists('pushing'));
     
     // Create ollie animation (10 frames)
     const ollieFrames = [];
     for (let i = 1; i <= 10; i++) {
       const frameNumber = i.toString().padStart(2, '0');
-      ollieFrames.push({ key: `character-ollie-${frameNumber}`, frame: 0 });
+      ollieFrames.push({ key: `character-ollie-${frameNumber}` });
     }
+    
+    // Slower frame rate on mobile for ollie too
+    const ollieFrameRate = isMobile ? 12 : 15;
+    
+    console.log('🎬 CREATING ollie animation:', {
+      frameCount: ollieFrames.length,
+      frameRate: ollieFrameRate,
+      frames: ollieFrames.map(f => f.key)
+    });
     
     this.anims.create({
       key: 'ollie',
       frames: ollieFrames,
-      frameRate: 15, // Slightly faster for jump animation
+      frameRate: ollieFrameRate, // Slower on mobile (12) vs desktop (15)
       repeat: 0 // Don't loop - play once per jump
+      // Note: Transition back to pushing is handled in update() loop when on ground
     });
+    
+    console.log('✅ Ollie animation created:', this.anims.exists('ollie'));
     
     // Create sprint pushing animation (10 frames)
     const sprintPushingFrames = [];
     for (let i = 1; i <= 10; i++) {
       const frameNumber = i.toString().padStart(2, '0');
-      sprintPushingFrames.push({ key: `sprint-character-pushing-${frameNumber}`, frame: 0 });
+      sprintPushingFrames.push({ key: `sprint-character-pushing-${frameNumber}` });
     }
+    
+    // Slower frame rate on mobile for sprint pushing too
+    const sprintPushingFrameRate = isMobile ? 8 : 12;
+    
+    console.log('🎬 CREATING sprint-pushing animation:', {
+      frameCount: sprintPushingFrames.length,
+      frameRate: sprintPushingFrameRate,
+      frames: sprintPushingFrames.map(f => f.key)
+    });
     
     this.anims.create({
       key: 'sprint-pushing',
       frames: sprintPushingFrames,
-      frameRate: 12, // Adjust speed as needed
-      repeat: -1
+      frameRate: sprintPushingFrameRate, // Slower on mobile (8) vs desktop (12)
+      repeat: -1 // Loop infinitely
     });
+    
+    console.log('✅ Sprint-pushing animation created:', this.anims.exists('sprint-pushing'));
     
     // Create sprint ollie animation (10 frames)
     const sprintOllieFrames = [];
     for (let i = 1; i <= 10; i++) {
       const frameNumber = i.toString().padStart(2, '0');
-      sprintOllieFrames.push({ key: `sprint-character-ollie-${frameNumber}`, frame: 0 });
+      sprintOllieFrames.push({ key: `sprint-character-ollie-${frameNumber}` });
     }
+    
+    // Slower frame rate on mobile for sprint ollie too
+    const sprintOllieFrameRate = isMobile ? 12 : 15;
+    
+    console.log('🎬 CREATING sprint-ollie animation:', {
+      frameCount: sprintOllieFrames.length,
+      frameRate: sprintOllieFrameRate,
+      frames: sprintOllieFrames.map(f => f.key)
+    });
     
     this.anims.create({
       key: 'sprint-ollie',
       frames: sprintOllieFrames,
-      frameRate: 15, // Slightly faster for jump animation
+      frameRate: sprintOllieFrameRate, // Slower on mobile (12) vs desktop (15)
       repeat: 0 // Don't loop - play once per jump
+      // Note: Transition back to sprint-pushing is handled in update() loop when on ground
     });
+    
+    console.log('✅ Sprint-ollie animation created:', this.anims.exists('sprint-ollie'));
     
     // Set initial texture and start pushing animation
     // Note: Scale is already set in create() method based on screen size
     this.player.setTexture('character-pushing-01');
-    this.player.play('pushing');
+    
+    console.log('🎬 SETUP: Starting initial pushing animation');
+    console.log('🎬 SETUP: Animation exists?', this.anims.exists('pushing'));
+    
+    if (this.anims.exists('pushing')) {
+      this.player.play('pushing');
+      this.lastAnimationKey = 'pushing'; // Initialize tracking
+      
+      // Verify animation started
+      const verifyAnim = this.player.anims.currentAnim;
+      console.log('✅ SETUP: Initial animation started:', {
+        playing: verifyAnim?.key || 'none',
+        isPlaying: verifyAnim !== null
+      });
+    } else {
+      console.error('❌ SETUP: Pushing animation does not exist!');
+    }
   }
 
   private updateMessageBubblePositions() {

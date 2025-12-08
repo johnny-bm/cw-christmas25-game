@@ -23,6 +23,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
   const containerRef = useRef<HTMLDivElement>(null);
   const callbacksRef = useRef({ onGameOver, onUpdateGameData, onGameReady, onLoadingProgress });
   const isInitializingRef = useRef(false);
+  const hasStartedGameRef = useRef(false); // Track if startGame() has been called
   
   // Update callbacks ref when they change
   useEffect(() => {
@@ -124,17 +125,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
       if (dimensions.width > 200 && dimensions.height > 200) {
         initialWidth = dimensions.width;
         initialHeight = dimensions.height;
-        // Visual debug: Show dimensions on screen (remove in production if needed)
-        if (typeof document !== 'undefined') {
-          const debugEl = document.getElementById('game-debug');
-          if (debugEl) {
-            const aspectRatio = (initialWidth / initialHeight).toFixed(2);
-            const isShort = initialHeight < 500;
-            const groundRatio = isShort ? (aspectRatio > 1.8 ? '30%' : '25%') : '15%';
-            const charRatio = isShort ? '15%' : '19.8%';
-            debugEl.innerHTML = `${Math.round(initialWidth)}x${Math.round(initialHeight)}<br/>${aspectRatio}${isShort ? ' SHORT' : ''}<br/>G:${groundRatio} C:${charRatio}`;
-          }
-        }
         initializeGame();
       } else if (attempts < maxAttempts) {
         // Retry after a delay (longer delay for Safari)
@@ -143,15 +133,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         // Last resort: use window dimensions
         initialWidth = window.innerWidth || window.screen.width || 1920;
         initialHeight = window.innerHeight || window.screen.height || 1080;
-        // Visual debug
-        if (typeof document !== 'undefined') {
-          const debugEl = document.getElementById('game-debug');
-          if (debugEl) {
-            const aspectRatio = (initialWidth / initialHeight).toFixed(2);
-            const isShort = initialHeight < 500;
-            debugEl.textContent = `FALLBACK: ${Math.round(initialWidth)}x${Math.round(initialHeight)} (${aspectRatio})${isShort ? ' SHORT' : ''}`;
-          }
-        }
         initializeGame();
       }
     };
@@ -201,7 +182,9 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         antialias: true,
         antialiasGL: true,
         roundPixels: false,
-        resolution: devicePixelRatio
+        resolution: devicePixelRatio,
+        // Ensure crisp rendering on high DPI displays
+        powerPreference: 'high-performance'
       }
     };
 
@@ -528,9 +511,26 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
           }
           
           if (isActive) {
-            scene.startGame();
+            // CRITICAL: Prevent double call to startGame()
+            // Only call startGame() once per session to prevent resetting counters/obstacles
+            if (!hasStartedGameRef.current) {
+              console.log('🎮 Calling startGame() for the first time');
+              hasStartedGameRef.current = true;
+              scene.startGame();
+            } else {
+              console.log('⚠️ startGame() already called, skipping to prevent reset');
+              // Don't call startGame() again - game is already started
+              // Just ensure the game is running
+              const isGameStarted = (scene as any).isGameStarted;
+              if (!isGameStarted) {
+                console.log('⚠️ Game not started yet, calling startGame()');
+                scene.startGame();
+              }
+            }
             return true;
           } else {
+            // Reset the flag when game becomes inactive (going back to landing)
+            hasStartedGameRef.current = false;
             scene.resetGame();
             return true;
           }
@@ -592,35 +592,8 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
 
   // Game container: Uses flexible sizing to fill parent container completely.
   // Phaser's RESIZE mode will adapt the game world to match this container's dimensions exactly.
-  // CRITICAL for Safari Mobile: Ensure container fills parent completely with visual debug
   return (
     <>
-      {/* Visual debug indicator - shows game dimensions (visible on screen for debugging) */}
-      {/* CRITICAL: Position it in middle left to avoid deadline counter and be visible */}
-      <div 
-        id="game-debug"
-        style={{
-          position: 'fixed',
-          left: '20px', // Middle left position
-          top: '50%', // Center vertically
-          transform: 'translateY(-50%) translateZ(0)', // Center vertically and force hardware acceleration
-          zIndex: 2147483647, // Maximum z-index value (JavaScript number max)
-          backgroundColor: 'rgba(255,0,0,0.95)',
-          color: 'white',
-          padding: '8px 12px',
-          fontSize: '14px',
-          fontFamily: 'monospace',
-          borderRadius: '6px',
-          pointerEvents: 'none',
-          fontWeight: 'bold',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-          border: '2px solid white',
-          // Force it to be on top
-          isolation: 'isolate' // Creates new stacking context
-        }}
-      >
-        Loading...
-      </div>
       <div 
         ref={containerRef} 
         className="w-full h-full overflow-hidden" 
