@@ -540,15 +540,16 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
   return (
     <>
       {/* Visual debug indicator - shows game dimensions (visible on screen for debugging) */}
-      {/* CRITICAL: Very high z-index to appear above all game UI elements */}
+      {/* CRITICAL: Position it in middle left to avoid deadline counter and be visible */}
       <div 
         id="game-debug"
         style={{
           position: 'fixed',
-          top: '10px',
-          left: '10px',
-          zIndex: 999999, // Increased to be above all UI elements (GameUI uses z-10, z-50, etc.)
-          backgroundColor: 'rgba(255,0,0,0.9)',
+          left: '20px', // Middle left position
+          top: '50%', // Center vertically
+          transform: 'translateY(-50%) translateZ(0)', // Center vertically and force hardware acceleration
+          zIndex: 2147483647, // Maximum z-index value (JavaScript number max)
+          backgroundColor: 'rgba(255,0,0,0.95)',
           color: 'white',
           padding: '8px 12px',
           fontSize: '14px',
@@ -557,7 +558,9 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
           pointerEvents: 'none',
           fontWeight: 'bold',
           boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-          border: '2px solid white'
+          border: '2px solid white',
+          // Force it to be on top
+          isolation: 'isolate' // Creates new stacking context
         }}
       >
         Loading...
