@@ -7,6 +7,8 @@ import { getElementColor } from '../game/colorConfig';
 
 // Global singleton to prevent multiple game instances
 let globalGameInstance: Phaser.Game | null = null;
+// Module-level flag to prevent double initialization (React Strict Mode protection)
+let isInitializing = false;
 
 interface GameProps {
   onGameOver: (score: number, maxCombo: number, grinchScore?: number, elfScore?: number) => void;
@@ -30,20 +32,39 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
   useEffect(() => {
     if (!containerRef.current) return;
     
-    // Check if game already exists globally (React Strict Mode protection)
-    if (globalGameInstance && globalGameInstance.scene) {
-      // Game already exists, just update our ref
+    // CRITICAL: Multiple layers of protection against double initialization (React Strict Mode)
+    // Layer 1: Check module-level flag
+    if (isInitializing) {
+      console.log('⚠️ Module-level guard: Initialization already in progress');
+      return;
+    }
+    
+    // Layer 2: Check if game already exists globally
+    if (globalGameInstance && globalGameInstance.scene && !globalGameInstance.scene.isDestroyed) {
+      // Game already exists and is valid, just update our ref
       if (!gameRef.current) {
         gameRef.current = globalGameInstance;
+        console.log('✅ Reusing existing game instance (React Strict Mode protection)');
       }
       return;
     }
     
-    if (gameRef.current || isInitializingRef.current) {
+    // Layer 3: Check if container already has a Phaser canvas
+    if (containerRef.current.querySelector('canvas')) {
+      console.log('⚠️ Canvas already exists in container, skipping initialization');
       return;
     }
     
-    isInitializingRef.current = true;
+    // Layer 4: Check component-level refs
+    if (gameRef.current || isInitializingRef.current) {
+      console.log('⚠️ Component-level guard: Game initialization already in progress');
+      return;
+    }
+    
+    // All checks passed - set flags to prevent double initialization
+    console.log('🎮 Initializing new game instance...');
+    isInitializing = true; // Module-level flag
+    isInitializingRef.current = true; // Component-level flag
     
     // Store the container reference to prevent recreation
     const container = containerRef.current;
@@ -184,9 +205,28 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
       }
     };
 
+    // CRITICAL: Final check before creating game (React Strict Mode double-invoke protection)
+    if (globalGameInstance && globalGameInstance.scene && !globalGameInstance.scene.isDestroyed) {
+      console.log('⚠️ Game instance already exists, reusing instead of creating new one');
+      gameRef.current = globalGameInstance;
+      isInitializingRef.current = false;
+      isInitializing = false; // Reset module-level flag
+      return;
+    }
+    
+    // Final check: if canvas exists, don't create
+    if (container.querySelector('canvas')) {
+      console.log('⚠️ Canvas already exists, aborting game creation');
+      isInitializingRef.current = false;
+      isInitializing = false;
+      return;
+    }
+    
+    console.log('🎮 Creating new Phaser game instance...');
     gameRef.current = new Phaser.Game(config);
     globalGameInstance = gameRef.current;
     const game = gameRef.current;
+    isInitializing = false; // Reset module-level flag after creation
     
     // Set up event listeners using refs so they always use latest callbacks
     game.events.on('gameOver', (score: number, maxCombo: number, grinchScore?: number, elfScore?: number) => {
@@ -434,8 +474,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
       // Don't destroy game on cleanup in development (React Strict Mode)
       // The game will be destroyed when the app actually unmounts
       if (gameRef.current && import.meta.env.DEV) {
-        gameRef.current = null;
-        isInitializingRef.current = false;
+        // Don't reset flags in dev mode - keep game alive
         return;
       }
       
@@ -447,12 +486,14 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
           if (globalGameInstance === gameRef.current) {
             gameRef.current.destroy(true);
             globalGameInstance = null;
+            isInitializing = false; // Reset module-level flag
           }
         } catch (e) {
           console.warn('Error destroying game:', e);
         }
         gameRef.current = null;
         isInitializingRef.current = false;
+        isInitializing = false; // Reset module-level flag
       }
     };
     // Only initialize once
@@ -478,6 +519,14 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
             return false; // Will try again after scene starts
           }
           
+          // CRITICAL: Check if assets are loaded before starting game
+          // Access the private assetsLoaded flag via type assertion
+          const assetsLoaded = (scene as any).assetsLoaded;
+          if (isActive && !assetsLoaded) {
+            console.log('⏳ Waiting for assets to load before starting game...');
+            return false; // Will try again after assets load
+          }
+          
           if (isActive) {
             scene.startGame();
             return true;
@@ -486,6 +535,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
             return true;
           }
         } catch (e) {
+          console.error('Error in tryStartGame:', e);
           return false;
         }
       }

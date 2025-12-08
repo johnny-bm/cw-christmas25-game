@@ -165,6 +165,7 @@ export class GameScene extends Phaser.Scene {
   private isGameStarted: boolean = false;
   private isGameOver: boolean = false;
   private groundY: number = 0;
+  private assetsLoaded: boolean = false; // Track if assets are fully loaded
   
   // Helper function to setup character physics body correctly - responsive
   // CRITICAL FIX for Safari Mobile: Ensure body bottom aligns with sprite.y (feet position)
@@ -180,8 +181,35 @@ export class GameScene extends Phaser.Scene {
     const bodyWidth = spriteWidth * 0.85; // 85% of sprite width for tighter collision
     const bodyHeight = spriteHeight * 0.85; // 85% of sprite height for tighter collision
     
-    // Set body size
+    // Set body size - CRITICAL: Use setSize to set both width and height
     this.player.body.setSize(bodyWidth, bodyHeight);
+    
+    // CRITICAL FIX: Force body size directly - Phaser sometimes doesn't apply setSize correctly
+    // Set width and height directly on the body object
+    this.player.body.width = bodyWidth;
+    this.player.body.height = bodyHeight;
+    
+    // CRITICAL FIX: Also update the body's size property directly
+    // Phaser Arcade Physics uses these properties for collision detection
+    if (this.player.body.setSize) {
+      this.player.body.setSize(bodyWidth, bodyHeight, false); // false = don't center
+    }
+    
+    // Verify body size was set correctly
+    if (Math.abs(this.player.body.width - bodyWidth) > 0.1 || Math.abs(this.player.body.height - bodyHeight) > 0.1) {
+      console.warn('⚠️ Body size still incorrect after correction, forcing:', {
+        expectedWidth: bodyWidth.toFixed(1),
+        actualWidth: this.player.body.width.toFixed(1),
+        expectedHeight: bodyHeight.toFixed(1),
+        actualHeight: this.player.body.height.toFixed(1),
+        forcing: true
+      });
+      // Force directly - sometimes Phaser's setSize doesn't work
+      (this.player.body as any).width = bodyWidth;
+      (this.player.body as any).height = bodyHeight;
+      (this.player.body as any).halfWidth = bodyWidth / 2;
+      (this.player.body as any).halfHeight = bodyHeight / 2;
+    }
     
     // CRITICAL FIX: Calculate offset so body bottom aligns with sprite.y (feet position)
     // With origin (0.5, 1), sprite.y is at the bottom center (feet)
@@ -204,32 +232,79 @@ export class GameScene extends Phaser.Scene {
     
     this.player.body.setOffset(offsetX, offsetY);
     
-    // CRITICAL: Verify body bottom aligns with sprite.y after setting offset
-    // If not, manually adjust body position
-    const spriteTopLeftY = this.player.y - spriteHeight; // Top-left Y of sprite
-    const bodyTopY = spriteTopLeftY + offsetY; // Top Y of body
-    const calculatedBodyBottom = bodyTopY + bodyHeight; // Calculated body bottom
+    // CRITICAL FIX: After setting offset, manually verify and correct body position
+    // With origin (0.5, 1), sprite.y is the bottom/feet position
+    // Body bottom should align with sprite.y
+    // 
+    // Sprite top-left Y = sprite.y - spriteHeight
+    // Body should be positioned at: sprite top-left Y + offsetY
+    // Body bottom = body.y + bodyHeight
+    // We want: body bottom = sprite.y
+    //
+    // So: body.y = (sprite.y - spriteHeight) + offsetY
+    // And: body bottom = body.y + bodyHeight = (sprite.y - spriteHeight) + offsetY + bodyHeight
+    // Since offsetY = spriteHeight - bodyHeight:
+    // body bottom = (sprite.y - spriteHeight) + (spriteHeight - bodyHeight) + bodyHeight = sprite.y ✓
     
-    if (Math.abs(calculatedBodyBottom - this.player.y) > 0.1) {
-      // Body bottom doesn't match sprite.y - this shouldn't happen, but log it
-      console.warn('⚠️ Body bottom calculation mismatch:', {
-        calculatedBodyBottom,
-        spriteY: this.player.y,
-        difference: calculatedBodyBottom - this.player.y
+    // Calculate correct body position
+    const spriteTopLeftY = this.player.y - spriteHeight;
+    const correctBodyY = spriteTopLeftY + offsetY;
+    
+    // Set body position directly to ensure correct alignment
+    this.player.body.y = correctBodyY;
+    
+    // Verify the calculation - use the actual body.height value from Phaser
+    const actualBodyHeight = this.player.body.height;
+    const actualBodyBottom = this.player.body.y + actualBodyHeight;
+    
+    // If body height is wrong, fix it
+    if (Math.abs(actualBodyHeight - bodyHeight) > 0.1) {
+      console.warn('⚠️ Body height is incorrect, fixing:', {
+        expected: bodyHeight.toFixed(1),
+        actual: actualBodyHeight.toFixed(1),
+        correcting: true
       });
+      // Force correct body height
+      this.player.body.height = bodyHeight;
+      // Recalculate body position with correct height
+      const correctedBodyY = spriteTopLeftY + offsetY;
+      this.player.body.y = correctedBodyY;
+    }
+    
+    // Final verification
+    const finalBodyBottom = this.player.body.y + this.player.body.height;
+    if (Math.abs(finalBodyBottom - this.player.y) > 0.5) {
+      console.warn('⚠️ Body bottom still doesn\'t match sprite.y after correction:', {
+        bodyY: this.player.body.y.toFixed(1),
+        bodyHeight: this.player.body.height.toFixed(1),
+        bodyBottom: finalBodyBottom.toFixed(1),
+        spriteY: this.player.y.toFixed(1),
+        difference: (finalBodyBottom - this.player.y).toFixed(1),
+        correcting: true
+      });
+      // Last resort: directly set body position to align bottom with sprite.y
+      this.player.body.y = this.player.y - this.player.body.height;
     }
     
     // Debug: Log body setup values to verify alignment
+    // Use calculated bodyHeight for verification since Phaser might report wrong values
+    const verifiedBodyHeight = Math.abs(this.player.body.height - bodyHeight) < 0.1 ? this.player.body.height : bodyHeight;
+    const verifiedBodyBottom = this.player.body.y + verifiedBodyHeight;
+    
     console.log('=== CHARACTER BODY SETUP ===');
     console.log('Sprite dimensions:', spriteWidth.toFixed(1), 'x', spriteHeight.toFixed(1));
-    console.log('Body size:', bodyWidth.toFixed(1), 'x', bodyHeight.toFixed(1));
+    console.log('Body size (set):', bodyWidth.toFixed(1), 'x', bodyHeight.toFixed(1));
+    console.log('Body size (reported):', this.player.body.width.toFixed(1), 'x', this.player.body.height.toFixed(1));
     console.log('Body offset:', offsetX.toFixed(1), offsetY.toFixed(1));
     console.log('Sprite.y (feet/ground):', this.player.y.toFixed(1));
     console.log('Body.y:', this.player.body.y.toFixed(1));
-    console.log('Body.height:', this.player.body.height.toFixed(1));
-    console.log('Body bottom:', (this.player.body.y + this.player.body.height).toFixed(1));
+    console.log('Body.height (verified):', verifiedBodyHeight.toFixed(1));
+    console.log('Body bottom (verified):', verifiedBodyBottom.toFixed(1));
     console.log('Ground Y:', this.groundY?.toFixed(1) || 'N/A');
-    console.log('Match:', Math.abs((this.player.body.y + this.player.body.height) - this.player.y) < 1 ? '✅' : '❌');
+    console.log('Match:', Math.abs(verifiedBodyBottom - this.player.y) < 1 ? '✅' : '❌');
+    if (Math.abs(this.player.body.height - bodyHeight) > 0.1) {
+      console.warn('⚠️ Body height mismatch - using calculated value for verification');
+    }
     console.log('======================================');
   }
   
@@ -341,6 +416,8 @@ export class GameScene extends Phaser.Scene {
     
     // Listen for load complete
     this.load.on('complete', () => {
+      this.assetsLoaded = true; // Mark assets as loaded
+      console.log('✅ All assets loaded, game is ready to start');
       this.game.events.emit('assetsLoaded');
     });
     
@@ -355,10 +432,15 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     // Get actual canvas dimensions (no fixed 1920x1080)
-    // CRITICAL FIX for iPhone Pro Max: Ensure dimensions are valid
+    // CRITICAL FIX for Safari Mobile: Ensure dimensions are valid and reasonable
     let { width, height } = this.scale;
     
-    // Validate and correct dimensions if invalid (prevents issues on iPhone Pro Max)
+    // CRITICAL FIX for Safari Mobile: Additional validation
+    // Safari mobile sometimes reports incorrect dimensions initially
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isMobile = width <= 768 || height <= 768;
+    
+    // Validate and correct dimensions if invalid (prevents issues on iPhone Pro Max and Safari)
     if (width <= 0 || height <= 0 || !isFinite(width) || !isFinite(height)) {
       console.warn('⚠️ Invalid game dimensions detected, using fallback:', width, height);
       // RESPONSIVE: 1920x1080 used as fallback reference only, not a fixed size
@@ -368,6 +450,36 @@ export class GameScene extends Phaser.Scene {
       // Force resize to valid dimensions
       this.scale.resize(width, height);
     }
+    
+    // CRITICAL FIX for Safari Mobile: Ensure minimum dimensions
+    // Safari mobile can report very small or very large dimensions
+    if (isSafari && isMobile) {
+      const minWidth = 300;
+      const minHeight = 400;
+      const maxWidth = 2000;
+      const maxHeight = 2000;
+      
+      if (width < minWidth || width > maxWidth) {
+        console.warn('⚠️ Safari mobile width out of range, adjusting:', width);
+        width = Math.max(minWidth, Math.min(maxWidth, width || window.innerWidth || 750));
+        this.scale.resize(width, height);
+      }
+      if (height < minHeight || height > maxHeight) {
+        console.warn('⚠️ Safari mobile height out of range, adjusting:', height);
+        height = Math.max(minHeight, Math.min(maxHeight, height || window.innerHeight || 402));
+        this.scale.resize(width, height);
+      }
+    }
+    
+    // Debug: Log final dimensions
+    console.log('📐 Final game dimensions:', {
+      width: Math.round(width),
+      height: Math.round(height),
+      aspectRatio: (width / height).toFixed(2),
+      isSafari,
+      isMobile,
+      scaleManager: this.scale.manager?.getParentBounds ? 'available' : 'N/A'
+    });
 
     // Set camera bounds to match actual canvas size
     // With RESIZE mode, the camera automatically shows the full game world (0, 0, width, height)
@@ -395,15 +507,28 @@ export class GameScene extends Phaser.Scene {
     });
     
     // Visual debug: Add corner markers to verify camera viewport
-    // Top-left corner (should be visible)
-    const topLeftMarker = this.add.rectangle(10, 10, 20, 20, 0x00ff00, 0.8);
+    // Top-left corner (should be visible) - GREEN
+    const topLeftMarker = this.add.rectangle(10, 10, 30, 30, 0x00ff00, 1.0);
     topLeftMarker.setDepth(1000);
-    // Bottom-right corner (should be visible)
-    const bottomRightMarker = this.add.rectangle(width - 10, height - 10, 20, 20, 0x0000ff, 0.8);
+    topLeftMarker.setOrigin(0, 0);
+    // Bottom-right corner (should be visible) - BLUE
+    // CRITICAL FIX for Safari: Ensure it's within visible bounds
+    const bottomRightX = Math.min(width - 10, width - 1);
+    const bottomRightY = Math.min(height - 10, height - 1);
+    const bottomRightMarker = this.add.rectangle(bottomRightX, bottomRightY, 30, 30, 0x0000ff, 1.0);
     bottomRightMarker.setDepth(1000);
-    // Center marker
-    const centerMarker = this.add.rectangle(width / 2, height / 2, 20, 20, 0xffff00, 0.8);
+    bottomRightMarker.setOrigin(1, 1); // Bottom-right origin
+    // Center marker - YELLOW
+    const centerMarker = this.add.rectangle(width / 2, height / 2, 30, 30, 0xffff00, 1.0);
     centerMarker.setDepth(1000);
+    centerMarker.setOrigin(0.5, 0.5);
+    
+    console.log('📍 Debug markers positioned:', {
+      topLeft: { x: 10, y: 10 },
+      center: { x: width / 2, y: height / 2 },
+      bottomRight: { x: bottomRightX, y: bottomRightY },
+      viewport: { width, height }
+    });
     
     // Set physics world bounds to match canvas size
     this.physics.world.setBounds(0, 0, width, height);
@@ -413,7 +538,7 @@ export class GameScene extends Phaser.Scene {
     
     // Scale gravity relative to screen height for responsive jump physics
     // Reduced gravity for lighter, more responsive feel
-    const isMobile = width <= 768 || height <= 768;
+    // Note: isMobile is already declared above
     const mobileGravityMultiplier = isMobile ? GameConfig.physics.mobileGravityMultiplier : 1.0;
     // Use slightly lower base gravity (2200 instead of 2000) for better jump feel
     const baseGravity = 2200;
@@ -430,22 +555,22 @@ export class GameScene extends Phaser.Scene {
     // Ground setup - responsive to aspect ratio
     // CRITICAL FIX for Safari Mobile: Ensure ground is always within visible bounds
     // Special handling for short viewports (like 750x402) where height is very limited
+    // Note: isSafari is already declared above
     const aspectRatio = width / height;
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const isIPhoneProMax = /iPhone/.test(navigator.userAgent) && (window.screen.height >= 926 || window.screen.width >= 926);
     const isShortViewport = height < 500; // CRITICAL: Detect very short viewports (like 402px height)
     
-    // CRITICAL FIX: For very short viewports, use larger ground ratio to ensure visibility
-    // With height of 402px, we need at least 25-30% for ground to be visible
+    // CRITICAL FIX: For very short viewports, use moderate ground ratio
+    // Reduced from 30% to 20% for better proportions
     let groundHeightRatio = 0.15; // Default 15%
     
     if (isShortViewport) {
-      // Very short viewport (height < 500px) - use larger ground ratio
-      // This ensures ground and character are visible in limited vertical space
+      // Very short viewport (height < 500px) - use moderate ground ratio
+      // Reduced from 30% to 20% for better proportions
       if (aspectRatio > 1.8) {
-        groundHeightRatio = 0.30; // 30% for wide + short viewports
+        groundHeightRatio = 0.20; // 20% for wide + short viewports (reduced from 30%)
       } else {
-        groundHeightRatio = 0.25; // 25% for short viewports
+        groundHeightRatio = 0.18; // 18% for short viewports (reduced from 25%)
       }
     } else if (aspectRatio > 2.2) {
       groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.24 : 0.22; // 24% on Safari/Pro Max, 22% otherwise
@@ -485,16 +610,20 @@ export class GameScene extends Phaser.Scene {
     this.ground = this.physics.add.staticGroup();
     
     // Create ground rectangle at groundY
-    // CRITICAL: Ensure ground is visible - use a bright color for debugging if needed
-    const groundRect = this.add.rectangle(0, this.groundY, groundWidth, groundHeight, getElementColorPhaser('ground'));
+    // CRITICAL: Make ground highly visible for debugging - use bright color
+    // Use a more visible color for debugging (darker gray with higher opacity)
+    const groundColor = 0x888888; // Bright gray for visibility
+    const groundRect = this.add.rectangle(0, this.groundY, groundWidth, groundHeight, groundColor, 1.0);
     groundRect.setDepth(10); // Ground depth - character (20) will render above
     groundRect.setOrigin(0, 0); // Top-left origin
     
     // Debug: Add a visible border to ground for testing (can remove later)
-    // This helps verify ground is positioned correctly
-    const groundDebug = this.add.rectangle(groundWidth / 2, this.groundY + groundHeight / 2, groundWidth, groundHeight, 0xff0000, 0.3);
+    // This helps verify ground is positioned correctly - make it more visible
+    const groundDebug = this.add.rectangle(width / 2, this.groundY + groundHeight / 2, groundWidth, groundHeight, 0xff0000, 0.5);
     groundDebug.setDepth(9);
     groundDebug.setOrigin(0.5, 0.5);
+    
+    // Ground surface line will be created after character positioning to ensure correct position
     
     // Add physics body and configure it
     this.physics.add.existing(groundRect, true);
@@ -503,7 +632,26 @@ export class GameScene extends Phaser.Scene {
       // Body matches sprite exactly - full width and height
       body.setSize(groundWidth, groundHeight);
       body.setOffset(0, 0); // No offset with (0,0) origin
-      // Static bodies are immovable by default in Phaser
+      
+      // CRITICAL FIX: Explicitly set body position to match ground surface
+      // The ground's top surface is at groundY, so body.y should be at groundY
+      // Phaser may calculate body position differently, so we force it here
+      body.x = 0; // Ground starts at x=0
+      body.y = this.groundY; // Ground top surface is at groundY
+      
+      // Static bodies are immovable by default in Phaser - no need to call setImmovable()
+      // Static bodies cannot be moved by physics interactions
+      
+      console.log('🌍 Ground body positioned:', {
+        bodyX: body.x,
+        bodyY: body.y,
+        bodyWidth: body.width,
+        bodyHeight: body.height,
+        bodyBottom: body.y + body.height,
+        groundY: this.groundY,
+        spriteY: groundRect.y,
+        match: Math.abs(body.y - this.groundY) < 1 ? '✅' : '❌'
+      });
     }
     this.ground.add(groundRect);
 
@@ -522,9 +670,21 @@ export class GameScene extends Phaser.Scene {
     const targetHeight = height * characterHeightRatio;
     const scale = targetHeight / 160;
     
+    // CRITICAL: Check if texture exists before creating sprite
+    if (!this.textures.exists('character-pushing-01')) {
+      console.error('❌ CRITICAL: Character texture "character-pushing-01" does not exist!');
+      console.log('Available textures:', Object.keys(this.textures.list));
+      // Create a placeholder rectangle so we can see something
+      const placeholder = this.add.rectangle(width * 0.25, height * 0.5, 40, 60, 0xff0000, 1.0);
+      placeholder.setDepth(20);
+      console.warn('⚠️ Created red placeholder rectangle at center - character texture missing!');
+    }
+    
     this.player = this.physics.add.sprite(width * 0.25, 0, 'character-pushing-01');
     this.player.setDepth(20);
     this.player.setScale(scale);
+    this.player.setVisible(true); // CRITICAL: Ensure character is visible
+    this.player.setAlpha(1.0); // CRITICAL: Ensure character is fully opaque
     
     // Set origin to BOTTOM CENTER (0.5, 1) - sprite.y will be the bottom
     this.player.setOrigin(0.5, 1);
@@ -537,6 +697,7 @@ export class GameScene extends Phaser.Scene {
     
     // CRITICAL: Position character so feet are ON the ground surface (at groundY)
     // The ground's top surface is at groundY, so character feet should be at groundY
+    // Use groundY directly (not safeGroundY) to ensure character is on the ground
     this.player.setPosition(playerX, this.groundY);
     
     // Setup physics body BEFORE setting physics properties to ensure proper alignment
@@ -580,6 +741,9 @@ export class GameScene extends Phaser.Scene {
           if (groundRect.body) {
             const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
             body.setSize(width * 3, newGroundHeight);
+            // CRITICAL: Update body position to match new groundY
+            body.x = 0;
+            body.y = this.groundY;
           }
         }
         // Reposition player at new ground level
@@ -634,12 +798,40 @@ export class GameScene extends Phaser.Scene {
     
     // CRITICAL: Final position adjustment - ensure character is exactly on ground surface
     // Position character so physics body bottom aligns with ground top surface
+    // CRITICAL FIX for Safari Mobile: Validate groundY is within visible bounds
+    if (this.groundY < 0 || this.groundY >= height) {
+      console.error('❌ CRITICAL: groundY is out of bounds!', {
+        groundY: this.groundY,
+        height: height,
+        adjusting: true
+      });
+      // Force groundY to be within bounds
+      this.groundY = Math.max(10, Math.min(height - 50, this.groundY));
+      // Update ground position
+      const groundRect = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
+      if (groundRect) {
+        const newGroundHeight = height - this.groundY;
+        groundRect.setPosition(0, this.groundY);
+        groundRect.setSize(width * 3, newGroundHeight);
+        if (groundRect.body) {
+          const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
+          body.setSize(width * 3, newGroundHeight);
+          body.x = 0;
+          body.y = this.groundY;
+        }
+      }
+    }
+    
+    // CRITICAL: Ensure character is positioned ON the ground surface
+    // The ground surface is at groundY, so character feet (sprite.y with origin 0.5, 1) should be at groundY
+    // Don't use safeGroundY - use groundY directly to ensure character is on the ground
     this.player.setPosition(playerX, this.groundY);
     
     // CRITICAL FIX for Safari Mobile: Force body bottom to align with ground surface
     // After setting up the body, manually verify and correct body position
     if (this.player.body) {
       // Calculate where body bottom should be (at sprite.y / groundY)
+      // The body bottom should align with groundY (the ground surface)
       const expectedBodyBottom = this.groundY;
       const currentBodyBottom = this.player.body.y + this.player.body.height;
       
@@ -652,7 +844,7 @@ export class GameScene extends Phaser.Scene {
       }
       
       // CRITICAL: Also ensure sprite position matches (in case body moved)
-      // The sprite should be at groundY with origin (0.5, 1)
+      // The sprite should be at groundY with origin (0.5, 1) - feet on ground surface
       if (Math.abs(this.player.y - this.groundY) > 0.5) {
         this.player.setPosition(playerX, this.groundY);
         // Re-setup body after repositioning
@@ -662,6 +854,43 @@ export class GameScene extends Phaser.Scene {
         if (Math.abs(newBodyBottom - this.groundY) > 0.5) {
           this.player.body.y += (this.groundY - newBodyBottom);
         }
+      }
+      
+      // CRITICAL FIX for Safari Mobile: Final validation - ensure character is visible
+      const characterTop = this.player.y - this.player.displayHeight;
+      const characterBottom = this.player.y;
+      if (characterTop < 0 || characterBottom > height) {
+        console.error('❌ CRITICAL: Character is outside visible bounds!', {
+          characterTop: characterTop.toFixed(1),
+          characterBottom: characterBottom.toFixed(1),
+          characterY: this.player.y.toFixed(1),
+          height: height,
+          groundY: this.groundY.toFixed(1),
+          adjusting: true
+        });
+        // Force character to be visible - but keep it on the ground
+        // Only adjust if character would be cut off, but keep feet on ground
+        const minY = this.player.displayHeight + 10;
+        const maxY = height - 10;
+        if (this.groundY < minY) {
+          // Ground is too high, move it down
+          this.groundY = minY;
+          // Update ground position
+          const groundRect = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
+          if (groundRect) {
+            const newGroundHeight = height - this.groundY;
+            groundRect.setPosition(0, this.groundY);
+            groundRect.setSize(width * 3, newGroundHeight);
+            if (groundRect.body) {
+              const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
+              body.setSize(width * 3, newGroundHeight);
+              body.x = 0;
+              body.y = this.groundY;
+            }
+          }
+        }
+        this.player.setPosition(playerX, this.groundY);
+        this.setupCharacterBody();
       }
       
       // Visual debug: Show character body outline (green = body, yellow = ground surface)
@@ -676,12 +905,13 @@ export class GameScene extends Phaser.Scene {
       bodyDebug.setDepth(1001);
       bodyDebug.setOrigin(0.5, 0.5);
       
-      // Show ground surface line (yellow)
+      // Show ground surface line (yellow) - this is where character feet should be
+      // This line shows where the ground surface is - character feet should be at this line
       const groundSurfaceLine = this.add.line(
         0, this.groundY, 
         0, this.groundY, 
         width, this.groundY,
-        0xffff00, 1
+        0xffff00, 1.0 // Bright yellow line
       );
       groundSurfaceLine.setDepth(1001);
       groundSurfaceLine.setLineWidth(4);
@@ -700,7 +930,35 @@ export class GameScene extends Phaser.Scene {
     // Setup animation
     if (this.textures.exists('character-pushing-01') && this.textures.exists('character-ollie-01')) {
       this.setupCharacterAnimation();
+    } else {
+      console.error('❌ CRITICAL: Character textures not loaded!', {
+        pushingExists: this.textures.exists('character-pushing-01'),
+        ollieExists: this.textures.exists('character-ollie-01'),
+        allTextures: Object.keys(this.textures.list)
+      });
+      // Try to set a fallback texture or create a placeholder
+      if (!this.textures.exists('character-pushing-01')) {
+        console.warn('⚠️ Creating placeholder for character texture');
+        // Create a simple colored rectangle as placeholder
+        this.add.graphics()
+          .fillStyle(0xff0000, 1)
+          .fillRect(playerX - 20, this.groundY - 40, 40, 40)
+          .setDepth(20);
+      }
     }
+    
+    // CRITICAL: Verify character is visible and positioned correctly
+    console.log('✅ Character creation complete:', {
+      playerExists: !!this.player,
+      playerX: this.player?.x?.toFixed(1),
+      playerY: this.player?.y?.toFixed(1),
+      playerVisible: this.player?.visible,
+      playerAlpha: this.player?.alpha,
+      playerScale: this.player?.scaleX,
+      groundY: this.groundY.toFixed(1),
+      screenHeight: height,
+      textureExists: this.textures.exists('character-pushing-01')
+    });
 
     // Sprint glow effect - scale relative to player size
     const glowWidth = 60 * scale;
@@ -931,6 +1189,8 @@ export class GameScene extends Phaser.Scene {
     const jumpVelocity = baseJumpVelocity * (height / GameConfig.physics.baseGravityHeight) * mobileJumpMultiplier;
     
     if (onGround) {
+      // CRITICAL: Re-enable gravity when jumping
+      this.player.body.setAllowGravity(true);
       this.player.body.setVelocityY(jumpVelocity);
       this.jumpsRemaining = 1;
       // Switch to ollie animation when jumping
@@ -955,6 +1215,8 @@ export class GameScene extends Phaser.Scene {
         }
       }
     } else if (this.jumpsRemaining > 0) {
+      // CRITICAL: Ensure gravity is enabled for double jump
+      this.player.body.setAllowGravity(true);
       this.player.body.setVelocityY(jumpVelocity);
       this.jumpsRemaining = 0;
       // Restart ollie animation for double jump
@@ -1872,6 +2134,56 @@ export class GameScene extends Phaser.Scene {
     const nearGround = Math.abs(this.player.y - this.groundY) < 3; // Within 3px of ground
     const onGround = touchingGround || (nearGround && this.player.body.velocity.y >= 0);
     
+    // CRITICAL FIX: Ensure gravity is enabled when in air (not on ground)
+    // This ensures character falls back down after jumping
+    if (!onGround) {
+      this.player.body.setAllowGravity(true);
+    }
+    
+    // CRITICAL FIX: Prevent character from sinking below ground
+    // Completely disable safeguard when touching ground to prevent bouncing/wiggling
+    // Only check if character is significantly below ground AND not touching ground
+    if (!touchingGround && !onGround) {
+      // Character is not touching ground - check if sinking significantly
+      const spriteHeight = this.player.displayHeight;
+      const calculatedBodyHeight = spriteHeight * 0.85;
+      const reportedBodyHeight = this.player.body.height;
+      const reliableBodyHeight = Math.abs(reportedBodyHeight - calculatedBodyHeight) > 5 
+        ? calculatedBodyHeight 
+        : reportedBodyHeight;
+      
+      const characterBodyBottom = this.player.body.y + reliableBodyHeight;
+      const spriteY = this.player.y;
+      
+      // Only correct if character is significantly below ground (more than 20px)
+      // This prevents constant micro-adjustments that cause wiggling
+      const sinkingThreshold = 20; // Only correct if more than 20px below ground
+      if (characterBodyBottom > this.groundY + sinkingThreshold || spriteY > this.groundY + sinkingThreshold) {
+        // Character is sinking significantly - correct it
+        this.player.y = this.groundY;
+        
+        // Fix body position to align with sprite
+        const spriteTopLeftY = this.player.y - spriteHeight;
+        const offsetY = spriteHeight - reliableBodyHeight;
+        const correctBodyY = spriteTopLeftY + offsetY;
+        this.player.body.y = correctBodyY;
+        
+        // Reset vertical velocity
+        this.player.body.setVelocityY(0);
+        
+        // Only log on mobile if sinking is severe
+        if (isMobile) {
+          console.warn('⚠️ Character sinking detected (mobile) - corrected:', {
+            bodyBottom: characterBodyBottom.toFixed(1),
+            spriteY: spriteY.toFixed(1),
+            groundY: this.groundY.toFixed(1)
+          });
+        }
+      }
+    }
+    // When on ground or touching ground, let physics collider handle everything
+    // Do NOT adjust position or velocity - this causes bouncing/wiggling
+    
     // Jump handling is done in jump() method via event listeners
     // No duplicate jump handling here to avoid inconsistency
     this.pointerWasDown = this.input.activePointer.isDown;
@@ -1880,8 +2192,32 @@ export class GameScene extends Phaser.Scene {
     if (onGround) {
       this.jumpsRemaining = 2;
       
+      // CRITICAL FIX: Ensure body height is correct when on ground
+      // Phaser sometimes resets body height, causing collider to fail
+      const spriteHeight = this.player.displayHeight;
+      const expectedBodyHeight = spriteHeight * 0.85;
+      if (Math.abs(this.player.body.height - expectedBodyHeight) > 5) {
+        // Body height is wrong - force correct value
+        this.player.body.height = expectedBodyHeight;
+        this.player.body.width = spriteHeight * 0.85; // Also ensure width is correct
+        // Re-setup body to ensure offset is correct
+        this.setupCharacterBody();
+      }
+      
+      // CRITICAL FIX: Disable gravity when on ground to prevent constant sinking
+      // Re-enable it when jumping
+      if (this.player.body.allowGravity) {
+        this.player.body.setAllowGravity(false);
+      }
+      
+      // Reset velocity to prevent any downward movement
+      if (this.player.body.velocity.y > 0) {
+        this.player.body.setVelocityY(0);
+      }
+      
       // Let Arcade Physics handle all position corrections
       // Do NOT manually adjust Y position - it causes jittering and conflicts with physics
+      // The collider will automatically keep the player on the ground
       
       // Switch to pushing animation when on ground
       const pushingAnim = this.getAnimationName(true);
@@ -2197,6 +2533,30 @@ export class GameScene extends Phaser.Scene {
   }
 
   startGame() {
+    console.log('🎮 startGame() called');
+    
+    // CRITICAL: Don't start game until assets are fully loaded
+    if (!this.assetsLoaded) {
+      console.warn('⚠️ startGame() called before assets are loaded, waiting...');
+      // Wait for assets to load, then retry
+      const checkAssets = setInterval(() => {
+        if (this.assetsLoaded) {
+          clearInterval(checkAssets);
+          this.startGame(); // Retry after assets are loaded
+        }
+      }, 100);
+      // Timeout after 5 seconds
+      setTimeout(() => {
+        clearInterval(checkAssets);
+        if (!this.assetsLoaded) {
+          console.error('❌ Assets failed to load within 5 seconds, starting anyway');
+          this.assetsLoaded = true; // Force allow start
+          this.startGame();
+        }
+      }, 5000);
+      return;
+    }
+    
     // Ensure audio is unlocked when game starts (mobile)
     if (this.sound.locked) {
       this.sound.unlock();
@@ -2205,22 +2565,61 @@ export class GameScene extends Phaser.Scene {
     // Get current game world dimensions (use scale, not camera)
     const { width, height } = this.scale;
     
+    // CRITICAL: Verify player exists before starting
+    if (!this.player) {
+      console.error('❌ CRITICAL: Player does not exist when startGame() is called!');
+      return;
+    }
+    
+    console.log('✅ Player exists:', {
+      x: this.player.x.toFixed(1),
+      y: this.player.y.toFixed(1),
+      visible: this.player.visible,
+      alpha: this.player.alpha,
+      scale: this.player.scaleX
+    });
+    
     // Ensure ground is positioned correctly before starting game
     // This is critical after orientation changes
-    // Safari on iPhone may need slightly larger ratios for proper visibility
+    // CRITICAL: Use the SAME logic as create() to ensure consistency
     const aspectRatio = width / height;
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isIPhoneProMax = /iPhone/.test(navigator.userAgent) && (window.screen.height >= 926 || window.screen.width >= 926);
+    const isShortViewport = height < 500; // CRITICAL: Detect very short viewports (like 402px height)
     
+    // CRITICAL FIX: For very short viewports, use moderate ground ratio
+    // This MUST match the logic in create() exactly
+    // Reduced from 30% to 20% for better proportions
     let groundHeightRatio = 0.15; // Default 15%
-    if (aspectRatio > 2.2) {
-      groundHeightRatio = isSafari ? 0.24 : 0.22; // 24% on Safari, 22% otherwise
+    
+    if (isShortViewport) {
+      // Very short viewport (height < 500px) - use moderate ground ratio
+      // Reduced from 30% to 20% for better proportions
+      if (aspectRatio > 1.8) {
+        groundHeightRatio = 0.20; // 20% for wide + short viewports (reduced from 30%)
+      } else {
+        groundHeightRatio = 0.18; // 18% for short viewports (reduced from 25%)
+      }
+    } else if (aspectRatio > 2.2) {
+      groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.24 : 0.22; // 24% on Safari/Pro Max, 22% otherwise
     } else if (aspectRatio > 1.8) {
-      groundHeightRatio = isSafari ? 0.20 : 0.18; // 20% on Safari, 18% otherwise
-    } else if (isSafari) {
-      groundHeightRatio = 0.17; // 17% on Safari for normal screens
+      groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.20 : 0.18; // 20% on Safari/Pro Max, 18% otherwise
+    } else if (isSafari || isIPhoneProMax) {
+      groundHeightRatio = 0.17; // 17% on Safari/Pro Max for normal screens
     }
+    
     const groundHeight = height * groundHeightRatio;
     this.groundY = height - groundHeight;
+    
+    console.log('🌍 startGame() ground recalculation:', {
+      width,
+      height,
+      aspectRatio: aspectRatio.toFixed(2),
+      isShortViewport,
+      groundHeightRatio: (groundHeightRatio * 100).toFixed(1) + '%',
+      groundHeight: Math.round(groundHeight),
+      groundY: Math.round(this.groundY)
+    });
     
     // Update ground position if it exists
     if (this.ground) {
@@ -2233,6 +2632,9 @@ export class GameScene extends Phaser.Scene {
           const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
           body.setSize(groundWidth, groundHeight);
           body.setOffset(0, 0);
+          // CRITICAL: Update body position to match groundY
+          body.x = 0;
+          body.y = this.groundY;
         }
       }
     }
@@ -2249,6 +2651,16 @@ export class GameScene extends Phaser.Scene {
     this.isGameOver = false;
     this.energy = GameConfig.energy.initial;
     this.combo = 0;
+    
+    console.log('✅ Game started:', {
+      isGameStarted: this.isGameStarted,
+      isGameOver: this.isGameOver,
+      energy: this.energy,
+      playerExists: !!this.player,
+      playerVisible: this.player?.visible,
+      playerX: this.player?.x?.toFixed(1),
+      playerY: this.player?.y?.toFixed(1)
+    });
     this.distance = 0;
     this.gameSpeed = GameConfig.speed.initial;
     this.grinchScore = 0;
@@ -2276,8 +2688,75 @@ export class GameScene extends Phaser.Scene {
       // Phaser's collider will automatically keep the player on the ground
       this.player.setPosition(playerX, this.groundY);
       
+      // CRITICAL: Re-setup body after repositioning to ensure body bottom aligns with ground
+      this.setupCharacterBody();
+      
+      // CRITICAL FIX: After setting position and body, ensure sprite and body are aligned
+      // The sprite.y should be at groundY (feet position with origin 0.5, 1)
+      // The body bottom should also be at groundY
+      this.player.setPosition(playerX, this.groundY);
+      
+      // Re-setup body again after final position is set
+      this.setupCharacterBody();
+      
+      // CRITICAL FIX for Mobile: Verify body height is correct (Phaser sometimes reports wrong values)
+      const spriteHeight = this.player.displayHeight;
+      const expectedBodyHeight = spriteHeight * 0.85;
+      if (Math.abs(this.player.body.height - expectedBodyHeight) > 5) {
+        // Body height is wrong - force correct value
+        this.player.body.height = expectedBodyHeight;
+        // Recalculate body position with correct height
+        const spriteTopLeftY = this.player.y - spriteHeight;
+        const offsetY = spriteHeight - expectedBodyHeight;
+        this.player.body.y = spriteTopLeftY + offsetY;
+        console.warn('⚠️ Mobile: Corrected body height from', this.player.body.height.toFixed(1), 'to', expectedBodyHeight.toFixed(1));
+      }
+      
+      // Verify and fix body bottom alignment
+      const bodyBottom = this.player.body.y + this.player.body.height;
+      if (Math.abs(bodyBottom - this.groundY) > 0.5) {
+        // Calculate correct body position
+        const spriteHeight = this.player.displayHeight;
+        const bodyHeight = this.player.body.height;
+        const offsetY = this.player.body.offset.y;
+        const spriteTopLeftY = this.player.y - spriteHeight;
+        const correctBodyY = spriteTopLeftY + offsetY;
+        
+        // Set body position directly
+        this.player.body.y = correctBodyY;
+        
+        // Verify again
+        const newBodyBottom = this.player.body.y + this.player.body.height;
+        if (Math.abs(newBodyBottom - this.groundY) > 0.5) {
+          // Last resort: adjust body position to match groundY
+          this.player.body.y += (this.groundY - newBodyBottom);
+        }
+        
+        console.log('🔧 startGame() corrected body position:', {
+          oldBodyBottom: bodyBottom.toFixed(1),
+          newBodyBottom: (this.player.body.y + this.player.body.height).toFixed(1),
+          groundY: this.groundY.toFixed(1),
+          spriteY: this.player.y.toFixed(1)
+        });
+      }
+      
+      // CRITICAL: Ensure sprite position matches groundY (in case body adjustment moved things)
+      if (Math.abs(this.player.y - this.groundY) > 0.5) {
+        this.player.setPosition(playerX, this.groundY);
+        this.setupCharacterBody();
+      }
+      
       // Reset all velocities to prevent falling or movement
       this.player.body.setVelocity(0, 0);
+      
+      console.log('✅ startGame() player repositioned:', {
+        playerX: this.player.x.toFixed(1),
+        playerY: this.player.y.toFixed(1),
+        groundY: this.groundY.toFixed(1),
+        bodyY: this.player.body.y.toFixed(1),
+        bodyBottom: (this.player.body.y + this.player.body.height).toFixed(1),
+        match: Math.abs((this.player.body.y + this.player.body.height) - this.groundY) < 1 ? '✅' : '❌'
+      });
     }
     
     this.jumpsRemaining = 2;
@@ -2892,6 +3371,9 @@ export class GameScene extends Phaser.Scene {
           // Body matches sprite exactly - full height, no offset
           body.setSize(groundWidth, groundHeight);
           body.setOffset(0, 0); // No offset with (0,0) origin
+          // CRITICAL: Update body position to match groundY
+          body.x = 0;
+          body.y = this.groundY;
         }
       }
     }
@@ -2948,6 +3430,9 @@ export class GameScene extends Phaser.Scene {
             if (groundRect.body) {
               const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
               body.setSize(width * 3, newGroundHeight);
+              // CRITICAL: Update body position to match groundY
+              body.x = 0;
+              body.y = this.groundY;
             }
           }
           // Reposition player
