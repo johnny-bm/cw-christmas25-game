@@ -321,7 +321,17 @@ export default function App() {
   const gameBackgroundColor = getElementColor('background');
   
   return (
-    <div className="w-full h-[100dvh] overflow-hidden relative" style={{ margin: 0, padding: 0, width: '100vw', height: '100vh', backgroundColor: gameBackgroundColor }}>
+    <div 
+      className="w-full overflow-hidden relative" 
+      style={{ 
+        margin: 0, 
+        padding: 0, 
+        width: '100vw', 
+        height: '100dvh', // Use dvh for better mobile support
+        minHeight: '100vh', // Fallback for browsers without dvh support
+        backgroundColor: gameBackgroundColor 
+      }}
+    >
       {/* Portrait orientation blocker - shared across all routes */}
       {showPortraitBlocker && <PortraitBlocker gameBackgroundColor={gameBackgroundColor} />}
       

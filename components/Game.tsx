@@ -336,7 +336,25 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     };
   }, []);
 
-  return <div ref={containerRef} className="w-full h-full overflow-hidden" style={{ margin: 0, padding: 0 }} />;
+  // Game container: Uses flexible sizing to fill parent container.
+  // Phaser's RESIZE mode will adapt the game world to match this container's dimensions.
+  // minHeight: 0 allows the container to shrink in flex layouts if needed.
+  return (
+    <div 
+      ref={containerRef} 
+      className="w-full h-full overflow-hidden" 
+      style={{ 
+        margin: 0, 
+        padding: 0,
+        width: '100%',
+        height: '100%',
+        minHeight: 0, // Allow flex shrinking in flex layouts
+        display: 'flex',
+        alignItems: 'stretch',
+        justifyContent: 'stretch'
+      }} 
+    />
+  );
 }
 
 export const Game = memo(GameComponent);

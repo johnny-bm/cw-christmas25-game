@@ -130,6 +130,9 @@
     border-color: var(--color-border);
   }
 
+  /* Root body: Use dvh (dynamic viewport height) for better mobile support.
+   * dvh accounts for browser UI (address bar) changes, ensuring the game
+   * always fills the visible viewport on mobile devices. */
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -137,7 +140,8 @@
     overflow: hidden;
     position: fixed;
     width: 100%;
-    height: 100%;
+    height: 100dvh; /* Use dvh for better mobile support - accounts for browser UI */
+    min-height: 100vh; /* Fallback for browsers without dvh support */
     margin: 0;
     padding: 0;
     -webkit-overflow-scrolling: touch;
@@ -150,21 +154,23 @@
     overflow: hidden;
     position: fixed;
     width: 100%;
-    height: 100%;
+    height: 100dvh; /* Use dvh for better mobile support */
+    min-height: 100vh; /* Fallback for browsers without dvh support */
     margin: 0;
     padding: 0;
     overscroll-behavior: none;
   }
   
-  /* Ensure canvas fills container completely */
+  /* Canvas: Phaser handles its own rendering and scaling via RESIZE mode.
+   * We just ensure it fills the container without constraining aspect ratio. */
   canvas {
     display: block;
-    width: 100vw !important;
-    height: 100vh !important;
+    width: 100% !important;
+    height: 100% !important;
     margin: 0;
     padding: 0;
-    max-width: 100vw;
-    max-height: 100vh;
+    max-width: 100%;
+    max-height: 100%;
   }
   
   /* Safe area insets for notched devices */
@@ -346,7 +352,6 @@ html {
 
   /* Deadline indicator positioning: top left on mobile devices, middle left on desktop */
   .deadline-indicator {
-    top: 0.5rem !important;
     top: max(0.5rem, env(safe-area-inset-top, 0.5rem)) !important;
     transform: none !important;
   }

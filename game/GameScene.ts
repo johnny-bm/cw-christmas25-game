@@ -339,8 +339,14 @@ export class GameScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // Set camera bounds to match actual canvas size
+    // Ensure camera shows the full play area, especially important on tall screens
     this.cameras.main.setBounds(0, 0, width, height);
     this.cameras.main.setBackgroundColor(getElementColorPhaser('background')); // White background
+    
+    // Center camera on the play area to ensure ground and character are always visible.
+    // This is critical for high aspect ratio screens (like iPhone 15 Pro Max landscape)
+    // where the ground might be positioned low and could be cut off without proper centering.
+    this.cameras.main.centerOn(width / 2, height / 2);
     
     // Set physics world bounds to match canvas size
     this.physics.world.setBounds(0, 0, width, height);
@@ -364,8 +370,14 @@ export class GameScene extends Phaser.Scene {
     // Parallax background
     this.createParallaxBackground();
 
-    // Ground setup - 15% of screen height for ground, 85% for game area
-    const groundHeightRatio = 0.15; // 15% of screen height
+    // Ground setup - responsive to aspect ratio
+    // On very wide screens (high aspect ratio like iPhone 15 Pro Max landscape),
+    // use a larger ground height ratio to ensure ground and character are always visible.
+    // This prevents the ground from being positioned too low on wide screens.
+    const aspectRatio = width / height;
+    // For wide screens (aspect ratio > 2.0), use larger ground ratio
+    // For normal screens, use 15% ground height
+    const groundHeightRatio = aspectRatio > 2.0 ? 0.20 : 0.15; // 20% on very wide screens, 15% otherwise
     const groundHeight = height * groundHeightRatio; // Scale proportionally
     this.groundY = height - groundHeight;
     const groundWidth = width * 3;
@@ -2509,9 +2521,12 @@ export class GameScene extends Phaser.Scene {
     const { width, height } = this.scale; // These are the actual game world dimensions (adapts to screen)
     
     // Update camera bounds to match game world
+    // Ensure camera shows the full play area, especially important on tall/wide screens
     if (this.cameras && this.cameras.main) {
       this.cameras.main.setBounds(0, 0, width, height);
       this.cameras.main.setBackgroundColor(getElementColorPhaser('background'));
+      // Center camera to ensure ground and character are always visible
+      this.cameras.main.centerOn(width / 2, height / 2);
     }
     
     // Update gravity - scale based on actual screen height for consistent physics
@@ -2529,9 +2544,11 @@ export class GameScene extends Phaser.Scene {
       this.player.body.setGravityY(resizeScaledGravity);
     }
     
-    // Reposition ground at new bottom - 15% of screen height for ground, 85% for game area
-    // Ground height scales with screen height (maintains visual proportion)
-    const groundHeightRatio = 0.15; // 15% of screen height
+    // Reposition ground at new bottom - responsive to aspect ratio
+    // On very wide screens (high aspect ratio), use larger ground height ratio
+    // to ensure ground and character are always visible
+    const aspectRatio = width / height;
+    const groundHeightRatio = aspectRatio > 2.0 ? 0.20 : 0.15; // 20% on very wide screens, 15% otherwise
     const groundHeight = height * groundHeightRatio; // Scale proportionally
     this.groundY = height - groundHeight;
     const groundWidth = width * 3; // Ground width extends 3x screen width
