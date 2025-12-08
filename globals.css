@@ -162,15 +162,16 @@
   }
   
   /* Canvas: Phaser handles its own rendering and scaling via RESIZE mode.
-   * We just ensure it fills the container without constraining aspect ratio. */
+   * Ensure it fills the container completely with no margins or padding. */
   canvas {
     display: block;
     width: 100% !important;
     height: 100% !important;
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
     max-width: 100%;
     max-height: 100%;
+    object-fit: fill; /* Fill container completely */
   }
   
   /* Safe area insets for notched devices */

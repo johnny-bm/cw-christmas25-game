@@ -205,9 +205,25 @@ export default function App() {
 
   // Handle orientation changes
   useEffect(() => {
+    let previousOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+    
     const checkOrientation = () => {
       // Check if portrait mode
       const isPortraitNow = window.innerHeight > window.innerWidth;
+      const currentOrientation = isPortraitNow ? 'portrait' : 'landscape';
+      
+      // If orientation actually changed (not just a resize), refresh the page
+      // This ensures the game initializes correctly with new dimensions
+      if (previousOrientation !== currentOrientation && gameState === 'playing') {
+        // Only refresh if game is currently playing (not on start screen)
+        // Small delay to let browser finish orientation change
+        setTimeout(() => {
+          window.location.reload();
+        }, 300);
+        return;
+      }
+      
+      previousOrientation = currentOrientation;
       setIsPortrait(isPortraitNow);
     };
 
@@ -216,8 +232,8 @@ export default function App() {
 
     // Listen to orientation change events
     const handleOrientationChange = () => {
-      // Small delay to let browser update dimensions
-      setTimeout(checkOrientation, 100);
+      // Longer delay to let browser update dimensions
+      setTimeout(checkOrientation, 200);
     };
 
     window.addEventListener('orientationchange', handleOrientationChange);
@@ -235,7 +251,7 @@ export default function App() {
         screen.orientation.removeEventListener('change', handleOrientationChange);
       }
     };
-  }, []);
+  }, [gameState]);
 
   const handleStartGame = () => {
     // Block game start if game is not ready
@@ -329,7 +345,13 @@ export default function App() {
         width: '100vw', 
         height: '100dvh', // Use dvh for better mobile support
         minHeight: '100vh', // Fallback for browsers without dvh support
-        backgroundColor: gameBackgroundColor 
+        backgroundColor: gameBackgroundColor,
+        boxSizing: 'border-box', // Ensure padding/margins don't affect sizing
+        position: 'fixed', // Fixed positioning to avoid any layout shifts
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
       }}
     >
       {/* Portrait orientation blocker - shared across all routes */}

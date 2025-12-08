@@ -374,16 +374,21 @@ export class GameScene extends Phaser.Scene {
     // Ground setup - responsive to aspect ratio
     // Ensure ground is always visible by using a minimum ground height ratio
     // On very wide screens (high aspect ratio), use larger ratio to keep ground visible
+    // Safari on iPhone may need slightly larger ratios for proper visibility
     const aspectRatio = width / height;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
     // For very wide screens (aspect ratio > 2.2), use 22% ground height
     // For wide screens (aspect ratio > 1.8), use 18% ground height  
     // For normal screens, use 15% ground height
-    // This ensures ground and character are always within visible bounds
+    // Safari may need slightly larger ratios (add 2% for Safari)
     let groundHeightRatio = 0.15; // Default 15%
     if (aspectRatio > 2.2) {
-      groundHeightRatio = 0.22; // 22% on very wide screens (iPhone 15 Pro Max landscape)
+      groundHeightRatio = isSafari ? 0.24 : 0.22; // 24% on Safari, 22% otherwise
     } else if (aspectRatio > 1.8) {
-      groundHeightRatio = 0.18; // 18% on wide screens
+      groundHeightRatio = isSafari ? 0.20 : 0.18; // 20% on Safari, 18% otherwise
+    } else if (isSafari) {
+      groundHeightRatio = 0.17; // 17% on Safari for normal screens
     }
     const groundHeight = height * groundHeightRatio; // Scale proportionally
     this.groundY = height - groundHeight; // Ground top edge at this Y position
@@ -1977,6 +1982,64 @@ export class GameScene extends Phaser.Scene {
       this.sound.unlock();
     }
     
+    // Get current game world dimensions (use scale, not camera)
+    const { width, height } = this.scale;
+    
+    // Ensure ground is positioned correctly before starting game
+    // This is critical after orientation changes
+    // Safari on iPhone may need slightly larger ratios for proper visibility
+    const aspectRatio = width / height;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    let groundHeightRatio = 0.15; // Default 15%
+    if (aspectRatio > 2.2) {
+      groundHeightRatio = isSafari ? 0.24 : 0.22; // 24% on Safari, 22% otherwise
+    } else if (aspectRatio > 1.8) {
+      groundHeightRatio = isSafari ? 0.20 : 0.18; // 20% on Safari, 18% otherwise
+    } else if (isSafari) {
+      groundHeightRatio = 0.17; // 17% on Safari for normal screens
+    }
+    const groundHeight = height * groundHeightRatio;
+    this.groundY = height - groundHeight;
+    
+    // Update ground position if it exists
+    if (this.ground) {
+      const groundRect = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
+      if (groundRect) {
+        const groundWidth = width * 3;
+        groundRect.setPosition(0, this.groundY);
+        groundRect.setSize(groundWidth, groundHeight);
+        if (groundRect.body) {
+          const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
+          body.setSize(groundWidth, groundHeight);
+          body.setOffset(0, 0);
+        }
+      }
+    }
+    
+    // Ensure camera shows full world
+    this.cameras.main.setBounds(0, 0, width, height);
+    this.cameras.main.setScroll(0, 0);
+    
+    // CRITICAL: Reposition player at ground level before starting game
+    // This ensures player is always on ground, especially after orientation changes
+    if (this.player) {
+      const playerX = width * 0.25; // 25% from left edge
+      this.player.setPosition(playerX, this.groundY);
+      
+      // Reset player physics to ensure proper positioning
+      if (this.player.body) {
+        this.player.body.setVelocityY(0);
+        this.player.body.setVelocityX(0);
+        // Force player to be on ground by setting position directly
+        this.player.body.y = this.groundY - (this.player.body.height || 0);
+        // Ensure player body is within bounds
+        if (this.player.body.y < 0) {
+          this.player.body.y = 0;
+        }
+      }
+    }
+    
     this.isGameStarted = true;
     this.isGameOver = false;
     this.energy = GameConfig.energy.initial;
@@ -1990,28 +2053,27 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.resetFX();
     this.cameras.main.setAlpha(1);
     
-    // Reset player position - simple and correct
+    // Reset player position - use actual game world width, not camera width
     // With origin (0.5, 1), sprite.y is the bottom/feet position
     // Position sprite.y = groundY to place feet at ground level
     if (this.player?.body) {
-      const { width: screenWidth } = this.cameras.main;
-      // Test with default body first - uncomment if you need custom body size
-      // this.setupCharacterBody();
+      const playerX = width * 0.25; // 25% from left edge
+      
+      // Ensure player scale is correct for current screen size
+      const isMobile = width <= 768 || height <= 768;
+      const characterHeightRatio = isMobile ? 0.198 : 0.15;
+      const targetHeight = height * characterHeightRatio;
+      const playerScale = targetHeight / 160;
+      this.player.setScale(playerScale);
+      this.setupCharacterBody();
+      
       // Position sprite at ground level - feet at groundY
-      this.player.setPosition(screenWidth * 0.25, this.groundY);
+      this.player.setPosition(playerX, this.groundY);
       this.player.body.setVelocity(0, 0);
       
-      // Debug positioning
-      const groundRectStart = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
-      if (groundRectStart) {
-        console.log('=== startGame() POSITIONING ===');
-        console.log('groundY:', this.groundY);
-        console.log('Character sprite.y (feet):', this.player.y);
-        console.log('Character body.y:', this.player.body.y);
-        console.log('Character body bottom:', this.player.body.y + this.player.body.height);
-        console.log('Ground body top:', groundRectStart.body ? (groundRectStart.body as Phaser.Physics.Arcade.StaticBody).y : 'N/A');
-        console.log('Expected: sprite.y = body bottom = groundY =', this.groundY);
-        console.log('==============================');
+      // Force player to be on ground (safety check)
+      if (this.player.body.y + this.player.body.height > this.groundY) {
+        this.player.setPosition(playerX, this.groundY);
       }
     }
     
@@ -2562,15 +2624,21 @@ export class GameScene extends Phaser.Scene {
     
     // Reposition ground at new bottom - responsive to aspect ratio
     // Ensure ground is always visible by using adaptive ground height ratio
+    // Safari on iPhone may need slightly larger ratios for proper visibility
     const aspectRatio = width / height;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
     // For very wide screens (aspect ratio > 2.2), use 22% ground height
     // For wide screens (aspect ratio > 1.8), use 18% ground height  
     // For normal screens, use 15% ground height
+    // Safari may need slightly larger ratios (add 2% for Safari)
     let groundHeightRatio = 0.15; // Default 15%
     if (aspectRatio > 2.2) {
-      groundHeightRatio = 0.22; // 22% on very wide screens
+      groundHeightRatio = isSafari ? 0.24 : 0.22; // 24% on Safari, 22% otherwise
     } else if (aspectRatio > 1.8) {
-      groundHeightRatio = 0.18; // 18% on wide screens
+      groundHeightRatio = isSafari ? 0.20 : 0.18; // 20% on Safari, 18% otherwise
+    } else if (isSafari) {
+      groundHeightRatio = 0.17; // 17% on Safari for normal screens
     }
     const groundHeight = height * groundHeightRatio; // Scale proportionally
     this.groundY = height - groundHeight; // Ground top edge at this Y position
@@ -2615,12 +2683,17 @@ export class GameScene extends Phaser.Scene {
       // Reset velocity to prevent sinking
       if (this.player.body) {
         this.player.body.setVelocityY(0);
+        this.player.body.setVelocityX(0);
+        // Force correct body position - body bottom should align with groundY
+        // With origin (0.5, 1), sprite.y is at feet, so body bottom should match
+        const bodyHeight = this.player.body.height || this.player.displayHeight * 0.85;
+        this.player.body.y = this.groundY - bodyHeight;
         // Ensure player body is within bounds
         if (this.player.body.y < 0) {
           this.player.body.y = 0;
         }
-        if (this.player.body.y + this.player.body.height > height) {
-          this.player.body.y = height - this.player.body.height;
+        if (this.player.body.y + bodyHeight > height) {
+          this.player.body.y = height - bodyHeight;
         }
       }
     }

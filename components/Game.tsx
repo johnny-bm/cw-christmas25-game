@@ -85,8 +85,8 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
       scene: [GameScene],
       scale: {
         mode: Phaser.Scale.RESIZE, // RESIZE mode makes game world adapt to container size
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-        // No fixed width/height - game world will match container size
+        // No autoCenter needed - RESIZE mode fills container completely
+        // No fixed width/height - game world will match container size exactly
         // This allows the design to adapt to any screen size proportionally
       },
       render: {
@@ -393,9 +393,9 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     };
   }, []);
 
-  // Game container: Uses flexible sizing to fill parent container.
-  // Phaser's RESIZE mode will adapt the game world to match this container's dimensions.
-  // minHeight: 0 allows the container to shrink in flex layouts if needed.
+  // Game container: Uses flexible sizing to fill parent container completely.
+  // Phaser's RESIZE mode will adapt the game world to match this container's dimensions exactly.
+  // No margins or padding to ensure full-width coverage.
   return (
     <div 
       ref={containerRef} 
@@ -406,9 +406,8 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         width: '100%',
         height: '100%',
         minHeight: 0, // Allow flex shrinking in flex layouts
-        display: 'flex',
-        alignItems: 'stretch',
-        justifyContent: 'stretch'
+        display: 'block', // Use block instead of flex to avoid centering
+        boxSizing: 'border-box'
       }} 
     />
   );
