@@ -167,7 +167,7 @@ export class GameScene extends Phaser.Scene {
   private groundY: number = 0;
   
   // Helper function to setup character physics body correctly - responsive
-  // CORRECT APPROACH: Manually align body bottom with sprite.y (feet position)
+  // CRITICAL FIX for Safari Mobile: Ensure body bottom aligns with sprite.y (feet position)
   private setupCharacterBody() {
     if (!this.player || !this.player.body) return;
     
@@ -180,37 +180,56 @@ export class GameScene extends Phaser.Scene {
     const bodyWidth = spriteWidth * 0.85; // 85% of sprite width for tighter collision
     const bodyHeight = spriteHeight * 0.85; // 85% of sprite height for tighter collision
     
-    // Set body size WITHOUT centering - we'll manually position it
+    // Set body size
     this.player.body.setSize(bodyWidth, bodyHeight);
     
-    // Calculate offset so body bottom aligns with sprite.y (feet position)
+    // CRITICAL FIX: Calculate offset so body bottom aligns with sprite.y (feet position)
     // With origin (0.5, 1), sprite.y is at the bottom center (feet)
     // Body offset is relative to sprite's top-left corner
-    // We want body bottom = sprite.y, so body should extend UPWARD from feet
     // 
-    // Sprite top-left: (sprite.x - spriteWidth/2, sprite.y - spriteHeight)
-    // Body top-left: (sprite.x - spriteWidth/2 + offsetX, sprite.y - spriteHeight + offsetY)
-    // Body bottom: sprite.y - spriteHeight + offsetY + bodyHeight
+    // Sprite origin is at (0.5, 1) = bottom center
+    // Sprite top-left corner is at: (sprite.x - spriteWidth/2, sprite.y - spriteHeight)
+    // Body is positioned relative to sprite's top-left corner
     // 
-    // We want: body bottom = sprite.y
-    // So: sprite.y - spriteHeight + offsetY + bodyHeight = sprite.y
-    // Therefore: offsetY = spriteHeight - bodyHeight
+    // We want: body bottom = sprite.y (ground surface)
+    // Body bottom = sprite top-left Y + offsetY + bodyHeight
+    // = (sprite.y - spriteHeight) + offsetY + bodyHeight
+    // 
+    // Set equal to sprite.y:
+    // (sprite.y - spriteHeight) + offsetY + bodyHeight = sprite.y
+    // offsetY = spriteHeight - bodyHeight
     
     const offsetX = (spriteWidth - bodyWidth) / 2; // Center horizontally
     const offsetY = spriteHeight - bodyHeight; // Align body bottom with sprite.y (feet)
     
     this.player.body.setOffset(offsetX, offsetY);
     
+    // CRITICAL: Verify body bottom aligns with sprite.y after setting offset
+    // If not, manually adjust body position
+    const spriteTopLeftY = this.player.y - spriteHeight; // Top-left Y of sprite
+    const bodyTopY = spriteTopLeftY + offsetY; // Top Y of body
+    const calculatedBodyBottom = bodyTopY + bodyHeight; // Calculated body bottom
+    
+    if (Math.abs(calculatedBodyBottom - this.player.y) > 0.1) {
+      // Body bottom doesn't match sprite.y - this shouldn't happen, but log it
+      console.warn('⚠️ Body bottom calculation mismatch:', {
+        calculatedBodyBottom,
+        spriteY: this.player.y,
+        difference: calculatedBodyBottom - this.player.y
+      });
+    }
+    
     // Debug: Log body setup values to verify alignment
-    console.log('=== CHARACTER BODY SETUP (CORRECTED) ===');
-    console.log('Sprite dimensions:', spriteWidth, 'x', spriteHeight);
-    console.log('Body size:', bodyWidth, 'x', bodyHeight);
-    console.log('Body offset:', offsetX, offsetY);
-    console.log('Sprite.y (feet position):', this.player.y);
-    console.log('Body.y:', this.player.body.y);
-    console.log('Body.height:', this.player.body.height);
-    console.log('Body bottom (body.y + body.height):', this.player.body.y + this.player.body.height);
-    console.log('Expected: body bottom = sprite.y =', this.player.y);
+    console.log('=== CHARACTER BODY SETUP ===');
+    console.log('Sprite dimensions:', spriteWidth.toFixed(1), 'x', spriteHeight.toFixed(1));
+    console.log('Body size:', bodyWidth.toFixed(1), 'x', bodyHeight.toFixed(1));
+    console.log('Body offset:', offsetX.toFixed(1), offsetY.toFixed(1));
+    console.log('Sprite.y (feet/ground):', this.player.y.toFixed(1));
+    console.log('Body.y:', this.player.body.y.toFixed(1));
+    console.log('Body.height:', this.player.body.height.toFixed(1));
+    console.log('Body bottom:', (this.player.body.y + this.player.body.height).toFixed(1));
+    console.log('Ground Y:', this.groundY?.toFixed(1) || 'N/A');
+    console.log('Match:', Math.abs((this.player.body.y + this.player.body.height) - this.player.y) < 1 ? '✅' : '❌');
     console.log('======================================');
   }
   
@@ -510,12 +529,18 @@ export class GameScene extends Phaser.Scene {
     // Set origin to BOTTOM CENTER (0.5, 1) - sprite.y will be the bottom
     this.player.setOrigin(0.5, 1);
     
-    // Position sprite at ground level - simple and correct
+    // Position sprite at ground level - CRITICAL FIX for Safari Mobile
     // With origin (0.5, 1), sprite.y is the bottom/feet position
-    // Position sprite.y = groundY to place feet at ground level
-    // Phaser's default body will be centered on sprite, and the collider will keep player on ground
+    // Ground is at groundY (top of ground rectangle), so character feet should be AT groundY
+    // But we need to ensure the physics body bottom aligns with ground surface
     const playerX = width * 0.25; // 25% from left edge
+    
+    // CRITICAL: Position character so feet are ON the ground surface (at groundY)
+    // The ground's top surface is at groundY, so character feet should be at groundY
     this.player.setPosition(playerX, this.groundY);
+    
+    // Setup physics body BEFORE setting physics properties to ensure proper alignment
+    this.setupCharacterBody();
     
     // Debug: Log character positioning
     console.log('👤 Character setup:', {
@@ -595,10 +620,82 @@ export class GameScene extends Phaser.Scene {
     this.player.body.setMaxVelocityY(1400);
     this.player.body.setDrag(200, 0);
     
+    // CRITICAL: Reset velocity to 0 to prevent character from falling through ground
+    this.player.body.setVelocity(0, 0);
+    
+    // CRITICAL FIX for Safari Mobile: Re-setup body after all physics properties are set
+    // This ensures body is properly aligned with sprite position
+    this.setupCharacterBody();
+    
     // Add collider - this is a COLLIDER (not overlap), so it will prevent penetration
     // Arcade Physics will automatically keep player on top of ground
     // The collider handles collision response, preventing character from sinking
     this.physics.add.collider(this.player, this.ground);
+    
+    // CRITICAL: Final position adjustment - ensure character is exactly on ground surface
+    // Position character so physics body bottom aligns with ground top surface
+    this.player.setPosition(playerX, this.groundY);
+    
+    // CRITICAL FIX for Safari Mobile: Force body bottom to align with ground surface
+    // After setting up the body, manually verify and correct body position
+    if (this.player.body) {
+      // Calculate where body bottom should be (at sprite.y / groundY)
+      const expectedBodyBottom = this.groundY;
+      const currentBodyBottom = this.player.body.y + this.player.body.height;
+      
+      // If body bottom doesn't match groundY, adjust body position
+      if (Math.abs(currentBodyBottom - expectedBodyBottom) > 0.5) {
+        const adjustment = expectedBodyBottom - currentBodyBottom;
+        // Move body up/down to align bottom with ground
+        this.player.body.y += adjustment;
+        console.log('🔧 Adjusted character body Y by', adjustment.toFixed(1), 'to align bottom with ground');
+      }
+      
+      // CRITICAL: Also ensure sprite position matches (in case body moved)
+      // The sprite should be at groundY with origin (0.5, 1)
+      if (Math.abs(this.player.y - this.groundY) > 0.5) {
+        this.player.setPosition(playerX, this.groundY);
+        // Re-setup body after repositioning
+        this.setupCharacterBody();
+        // Re-adjust body if needed
+        const newBodyBottom = this.player.body.y + this.player.body.height;
+        if (Math.abs(newBodyBottom - this.groundY) > 0.5) {
+          this.player.body.y += (this.groundY - newBodyBottom);
+        }
+      }
+      
+      // Visual debug: Show character body outline (green = body, yellow = ground surface)
+      const bodyDebug = this.add.rectangle(
+        this.player.body.x + this.player.body.width / 2,
+        this.player.body.y + this.player.body.height / 2,
+        this.player.body.width,
+        this.player.body.height,
+        0x00ff00,
+        0.4
+      );
+      bodyDebug.setDepth(1001);
+      bodyDebug.setOrigin(0.5, 0.5);
+      
+      // Show ground surface line (yellow)
+      const groundSurfaceLine = this.add.line(
+        0, this.groundY, 
+        0, this.groundY, 
+        width, this.groundY,
+        0xffff00, 1
+      );
+      groundSurfaceLine.setDepth(1001);
+      groundSurfaceLine.setLineWidth(4);
+      
+      // Show body bottom line (cyan) - should align with yellow line
+      const bodyBottomLine = this.add.line(
+        0, this.player.body.y + this.player.body.height,
+        0, this.player.body.y + this.player.body.height,
+        width, this.player.body.y + this.player.body.height,
+        0x00ffff, 1
+      );
+      bodyBottomLine.setDepth(1001);
+      bodyBottomLine.setLineWidth(2);
+    }
 
     // Setup animation
     if (this.textures.exists('character-pushing-01') && this.textures.exists('character-ollie-01')) {
