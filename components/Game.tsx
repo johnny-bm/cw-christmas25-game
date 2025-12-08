@@ -109,7 +109,9 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
           if (debugEl) {
             const aspectRatio = (initialWidth / initialHeight).toFixed(2);
             const isShort = initialHeight < 500;
-            debugEl.textContent = `${Math.round(initialWidth)}x${Math.round(initialHeight)} (${aspectRatio})${isShort ? ' SHORT' : ''}`;
+            const groundRatio = isShort ? (aspectRatio > 1.8 ? '30%' : '25%') : '15%';
+            const charRatio = isShort ? '15%' : '19.8%';
+            debugEl.innerHTML = `${Math.round(initialWidth)}x${Math.round(initialHeight)}<br/>${aspectRatio}${isShort ? ' SHORT' : ''}<br/>G:${groundRatio} C:${charRatio}`;
           }
         }
         initializeGame();

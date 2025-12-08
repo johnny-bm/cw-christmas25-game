@@ -356,10 +356,35 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, width, height);
     this.cameras.main.setBackgroundColor(getElementColorPhaser('background')); // White background
     
+    // CRITICAL FIX for Safari Mobile: Ensure camera shows full world from (0,0) to (width, height)
     // Reset camera scroll to origin to ensure we see the full world from top-left
     // This ensures ground (at bottom) and character are always visible
-    // With RESIZE mode, camera should already be at (0, 0), but explicitly set it for safety
     this.cameras.main.setScroll(0, 0);
+    
+    // CRITICAL: Force camera to show the full world - ensure viewport matches game world
+    this.cameras.main.setViewport(0, 0, width, height);
+    
+    // CRITICAL: Ensure camera follows the world properly
+    this.cameras.main.setDeadzone(0, 0); // No deadzone - show full world
+    
+    // Debug: Log camera and world info
+    console.log('🎥 Camera setup:', {
+      bounds: { x: 0, y: 0, width, height },
+      scroll: { x: this.cameras.main.scrollX, y: this.cameras.main.scrollY },
+      viewport: { x: 0, y: 0, width, height },
+      worldView: { x: this.cameras.main.worldView.x, y: this.cameras.main.worldView.y, width: this.cameras.main.worldView.width, height: this.cameras.main.worldView.height }
+    });
+    
+    // Visual debug: Add corner markers to verify camera viewport
+    // Top-left corner (should be visible)
+    const topLeftMarker = this.add.rectangle(10, 10, 20, 20, 0x00ff00, 0.8);
+    topLeftMarker.setDepth(1000);
+    // Bottom-right corner (should be visible)
+    const bottomRightMarker = this.add.rectangle(width - 10, height - 10, 20, 20, 0x0000ff, 0.8);
+    bottomRightMarker.setDepth(1000);
+    // Center marker
+    const centerMarker = this.add.rectangle(width / 2, height / 2, 20, 20, 0xffff00, 0.8);
+    centerMarker.setDepth(1000);
     
     // Set physics world bounds to match canvas size
     this.physics.world.setBounds(0, 0, width, height);
@@ -424,14 +449,33 @@ export class GameScene extends Phaser.Scene {
       console.warn('⚠️ Ground Y position exceeds height, adjusting:', this.groundY, height);
       this.groundY = height * 0.85; // Ensure ground is at least 15% from bottom
     }
+    
+    // Debug: Log ground positioning
+    console.log('🌍 Ground setup:', {
+      width,
+      height,
+      aspectRatio: (width / height).toFixed(2),
+      isShortViewport,
+      groundHeightRatio: (groundHeightRatio * 100).toFixed(1) + '%',
+      groundHeight: Math.round(groundHeight),
+      groundY: Math.round(this.groundY),
+      groundBottom: Math.round(this.groundY + groundHeight)
+    });
     const groundWidth = width * 3;
     
     this.ground = this.physics.add.staticGroup();
     
     // Create ground rectangle at groundY
+    // CRITICAL: Ensure ground is visible - use a bright color for debugging if needed
     const groundRect = this.add.rectangle(0, this.groundY, groundWidth, groundHeight, getElementColorPhaser('ground'));
     groundRect.setDepth(10); // Ground depth - character (20) will render above
     groundRect.setOrigin(0, 0); // Top-left origin
+    
+    // Debug: Add a visible border to ground for testing (can remove later)
+    // This helps verify ground is positioned correctly
+    const groundDebug = this.add.rectangle(groundWidth / 2, this.groundY + groundHeight / 2, groundWidth, groundHeight, 0xff0000, 0.3);
+    groundDebug.setDepth(9);
+    groundDebug.setOrigin(0.5, 0.5);
     
     // Add physics body and configure it
     this.physics.add.existing(groundRect, true);
@@ -472,6 +516,16 @@ export class GameScene extends Phaser.Scene {
     // Phaser's default body will be centered on sprite, and the collider will keep player on ground
     const playerX = width * 0.25; // 25% from left edge
     this.player.setPosition(playerX, this.groundY);
+    
+    // Debug: Log character positioning
+    console.log('👤 Character setup:', {
+      playerX: Math.round(playerX),
+      playerY: Math.round(this.groundY),
+      characterHeight: Math.round(targetHeight),
+      characterTop: Math.round(this.groundY - targetHeight),
+      groundY: Math.round(this.groundY),
+      worldHeight: height
+    });
     
     // CRITICAL FIX for iPhone Pro Max: Ensure player is fully visible
     // Verify character fits in visible area and adjust if necessary
