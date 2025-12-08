@@ -384,26 +384,33 @@ export class GameScene extends Phaser.Scene {
     this.createParallaxBackground();
 
     // Ground setup - responsive to aspect ratio
-    // CRITICAL FIX for iPhone Pro Max: Ensure ground is always within visible bounds
-    // Ensure ground is always visible by using a minimum ground height ratio
-    // On very wide screens (high aspect ratio), use larger ratio to keep ground visible
-    // Safari on iPhone may need slightly larger ratios for proper visibility
+    // CRITICAL FIX for Safari Mobile: Ensure ground is always within visible bounds
+    // Special handling for short viewports (like 750x402) where height is very limited
     const aspectRatio = width / height;
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const isIPhoneProMax = /iPhone/.test(navigator.userAgent) && (window.screen.height >= 926 || window.screen.width >= 926);
+    const isShortViewport = height < 500; // CRITICAL: Detect very short viewports (like 402px height)
     
-    // For very wide screens (aspect ratio > 2.2), use 22% ground height
-    // For wide screens (aspect ratio > 1.8), use 18% ground height  
-    // For normal screens, use 15% ground height
-    // Safari and iPhone Pro Max may need slightly larger ratios for proper visibility
+    // CRITICAL FIX: For very short viewports, use larger ground ratio to ensure visibility
+    // With height of 402px, we need at least 25-30% for ground to be visible
     let groundHeightRatio = 0.15; // Default 15%
-    if (aspectRatio > 2.2) {
+    
+    if (isShortViewport) {
+      // Very short viewport (height < 500px) - use larger ground ratio
+      // This ensures ground and character are visible in limited vertical space
+      if (aspectRatio > 1.8) {
+        groundHeightRatio = 0.30; // 30% for wide + short viewports
+      } else {
+        groundHeightRatio = 0.25; // 25% for short viewports
+      }
+    } else if (aspectRatio > 2.2) {
       groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.24 : 0.22; // 24% on Safari/Pro Max, 22% otherwise
     } else if (aspectRatio > 1.8) {
       groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.20 : 0.18; // 20% on Safari/Pro Max, 18% otherwise
     } else if (isSafari || isIPhoneProMax) {
       groundHeightRatio = 0.17; // 17% on Safari/Pro Max for normal screens
     }
+    
     const groundHeight = height * groundHeightRatio; // Scale proportionally
     this.groundY = height - groundHeight; // Ground top edge at this Y position
     
@@ -438,9 +445,17 @@ export class GameScene extends Phaser.Scene {
     this.ground.add(groundRect);
 
     // Character setup with square bounding box - responsive
-    // Scale player - proportional to desktop for consistent feel, 10% bigger on mobile
+    // CRITICAL FIX for short viewports: Reduce character size if viewport is very short
     const isMobilePlayer = width <= 768 || height <= 768;
-    const characterHeightRatio = isMobilePlayer ? 0.198 : 0.15; // 19.8% on mobile (10% bigger), 15% on desktop
+    // Note: isShortViewport is already declared above in ground setup section
+    
+    // For short viewports, use smaller character to ensure it fits above ground
+    let characterHeightRatio = isMobilePlayer ? 0.198 : 0.15; // 19.8% on mobile (10% bigger), 15% on desktop
+    if (isShortViewport) {
+      // Reduce character size for short viewports to ensure it fits
+      characterHeightRatio = isMobilePlayer ? 0.15 : 0.12; // Smaller on short viewports
+    }
+    
     const targetHeight = height * characterHeightRatio;
     const scale = targetHeight / 160;
     
@@ -2672,19 +2687,24 @@ export class GameScene extends Phaser.Scene {
     }
     
     // Reposition ground at new bottom - responsive to aspect ratio
-    // CRITICAL FIX for iPhone Pro Max: Ensure ground is always within visible bounds
-    // Ensure ground is always visible by using adaptive ground height ratio
-    // Safari on iPhone may need slightly larger ratios for proper visibility
+    // CRITICAL FIX for Safari Mobile: Ensure ground is always within visible bounds
+    // Special handling for short viewports (like 750x402) where height is very limited
     const aspectRatio = width / height;
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const isIPhoneProMax = /iPhone/.test(navigator.userAgent) && (window.screen.height >= 926 || window.screen.width >= 926);
+    const isShortViewport = height < 500; // CRITICAL: Detect very short viewports (like 402px height)
     
-    // For very wide screens (aspect ratio > 2.2), use 22% ground height
-    // For wide screens (aspect ratio > 1.8), use 18% ground height  
-    // For normal screens, use 15% ground height
-    // Safari and iPhone Pro Max may need slightly larger ratios for proper visibility
+    // CRITICAL FIX: For very short viewports, use larger ground ratio to ensure visibility
     let groundHeightRatio = 0.15; // Default 15%
-    if (aspectRatio > 2.2) {
+    
+    if (isShortViewport) {
+      // Very short viewport (height < 500px) - use larger ground ratio
+      if (aspectRatio > 1.8) {
+        groundHeightRatio = 0.30; // 30% for wide + short viewports
+      } else {
+        groundHeightRatio = 0.25; // 25% for short viewports
+      }
+    } else if (aspectRatio > 2.2) {
       groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.24 : 0.22; // 24% on Safari/Pro Max, 22% otherwise
     } else if (aspectRatio > 1.8) {
       groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.20 : 0.18; // 20% on Safari/Pro Max, 18% otherwise
@@ -2730,8 +2750,17 @@ export class GameScene extends Phaser.Scene {
       const playerX = width * 0.25; // Keep at 25% from left (proportional)
       
       // Rescale player proportionally to screen height - 10% bigger on mobile
+      // CRITICAL FIX for short viewports: Reduce character size if viewport is very short
       const isMobile = width <= 768 || height <= 768;
-      const characterHeightRatio = isMobile ? 0.198 : 0.15; // 19.8% on mobile (10% bigger), 15% on desktop
+      // Note: isShortViewport is already declared above in ground setup section
+      
+      // For short viewports, use smaller character to ensure it fits above ground
+      let characterHeightRatio = isMobile ? 0.198 : 0.15; // 19.8% on mobile (10% bigger), 15% on desktop
+      if (isShortViewport) {
+        // Reduce character size for short viewports to ensure it fits
+        characterHeightRatio = isMobile ? 0.15 : 0.12; // Smaller on short viewports
+      }
+      
       const targetHeight = height * characterHeightRatio;
       const playerScale = targetHeight / 160; // 160 is the raw image height
       this.player.setScale(playerScale);

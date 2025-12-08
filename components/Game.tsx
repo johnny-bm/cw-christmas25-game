@@ -107,7 +107,9 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         if (typeof document !== 'undefined') {
           const debugEl = document.getElementById('game-debug');
           if (debugEl) {
-            debugEl.textContent = `Game: ${Math.round(initialWidth)}x${Math.round(initialHeight)}`;
+            const aspectRatio = (initialWidth / initialHeight).toFixed(2);
+            const isShort = initialHeight < 500;
+            debugEl.textContent = `${Math.round(initialWidth)}x${Math.round(initialHeight)} (${aspectRatio})${isShort ? ' SHORT' : ''}`;
           }
         }
         initializeGame();
@@ -122,7 +124,9 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         if (typeof document !== 'undefined') {
           const debugEl = document.getElementById('game-debug');
           if (debugEl) {
-            debugEl.textContent = `Game (fallback): ${Math.round(initialWidth)}x${Math.round(initialHeight)}`;
+            const aspectRatio = (initialWidth / initialHeight).toFixed(2);
+            const isShort = initialHeight < 500;
+            debugEl.textContent = `FALLBACK: ${Math.round(initialWidth)}x${Math.round(initialHeight)} (${aspectRatio})${isShort ? ' SHORT' : ''}`;
           }
         }
         initializeGame();
