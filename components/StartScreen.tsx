@@ -17,6 +17,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
   });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+  const [fullscreenSupported, setFullscreenSupported] = useState(false);
   
   // Detect if we're on mobile Safari
   const isMobileSafari = /iPhone|iPad|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -74,12 +75,29 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
     };
   }, []);
 
+  // Detect fullscreen support
+  useEffect(() => {
+    const elem = document.documentElement as any;
+    const supported = !!(
+      elem.requestFullscreen ||
+      elem.webkitRequestFullscreen ||
+      elem.mozRequestFullScreen ||
+      elem.msRequestFullscreen
+    );
+    setFullscreenSupported(supported);
+  }, []);
+
   // Show fullscreen prompt for mobile Safari on first load
   useEffect(() => {
-    if (isMobileSafari && !isFullscreen && !localStorage.getItem('fullscreenPromptDismissed')) {
+    if (
+      isMobileSafari &&
+      fullscreenSupported &&
+      !isFullscreen &&
+      !localStorage.getItem('fullscreenPromptDismissed')
+    ) {
       setShowFullscreenPrompt(true);
     }
-  }, [isMobileSafari, isFullscreen]);
+  }, [isMobileSafari, isFullscreen, fullscreenSupported]);
 
   const handleRequestFullscreen = async () => {
     try {
@@ -100,6 +118,11 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
       // Try ms (IE/Edge)
       else if ((elem as any).msRequestFullscreen) {
         (elem as any).msRequestFullscreen();
+      }
+      else {
+        console.warn('Fullscreen not supported on this device/browser.');
+        setShowFullscreenPrompt(false);
+        localStorage.setItem('fullscreenPromptDismissed', 'true');
       }
     } catch (error) {
       console.warn('Fullscreen request failed:', error);
@@ -161,7 +184,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
       </button>
 
       {/* Fullscreen Prompt for Mobile Safari */}
-      {showFullscreenPrompt && isMobileSafari && !isFullscreen && (
+      {showFullscreenPrompt && isMobileSafari && fullscreenSupported && !isFullscreen && (
         <div className="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 max-w-sm text-center space-y-4">
             <h3 className="text-lg font-bold">Fullscreen Recommended</h3>
@@ -190,7 +213,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
       )}
 
       {/* Fullscreen Button for Mobile Safari */}
-      {isMobileSafari && !isFullscreen && (
+      {isMobileSafari && fullscreenSupported && !isFullscreen && (
         <button
           onClick={handleRequestFullscreen}
           className="absolute z-20 pointer-events-auto bg-white rounded-lg sm:rounded-xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
