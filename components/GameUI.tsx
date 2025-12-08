@@ -15,6 +15,12 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
     // Check localStorage for saved mute state
     return localStorage.getItem('escapeTheDeadline_muted') === 'true';
   });
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 640; // sm breakpoint
+    }
+    return false;
+  });
 
   useEffect(() => {
     // Sync with Phaser game mute state
@@ -28,6 +34,17 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
     checkMuteState();
     const interval = setInterval(checkMuteState, 500);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    // Detect mobile screen size
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   const handleToggleMute = (e: React.MouseEvent) => {
@@ -103,16 +120,18 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           top: 'max(0.75rem, env(safe-area-inset-top, 0.75rem) + 0.25rem)'
         }}
       >
-        <div className="text-3xl max-md:landscape:text-2xl sm:text-5xl md:text-7xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+        <div className="text-4xl max-md:landscape:text-3xl sm:text-5xl md:text-7xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
           {formatNumber(distance)}m
         </div>
       </div>
 
-      {/* Character Scores - Below Distance Counter - Responsive - Bigger on mobile */}
+      {/* Character Scores - Below Distance Counter - Responsive - Bigger on mobile - Closer on mobile */}
       <div 
         className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 sm:gap-4 md:gap-6"
         style={{
-          top: 'max(5.5rem, env(safe-area-inset-top, 0.75rem) + 5rem)'
+          top: isMobile 
+            ? 'max(3.5rem, env(safe-area-inset-top, 0.75rem) + 3rem)'
+            : 'max(5.5rem, env(safe-area-inset-top, 0.75rem) + 5rem)'
         }}
       >
         {/* Grinch Score */}

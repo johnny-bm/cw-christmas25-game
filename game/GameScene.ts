@@ -504,29 +504,49 @@ export class GameScene extends Phaser.Scene {
       const visibleWidth = window.visualViewport.width;
       const visibleHeight = window.visualViewport.height;
       
-      // Use visual viewport dimensions if they're significantly different (Safari UI visible)
-      // CRITICAL: Only use visualViewport if it's reasonable (not too small)
-      // Safari with multiple tabs can have very small viewport, but we need minimum dimensions
+      // CRITICAL FIX: Don't use visualViewport if it's significantly smaller than scale dimensions
+      // When Safari has multiple tabs, visualViewport can be much smaller, causing game elements to be cut off
+      // Instead, use scale dimensions to ensure the full game world is visible
+      const heightDifference = height - visibleHeight;
+      const heightDifferencePercent = (heightDifference / height) * 100;
+      
+      // Only use visualViewport if:
+      // 1. It's not too small (at least 300px)
+      // 2. The difference is not too large (less than 30% smaller)
+      // This prevents the game from being cut off when Safari UI takes up too much space
       const minReasonableHeight = 300; // Minimum height to ensure game is playable
+      const maxHeightDifferencePercent = 30; // Don't use visualViewport if it's more than 30% smaller
+      
       if ((Math.abs(width - visibleWidth) > 10 || Math.abs(height - visibleHeight) > 10) &&
-          visibleHeight >= minReasonableHeight) {
+          visibleHeight >= minReasonableHeight &&
+          heightDifferencePercent < maxHeightDifferencePercent) {
         console.log('📱 Using visual viewport (Safari UI detected):', {
           scaleWidth: Math.round(width),
           scaleHeight: Math.round(height),
           visualWidth: Math.round(visibleWidth),
-          visualHeight: Math.round(visibleHeight)
+          visualHeight: Math.round(visibleHeight),
+          heightDifferencePercent: heightDifferencePercent.toFixed(1) + '%'
         });
         width = visibleWidth;
         height = visibleHeight;
         // Resize game to match visible viewport
         this.scale.resize(width, height);
-      } else if (visibleHeight < minReasonableHeight) {
-        console.warn('⚠️ Visual viewport too small, using scale dimensions:', {
-          visualHeight: Math.round(visibleHeight),
-          scaleHeight: Math.round(height),
-          minReasonableHeight
-        });
-        // Don't use visualViewport if it's too small - use scale dimensions instead
+      } else {
+        if (visibleHeight < minReasonableHeight) {
+          console.warn('⚠️ Visual viewport too small, using scale dimensions:', {
+            visualHeight: Math.round(visibleHeight),
+            scaleHeight: Math.round(height),
+            minReasonableHeight
+          });
+        } else if (heightDifferencePercent >= maxHeightDifferencePercent) {
+          console.warn('⚠️ Visual viewport too much smaller than scale, using scale dimensions:', {
+            visualHeight: Math.round(visibleHeight),
+            scaleHeight: Math.round(height),
+            heightDifferencePercent: heightDifferencePercent.toFixed(1) + '%',
+            maxHeightDifferencePercent
+          });
+        }
+        // Don't use visualViewport - use scale dimensions instead to ensure full game world is visible
       }
     }
     
@@ -3621,29 +3641,49 @@ export class GameScene extends Phaser.Scene {
       const visibleWidth = window.visualViewport.width;
       const visibleHeight = window.visualViewport.height;
       
-      // Use visual viewport if it's significantly different (Safari UI visible)
-      // CRITICAL: Only use visualViewport if it's reasonable (not too small)
-      // Safari with multiple tabs can have very small viewport, but we need minimum dimensions
+      // CRITICAL FIX: Don't use visualViewport if it's significantly smaller than scale dimensions
+      // When Safari has multiple tabs, visualViewport can be much smaller, causing game elements to be cut off
+      // Instead, use scale dimensions to ensure the full game world is visible
+      const heightDifference = height - visibleHeight;
+      const heightDifferencePercent = (heightDifference / height) * 100;
+      
+      // Only use visualViewport if:
+      // 1. It's not too small (at least 300px)
+      // 2. The difference is not too large (less than 30% smaller)
+      // This prevents the game from being cut off when Safari UI takes up too much space
       const minReasonableHeight = 300; // Minimum height to ensure game is playable
+      const maxHeightDifferencePercent = 30; // Don't use visualViewport if it's more than 30% smaller
+      
       if ((Math.abs(width - visibleWidth) > 10 || Math.abs(height - visibleHeight) > 10) &&
-          visibleHeight >= minReasonableHeight) {
+          visibleHeight >= minReasonableHeight &&
+          heightDifferencePercent < maxHeightDifferencePercent) {
         console.log('📱 Resize: Using visual viewport (Safari UI detected):', {
           scaleWidth: Math.round(width),
           scaleHeight: Math.round(height),
           visualWidth: Math.round(visibleWidth),
-          visualHeight: Math.round(visibleHeight)
+          visualHeight: Math.round(visibleHeight),
+          heightDifferencePercent: heightDifferencePercent.toFixed(1) + '%'
         });
         width = visibleWidth;
         height = visibleHeight;
         // Resize game to match visible viewport
         this.scale.resize(width, height);
-      } else if (visibleHeight < minReasonableHeight) {
-        console.warn('⚠️ Resize: Visual viewport too small, using scale dimensions:', {
-          visualHeight: Math.round(visibleHeight),
-          scaleHeight: Math.round(height),
-          minReasonableHeight
-        });
-        // Don't use visualViewport if it's too small - use scale dimensions instead
+      } else {
+        if (visibleHeight < minReasonableHeight) {
+          console.warn('⚠️ Resize: Visual viewport too small, using scale dimensions:', {
+            visualHeight: Math.round(visibleHeight),
+            scaleHeight: Math.round(height),
+            minReasonableHeight
+          });
+        } else if (heightDifferencePercent >= maxHeightDifferencePercent) {
+          console.warn('⚠️ Resize: Visual viewport too much smaller than scale, using scale dimensions:', {
+            visualHeight: Math.round(visibleHeight),
+            scaleHeight: Math.round(height),
+            heightDifferencePercent: heightDifferencePercent.toFixed(1) + '%',
+            maxHeightDifferencePercent
+          });
+        }
+        // Don't use visualViewport - use scale dimensions instead to ensure full game world is visible
       }
     }
     
