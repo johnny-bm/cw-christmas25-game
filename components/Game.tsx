@@ -197,23 +197,76 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     // We just need to trigger the resize event
     const handleResize = () => {
       if (gameRef.current && container) {
-        // Get the actual container dimensions
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
+        // Get the actual container dimensions - use multiple methods for reliability
+        // Prefer container dimensions, fallback to window dimensions
+        // Use visual viewport if available for more accurate mobile dimensions
+        let containerWidth: number;
+        let containerHeight: number;
         
-        // With RESIZE mode, this updates the game world size to match container
-        // Everything will scale proportionally based on the new dimensions
-        gameRef.current.scale.resize(containerWidth, containerHeight);
+        if (window.visualViewport) {
+          // Use visual viewport for more accurate dimensions on mobile (accounts for browser UI)
+          containerWidth = window.visualViewport.width;
+          containerHeight = window.visualViewport.height;
+        } else {
+          // Fallback to container or window dimensions
+          containerWidth = container.clientWidth || window.innerWidth;
+          containerHeight = container.clientHeight || window.innerHeight;
+        }
+        
+        // Ensure we have valid dimensions
+        if (containerWidth > 0 && containerHeight > 0) {
+          // With RESIZE mode, this updates the game world size to match container
+          // Everything will scale proportionally based on the new dimensions
+          // The scene's resize handler (via scale.on('resize')) will be called automatically
+          gameRef.current.scale.resize(containerWidth, containerHeight);
+        }
       }
     };
 
     // Debounce resize events to prevent excessive recalculations
-    const debouncedResize = debounce(handleResize, 250);
+    // Use shorter debounce for orientation changes to respond faster
+    const debouncedResize = debounce(handleResize, 100);
+
+    // Handle orientation changes specifically - need immediate response
+    const handleOrientationChange = () => {
+      // Immediate resize for orientation changes (no debounce)
+      // Use a longer delay to let browser finish orientation change and update dimensions
+      setTimeout(() => {
+        if (gameRef.current && container) {
+          // Get fresh dimensions after orientation change
+          // Use visual viewport if available for more accurate dimensions
+          let containerWidth: number;
+          let containerHeight: number;
+          
+          if (window.visualViewport) {
+            containerWidth = window.visualViewport.width;
+            containerHeight = window.visualViewport.height;
+          } else {
+            containerWidth = container.clientWidth || window.innerWidth;
+            containerHeight = container.clientHeight || window.innerHeight;
+          }
+          
+          // Ensure we have valid dimensions before resizing
+          if (containerWidth > 0 && containerHeight > 0) {
+            // Resize game - scene's resize handler will be called automatically via scale.on('resize')
+            gameRef.current.scale.resize(containerWidth, containerHeight);
+          }
+        }
+      }, 250); // Delay to let browser finish orientation change and update dimensions
+    };
 
     // Listen to visual viewport API for mobile browsers (iOS Safari)
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', debouncedResize);
       window.visualViewport.addEventListener('scroll', debouncedResize);
+    }
+
+    // Listen to orientation changes specifically
+    window.addEventListener('orientationchange', handleOrientationChange);
+    
+    // Also listen to screen.orientation API if available (more reliable)
+    if (screen.orientation) {
+      screen.orientation.addEventListener('change', handleOrientationChange);
     }
 
     // Fallback to window resize for browsers without visual viewport API
@@ -225,7 +278,11 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         window.visualViewport.removeEventListener('resize', debouncedResize);
         window.visualViewport.removeEventListener('scroll', debouncedResize);
       }
+      window.removeEventListener('orientationchange', handleOrientationChange);
       window.removeEventListener('resize', debouncedResize);
+      if (screen.orientation) {
+        screen.orientation.removeEventListener('change', handleOrientationChange);
+      }
       
       // Don't destroy game on cleanup in development (React Strict Mode)
       // The game will be destroyed when the app actually unmounts
