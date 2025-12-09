@@ -133,8 +133,8 @@ const COMBO_MESSAGES = [
 ];
 
 export class GameScene extends Phaser.Scene {
-  private readonly SAFARI_FIXED_WIDTH = 800;
-  private readonly SAFARI_FIXED_HEIGHT = 400; // Reduced from 600 to fit Safari mobile viewport
+  private readonly SAFARI_FIXED_WIDTH = 400; // Portrait width for Safari mobile
+  private readonly SAFARI_FIXED_HEIGHT = 700; // Portrait height for Safari mobile
   private lastJumpTime: number = 0;
   private jumpCooldown: number = 300; // 300ms cooldown between jumps
   private debugText?: Phaser.GameObjects.Text;
@@ -530,10 +530,10 @@ export class GameScene extends Phaser.Scene {
     const isSafariMobile = this.isSafariMobile();
     let { width, height } = this.scale;
     
-    // For Safari mobile: use fixed dimensions, skip all complex logic
+    // For Safari mobile: use portrait dimensions
     if (isSafariMobile) {
-      width = 800;
-      height = 400; // Reduced from 600 to fit Safari mobile viewport
+      width = 400;  // Portrait width
+      height = 700; // Portrait height
       // Don't call resize - let Phaser handle it with FIT mode
     } else {
       // Desktop/other mobile: keep existing dynamic logic
@@ -578,16 +578,21 @@ export class GameScene extends Phaser.Scene {
     // Set camera bounds to match actual canvas size
     // With RESIZE mode, the camera automatically shows the full game world (0, 0, width, height)
     // The camera viewport is automatically managed by Phaser's scale manager in RESIZE mode
-    this.cameras.main.setBounds(0, 0, width, height);
-    this.cameras.main.setBackgroundColor(getElementColorPhaser('background')); // White background
-    
     if (isSafariMobile) {
+      // Safari mobile: portrait orientation - fixed dimensions
+      const safariWidth = 400;
+      const safariHeight = 700;
+      this.physics.world.setBounds(0, 0, safariWidth, safariHeight);
+      this.cameras.main.setBounds(0, 0, safariWidth, safariHeight);
+      this.cameras.main.setBackgroundColor(getElementColorPhaser('background'));
       // Safari mobile: FIXED camera, no scrolling, no following
       this.cameras.main.setScroll(0, 0);
       this.cameras.main.scrollX = 0;
       this.cameras.main.scrollY = 0;
       this.cameras.main.stopFollow();
     } else {
+      this.cameras.main.setBounds(0, 0, width, height);
+      this.cameras.main.setBackgroundColor(getElementColorPhaser('background')); // White background
       // Desktop: allow camera setup as normal
       this.cameras.main.setScroll(0, 0);
       this.cameras.main.setViewport(0, 0, width, height);
@@ -624,18 +629,18 @@ export class GameScene extends Phaser.Scene {
     // Parallax background
     this.createParallaxBackground();
 
-    // GROUND SETUP - Complete reset for Safari mobile
-    const FIXED_GAME_HEIGHT = 400; // Reduced from 600 to fit Safari mobile viewport
-    const FIXED_GAME_WIDTH = 800;
+    // GROUND SETUP - Portrait orientation for Safari mobile
+    const FIXED_GAME_WIDTH = 400;  // Portrait width
+    const FIXED_GAME_HEIGHT = 700; // Portrait height
     
     let groundHeight: number;
     let groundWidth: number;
     
     if (isSafariMobile) {
-      // Safari mobile: simple fixed values
-      groundHeight = 80; // Smaller ground for 400px height
-      this.groundY = FIXED_GAME_HEIGHT - groundHeight; // 320px - ground top edge
-      groundWidth = FIXED_GAME_WIDTH * 3;
+      // Safari mobile: portrait orientation
+      groundHeight = 100;
+      this.groundY = FIXED_GAME_HEIGHT - groundHeight; // 600px - ground top edge
+      groundWidth = FIXED_GAME_WIDTH * 2; // Only 2x width for vertical
     } else {
       // Desktop: existing logic
       const aspectRatio = width / height;
@@ -669,12 +674,12 @@ export class GameScene extends Phaser.Scene {
     const groundColor = getElementColorPhaser('ground');
     
     if (isSafariMobile) {
-      // Safari mobile: center origin positioning
+      // Safari mobile: center origin positioning for portrait
       const groundRect = this.add.rectangle(
-        FIXED_GAME_WIDTH / 2,  // Center X
-        FIXED_GAME_HEIGHT - (groundHeight / 2),  // Center Y = 400 - 40 = 360
-        groundWidth, 
-        groundHeight, 
+        FIXED_GAME_WIDTH / 2,  // Center X = 200
+        FIXED_GAME_HEIGHT - (groundHeight / 2),  // Center Y = 700 - 50 = 650
+        groundWidth,  // 800
+        groundHeight,  // 100
         groundColor, 
         1.0
       );
@@ -711,15 +716,12 @@ export class GameScene extends Phaser.Scene {
       this.ground.add(groundRect);
     }
 
-    // PLAYER SETUP - Complete reset for Safari mobile
+    // PLAYER SETUP - Portrait orientation for Safari mobile
     if (isSafariMobile) {
-      // Safari mobile: simple fixed values
-      const PLAYER_SIZE = 64; // Fixed 64x64 size
-      const PLAYER_START_X = 100; // Left side of screen, not center
-      // FIXED: Position player ABOVE the ground surface
-      // With center origin (0.5, 0.5), player.y should be groundY - (PLAYER_SIZE/2) - 5
-      // The -5 ensures player bottom is above ground surface (ground starts at groundY)
-      const PLAYER_Y = this.groundY - (PLAYER_SIZE / 2) - 5; // 320 - 32 - 5 = 283
+      // Safari mobile: portrait orientation
+      const PLAYER_SIZE = 80; // Slightly bigger for vertical
+      const PLAYER_START_X = FIXED_GAME_WIDTH / 2; // Center horizontally = 200
+      const PLAYER_Y = FIXED_GAME_HEIGHT - groundHeight - (PLAYER_SIZE / 2) - 10; // 700 - 100 - 40 - 10 = 550
       
       this.player = this.physics.add.sprite(PLAYER_START_X, PLAYER_Y, 'character-pushing-01');
       this.player.setDisplaySize(PLAYER_SIZE, PLAYER_SIZE);
@@ -733,8 +735,8 @@ export class GameScene extends Phaser.Scene {
       
       // For center-origin sprites, setSize automatically centers the body
       // DO NOT use setOffset - it breaks collision detection for center-origin sprites
-      const bodyWidth = PLAYER_SIZE * 0.6;
-      const bodyHeight = PLAYER_SIZE * 0.8;
+      const bodyWidth = PLAYER_SIZE * 0.7;
+      const bodyHeight = PLAYER_SIZE * 0.85;
       this.player.body.setSize(bodyWidth, bodyHeight);
       // No offset needed - Phaser centers it automatically for center-origin sprites
       

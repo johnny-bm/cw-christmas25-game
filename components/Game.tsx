@@ -146,11 +146,14 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     return;
     
     function initializeGame() {
-      // EMERGENCY FIX: Absolute basics for Safari mobile - fixed 800x400
+      // NEW APPROACH: Portrait orientation for Safari mobile
+      const SAFARI_WIDTH = Math.min(window.innerWidth, 400); // Portrait width
+      const SAFARI_HEIGHT = Math.min(window.innerHeight, 700); // Portrait height
+      
       const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
-      width: useFitMode ? 800 : initialWidth,
-      height: useFitMode ? 400 : initialHeight, // Reduced from 600 to fit Safari mobile viewport
+      width: useFitMode ? SAFARI_WIDTH : initialWidth,
+      height: useFitMode ? SAFARI_HEIGHT : initialHeight,
       parent: container,
       backgroundColor: getElementColor('background'), // White background
       audio: {
