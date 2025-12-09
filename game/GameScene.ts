@@ -137,6 +137,7 @@ export class GameScene extends Phaser.Scene {
   private readonly SAFARI_FIXED_HEIGHT = 400; // Reduced from 600 to fit Safari mobile viewport
   private lastJumpTime: number = 0;
   private jumpCooldown: number = 300; // 300ms cooldown between jumps
+  private debugText?: Phaser.GameObjects.Text;
   private player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private ground!: Phaser.Physics.Arcade.StaticGroup;
   private obstacles!: Phaser.GameObjects.Group;
@@ -1039,6 +1040,19 @@ export class GameScene extends Phaser.Scene {
     // CRITICAL: Mark initialization as complete to allow visual viewport resize
     // This prevents visual viewport resize from interfering during create()
     this.isInitializing = false;
+    
+    // EMERGENCY DEBUG: Add visual debug info for Safari mobile
+    if (isSafariMobile) {
+      // Create debug text that shows on screen
+      this.debugText = this.add.text(10, 10, '', {
+        fontSize: '12px',
+        color: '#00ff00',
+        backgroundColor: '#000000',
+        padding: { x: 5, y: 5 }
+      });
+      this.debugText.setDepth(1000); // Always on top
+      this.debugText.setScrollFactor(0); // Fixed to camera
+    }
   }
   
   // Helper function to safely get audio context
@@ -2186,6 +2200,23 @@ export class GameScene extends Phaser.Scene {
   }
 
   public update(time: number, delta: number) {
+    // EMERGENCY DEBUG: Update debug text for Safari mobile
+    if (this.isSafariMobile() && this.debugText) {
+      const groundRect = this.ground?.getChildren()[0] as Phaser.GameObjects.Rectangle;
+      const info = [
+        `Game: ${this.scale.width}x${this.scale.height}`,
+        `Ground Y: ${this.groundY}`,
+        `Ground H: ${groundRect?.height || 'N/A'}`,
+        `Player Y: ${Math.round(this.player?.y || 0)}`,
+        `Player H: ${Math.round(this.player?.displayHeight || 0)}`,
+        `Camera: ${Math.round(this.cameras.main.scrollY)}`,
+        `Viewport: ${window.innerHeight}px`,
+        `Player visible: ${this.player?.visible}`,
+        `Player touching.down: ${this.player?.body?.touching.down}`
+      ];
+      this.debugText.setText(info.join('\n'));
+    }
+    
     // CRITICAL: Lock camera for Safari mobile - prevent any scrolling
     if (this.isSafariMobile()) {
       this.cameras.main.scrollX = 0;
