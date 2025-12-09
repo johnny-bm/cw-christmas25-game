@@ -135,6 +135,8 @@ const COMBO_MESSAGES = [
 export class GameScene extends Phaser.Scene {
   private readonly SAFARI_FIXED_WIDTH = 800;
   private readonly SAFARI_FIXED_HEIGHT = 400; // Reduced from 600 to fit Safari mobile viewport
+  private lastJumpTime: number = 0;
+  private jumpCooldown: number = 300; // 300ms cooldown between jumps
   private player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private ground!: Phaser.Physics.Arcade.StaticGroup;
   private obstacles!: Phaser.GameObjects.Group;
@@ -702,7 +704,9 @@ export class GameScene extends Phaser.Scene {
       // Safari mobile: simple fixed values
       const PLAYER_SIZE = 64; // Fixed 64x64 size
       const PLAYER_START_X = 100; // Left side of screen, not center
-      const PLAYER_Y = FIXED_GAME_HEIGHT - groundHeight - (PLAYER_SIZE / 2); // Above ground: 400 - 80 - 32 = 288px
+      // FIXED: Position player ON the ground surface, not below it
+      // With center origin (0.5, 0.5), player.y should be groundY - (PLAYER_SIZE/2)
+      const PLAYER_Y = this.groundY - (PLAYER_SIZE / 2); // Feet touch ground top surface
       
       this.player = this.physics.add.sprite(PLAYER_START_X, PLAYER_Y, 'character-pushing-01');
       this.player.setDisplaySize(PLAYER_SIZE, PLAYER_SIZE);
@@ -713,7 +717,15 @@ export class GameScene extends Phaser.Scene {
       // Simple physics
       this.player.body.setCollideWorldBounds(true);
       this.player.body.setBounce(0.2);
-      this.player.body.setSize(PLAYER_SIZE * 0.6, PLAYER_SIZE * 0.8); // Smaller hitbox
+      
+      // Center the physics body on the sprite (which has center origin)
+      const bodyWidth = PLAYER_SIZE * 0.6;
+      const bodyHeight = PLAYER_SIZE * 0.8;
+      this.player.body.setSize(bodyWidth, bodyHeight);
+      this.player.body.setOffset(
+        (PLAYER_SIZE - bodyWidth) / 2,
+        (PLAYER_SIZE - bodyHeight) / 2
+      );
     } else {
       // Desktop/other mobile: keep existing logic
       if (!this.textures.exists('character-pushing-01')) {
@@ -1072,14 +1084,22 @@ export class GameScene extends Phaser.Scene {
     const onGround = touchingGround || (nearGround && velocityDownward);
     
     // Scale jump velocity relative to screen height for responsive jump physics
-    // Stronger jump on mobile to allow clearing obstacles
+    // CRITICAL FIX: Reduce jump height for Safari mobile
     const { width, height } = this.scale;
-    const isMobileJump = width <= 768 || height <= 768;
-    // Use config value for mobile jump multiplier (1.05 = 5% stronger on mobile)
-    const mobileJumpMultiplier = isMobileJump ? GameConfig.physics.mobileJumpMultiplier : 1.0;
-    // Use base velocity for consistent jump feel - increased for better obstacle clearance
-    const baseJumpVelocity = -1200;
-    const jumpVelocity = baseJumpVelocity * (height / GameConfig.physics.baseGravityHeight) * mobileJumpMultiplier;
+    let jumpVelocity: number;
+    
+    if (this.isSafariMobile()) {
+      // Safari mobile: reduced jump velocity
+      jumpVelocity = -250;
+    } else {
+      // Desktop: normal jump physics
+      const isMobileJump = width <= 768 || height <= 768;
+      // Use config value for mobile jump multiplier (1.05 = 5% stronger on mobile)
+      const mobileJumpMultiplier = isMobileJump ? GameConfig.physics.mobileJumpMultiplier : 1.0;
+      // Use base velocity for consistent jump feel - increased for better obstacle clearance
+      const baseJumpVelocity = -1200;
+      jumpVelocity = baseJumpVelocity * (height / GameConfig.physics.baseGravityHeight) * mobileJumpMultiplier;
+    }
     
     // CRITICAL: Allow jumping immediately when on ground, regardless of jumpsRemaining
     // This prevents delay when landing and trying to jump immediately
@@ -1090,8 +1110,11 @@ export class GameScene extends Phaser.Scene {
         this.jumpsRemaining = 2;
       }
       
+      // CRITICAL FIX: Check jump cooldown before allowing jump
+      const canJump = (this.time.now - this.lastJumpTime) > this.jumpCooldown;
+      
       // Allow jump from ground - always allow first jump when on ground
-      if (this.jumpsRemaining > 0) {
+      if (this.jumpsRemaining > 0 && canJump) {
         console.log('🚀 JUMP (on ground):', {
           onGround,
           touchingGround,
@@ -1105,6 +1128,7 @@ export class GameScene extends Phaser.Scene {
         // CRITICAL: Re-enable gravity when jumping
         this.player.body.setAllowGravity(true);
         this.player.body.setVelocityY(jumpVelocity);
+        this.lastJumpTime = this.time.now; // Record jump time for cooldown
         this.jumpsRemaining = 1;
         // Switch to ollie animation when jumping
         const ollieAnim = this.getAnimationName(false);
@@ -1157,6 +1181,7 @@ export class GameScene extends Phaser.Scene {
       // Ensure gravity is enabled for double jump
       this.player.body.setAllowGravity(true);
       this.player.body.setVelocityY(jumpVelocity);
+      this.lastJumpTime = this.time.now; // Record jump time for cooldown
       this.jumpsRemaining = 0;
       // Restart ollie animation for double jump
       const ollieAnim = this.getAnimationName(false);
@@ -1234,14 +1259,20 @@ export class GameScene extends Phaser.Scene {
       obstacle.setScale(0.3);
     }
     
-    // Match player origin - bottom-center (same as character)
-    // This makes obstacle.y represent the bottom of the obstacle (like character.y represents feet)
-    obstacle.setOrigin(0.5, 1);
-    
-    // Position obstacle on ground - simple and correct
-    // With origin (0.5, 1), obstacle.y is the bottom
-    // Position obstacle.y = groundY to place bottom on ground surface (same as character)
-    obstacle.setPosition(width + 50, this.groundY);
+    // CRITICAL FIX: Set origin based on platform
+    if (this.isSafariMobile()) {
+      // Safari mobile: use center origin to match player
+      obstacle.setOrigin(0.5, 0.5);
+      // Position obstacle center on ground surface
+      const obstacleHeight = obstacle.displayHeight || 100;
+      const obstacleY = this.groundY - (obstacleHeight / 2);
+      obstacle.setPosition(width + 50, obstacleY);
+    } else {
+      // Desktop: use bottom origin (0.5, 1) - makes obstacle.y represent the bottom
+      obstacle.setOrigin(0.5, 1);
+      // Position obstacle.y = groundY to place bottom on ground surface
+      obstacle.setPosition(width + 50, this.groundY);
+    }
     obstacle.setDepth(10);
     
     // Note: Obstacles don't have physics bodies in this game (collision is checked via bounds)
@@ -1560,7 +1591,14 @@ export class GameScene extends Phaser.Scene {
     );
     const isSpecial = matchingName ? GameConfig.collectibles.types.special.includes(matchingName) : false;
     
-    const collectible = this.add.image(width + 50, y, imageKey);
+    // CRITICAL FIX: Position collectible above ground for Safari mobile
+    let collectibleY = y;
+    if (this.isSafariMobile()) {
+      // Safari mobile: position collectible 100px above ground
+      collectibleY = this.groundY - 100;
+    }
+    
+    const collectible = this.add.image(width + 50, collectibleY, imageKey);
     // Scale collectible image relative to screen height (assuming base image is ~50px, scale to collectibleSize)
     const imageScale = collectibleSize / 50;
     collectible.setScale(imageScale);
