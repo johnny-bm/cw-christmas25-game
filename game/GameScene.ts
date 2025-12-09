@@ -682,6 +682,17 @@ export class GameScene extends Phaser.Scene {
       groundRect.setDepth(10);
       
       this.physics.add.existing(groundRect, true);
+      
+      // CRITICAL FIX: Set body to match the rectangle's center origin
+      // Ground rectangle has center origin at Y=360 (400-80/2)
+      // Static bodies don't need offset - Phaser handles center origin automatically
+      if (groundRect.body) {
+        const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
+        // Body should span full ground area
+        body.setSize(groundWidth, groundHeight);
+        // DO NOT set offset - static bodies with center origin work correctly without offset
+      }
+      
       this.ground.add(groundRect);
     } else {
       // Desktop: existing logic with top-left origin
@@ -706,8 +717,9 @@ export class GameScene extends Phaser.Scene {
       const PLAYER_SIZE = 64; // Fixed 64x64 size
       const PLAYER_START_X = 100; // Left side of screen, not center
       // FIXED: Position player ON the ground surface, not below it
-      // With center origin (0.5, 0.5), player.y should be groundY - (PLAYER_SIZE/2)
-      const PLAYER_Y = this.groundY - (PLAYER_SIZE / 2); // Feet touch ground top surface
+      // With center origin (0.5, 0.5), player.y should be groundY - (PLAYER_SIZE/2) - 2
+      // The -2 ensures player bottom is just above ground surface to ensure collision
+      const PLAYER_Y = this.groundY - (PLAYER_SIZE / 2) - 2; // 321.6 - 32 - 2 = 287.6
       
       this.player = this.physics.add.sprite(PLAYER_START_X, PLAYER_Y, 'character-pushing-01');
       this.player.setDisplaySize(PLAYER_SIZE, PLAYER_SIZE);
@@ -727,6 +739,15 @@ export class GameScene extends Phaser.Scene {
         (PLAYER_SIZE - bodyWidth) / 2,
         (PLAYER_SIZE - bodyHeight) / 2
       );
+      
+      // CRITICAL: Verify gravity is working
+      console.log('🔧 Safari Mobile Physics Setup:', {
+        gravityY: this.physics.world.gravity.y,
+        playerBodyGravityY: this.player.body.gravity.y,
+        playerY: PLAYER_Y,
+        groundY: this.groundY,
+        playerBottom: PLAYER_Y + (PLAYER_SIZE / 2)
+      });
     } else {
       // Desktop/other mobile: keep existing logic
       if (!this.textures.exists('character-pushing-01')) {
@@ -2206,16 +2227,22 @@ export class GameScene extends Phaser.Scene {
     // EMERGENCY DEBUG: Update debug text for Safari mobile
     if (this.isSafariMobile() && this.debugText) {
       const groundRect = this.ground?.getChildren()[0] as Phaser.GameObjects.Rectangle;
+      const groundBody = groundRect?.body as Phaser.Physics.Arcade.StaticBody;
+      const playerBottom = (this.player?.y || 0) + (this.player?.displayHeight || 0) / 2;
       const info = [
         `Game: ${this.scale.width}x${this.scale.height}`,
         `Ground Y: ${this.groundY}`,
         `Ground H: ${groundRect?.height || 'N/A'}`,
+        `Ground body Y: ${groundBody?.y || 'N/A'}`,
         `Player Y: ${Math.round(this.player?.y || 0)}`,
         `Player H: ${Math.round(this.player?.displayHeight || 0)}`,
+        `Player body Y: ${Math.round(this.player?.body?.y || 0)}`,
+        `Player bottom: ${Math.round(playerBottom)}`,
         `Camera: ${Math.round(this.cameras.main.scrollY)}`,
         `Viewport: ${window.innerHeight}px`,
         `Player visible: ${this.player?.visible}`,
-        `Player touching.down: ${this.player?.body?.touching.down}`
+        `Player touching.down: ${this.player?.body?.touching.down}`,
+        `Gravity: ${this.physics.world.gravity.y}`
       ];
       this.debugText.setText(info.join('\n'));
     }
