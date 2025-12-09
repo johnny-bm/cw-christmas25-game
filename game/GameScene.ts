@@ -2230,10 +2230,13 @@ export class GameScene extends Phaser.Scene {
       });
       
       // Character is below ground - correct it immediately
-      this.player.y = this.groundY;
-      
-      // Fix body position using setupCharacterBody logic
-      this.setupCharacterBody();
+      // CRITICAL FIX: Only apply this correction for desktop (bottom origin), not Safari mobile (center origin)
+      if (!this.isSafariMobile()) {
+        this.player.y = this.groundY;
+        // Fix body position using setupCharacterBody logic
+        this.setupCharacterBody();
+      }
+      // Safari mobile doesn't need this correction - it uses center origin and physics handles it
       
       // Reset vertical velocity and disable gravity when on ground
       this.player.body.setVelocityY(0);
@@ -3014,7 +3017,8 @@ export class GameScene extends Phaser.Scene {
     // Reset player position - simple and correct
     // With origin (0.5, 1), sprite.y is the bottom/feet position
     // Position sprite.y = groundY to place feet at ground level
-    if (this.player?.body) {
+    // CRITICAL FIX: Only apply this for desktop, not Safari mobile (which uses center origin)
+    if (this.player?.body && !this.isSafariMobile()) {
       const { width: screenWidth } = this.cameras.main;
       // Test with default body first - uncomment if you need custom body size
       // this.setupCharacterBody();
@@ -3022,6 +3026,7 @@ export class GameScene extends Phaser.Scene {
       this.player.setPosition(screenWidth * 0.25, this.groundY);
       this.player.body.setVelocity(0, 0);
     }
+    // Safari mobile already positioned correctly in create() - don't override
     
     // Initialize deadline at top left
     const { width, height } = this.scale;
