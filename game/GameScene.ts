@@ -489,6 +489,30 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  // Get a safe viewport height that won't shrink the game world excessively on Safari
+  // Returns visualViewport.height only if it's reasonable; otherwise falls back to scale height
+  private getReliableViewportHeight(): number {
+    const scaleHeightRaw = this.scale?.height || 0;
+    const scaleHeight = scaleHeightRaw > 0 ? scaleHeightRaw : (window.innerHeight || 1080);
+    const visualHeight = (window.visualViewport && window.visualViewport.height > 0) ? window.visualViewport.height : 0;
+    const minHeight = 300; // Minimum usable height
+    const minScaleRatio = 0.7; // Visual height must be at least 70% of scale height
+
+    if (visualHeight >= minHeight && visualHeight >= scaleHeight * minScaleRatio) {
+      return visualHeight;
+    }
+
+    if (visualHeight > 0) {
+      console.warn('⚠️ Visual viewport height unreliable, using scale height instead:', {
+        visualHeight: Math.round(visualHeight),
+        scaleHeight: Math.round(scaleHeight),
+        minHeight,
+        minScaleRatio
+      });
+    }
+    return scaleHeight;
+  }
+
   create() {
     // CRITICAL: Mark as initializing to prevent visual viewport resize during create()
     this.isInitializing = true;
@@ -498,56 +522,15 @@ export class GameScene extends Phaser.Scene {
     // When Safari has multiple tabs, the UI takes up more space, reducing visible viewport
     let { width, height } = this.scale;
     
-    // CRITICAL FIX for Safari Mobile: Use visualViewport if available (accounts for Safari UI)
-    // This ensures the game uses the actual visible area, not the full screen
-    if (window.visualViewport && window.visualViewport.width > 0 && window.visualViewport.height > 0) {
-      const visibleWidth = window.visualViewport.width;
-      const visibleHeight = window.visualViewport.height;
-      
-      // CRITICAL FIX: Don't use visualViewport if it's significantly smaller than scale dimensions
-      // When Safari has multiple tabs, visualViewport can be much smaller, causing game elements to be cut off
-      // Instead, use scale dimensions to ensure the full game world is visible
-      const heightDifference = height - visibleHeight;
-      const heightDifferencePercent = (heightDifference / height) * 100;
-      
-      // Only use visualViewport if:
-      // 1. It's not too small (at least 300px)
-      // 2. The difference is not too large (less than 30% smaller)
-      // This prevents the game from being cut off when Safari UI takes up too much space
-      const minReasonableHeight = 300; // Minimum height to ensure game is playable
-      const maxHeightDifferencePercent = 30; // Don't use visualViewport if it's more than 30% smaller
-      
-      if ((Math.abs(width - visibleWidth) > 10 || Math.abs(height - visibleHeight) > 10) &&
-          visibleHeight >= minReasonableHeight &&
-          heightDifferencePercent < maxHeightDifferencePercent) {
-        console.log('📱 Using visual viewport (Safari UI detected):', {
-          scaleWidth: Math.round(width),
-          scaleHeight: Math.round(height),
-          visualWidth: Math.round(visibleWidth),
-          visualHeight: Math.round(visibleHeight),
-          heightDifferencePercent: heightDifferencePercent.toFixed(1) + '%'
-        });
-        width = visibleWidth;
-        height = visibleHeight;
-        // Resize game to match visible viewport
-        this.scale.resize(width, height);
-      } else {
-        if (visibleHeight < minReasonableHeight) {
-          console.warn('⚠️ Visual viewport too small, using scale dimensions:', {
-            visualHeight: Math.round(visibleHeight),
-            scaleHeight: Math.round(height),
-            minReasonableHeight
-          });
-        } else if (heightDifferencePercent >= maxHeightDifferencePercent) {
-          console.warn('⚠️ Visual viewport too much smaller than scale, using scale dimensions:', {
-            visualHeight: Math.round(visibleHeight),
-            scaleHeight: Math.round(height),
-            heightDifferencePercent: heightDifferencePercent.toFixed(1) + '%',
-            maxHeightDifferencePercent
-          });
-        }
-        // Don't use visualViewport - use scale dimensions instead to ensure full game world is visible
-      }
+    // Use a reliable viewport height that won't shrink the world excessively on Safari
+    const reliableHeight = this.getReliableViewportHeight();
+    if (reliableHeight !== height) {
+      console.log('📱 Using reliable viewport height:', {
+        scaleHeight: Math.round(height),
+        reliableHeight: Math.round(reliableHeight)
+      });
+      height = reliableHeight;
+      this.scale.resize(width, height);
     }
     
     // CRITICAL FIX for Safari Mobile: Additional validation
@@ -3635,56 +3618,15 @@ export class GameScene extends Phaser.Scene {
     // When Safari has multiple tabs, the UI takes up more space, reducing visible viewport
     let { width, height } = this.scale; // These are the actual game world dimensions (adapts to screen)
     
-    // CRITICAL FIX for Safari Mobile: Check if visualViewport is available and use it
-    // This ensures the game uses the actual visible area when Safari UI is expanded
-    if (window.visualViewport && window.visualViewport.width > 0 && window.visualViewport.height > 0) {
-      const visibleWidth = window.visualViewport.width;
-      const visibleHeight = window.visualViewport.height;
-      
-      // CRITICAL FIX: Don't use visualViewport if it's significantly smaller than scale dimensions
-      // When Safari has multiple tabs, visualViewport can be much smaller, causing game elements to be cut off
-      // Instead, use scale dimensions to ensure the full game world is visible
-      const heightDifference = height - visibleHeight;
-      const heightDifferencePercent = (heightDifference / height) * 100;
-      
-      // Only use visualViewport if:
-      // 1. It's not too small (at least 300px)
-      // 2. The difference is not too large (less than 30% smaller)
-      // This prevents the game from being cut off when Safari UI takes up too much space
-      const minReasonableHeight = 300; // Minimum height to ensure game is playable
-      const maxHeightDifferencePercent = 30; // Don't use visualViewport if it's more than 30% smaller
-      
-      if ((Math.abs(width - visibleWidth) > 10 || Math.abs(height - visibleHeight) > 10) &&
-          visibleHeight >= minReasonableHeight &&
-          heightDifferencePercent < maxHeightDifferencePercent) {
-        console.log('📱 Resize: Using visual viewport (Safari UI detected):', {
-          scaleWidth: Math.round(width),
-          scaleHeight: Math.round(height),
-          visualWidth: Math.round(visibleWidth),
-          visualHeight: Math.round(visibleHeight),
-          heightDifferencePercent: heightDifferencePercent.toFixed(1) + '%'
-        });
-        width = visibleWidth;
-        height = visibleHeight;
-        // Resize game to match visible viewport
-        this.scale.resize(width, height);
-      } else {
-        if (visibleHeight < minReasonableHeight) {
-          console.warn('⚠️ Resize: Visual viewport too small, using scale dimensions:', {
-            visualHeight: Math.round(visibleHeight),
-            scaleHeight: Math.round(height),
-            minReasonableHeight
-          });
-        } else if (heightDifferencePercent >= maxHeightDifferencePercent) {
-          console.warn('⚠️ Resize: Visual viewport too much smaller than scale, using scale dimensions:', {
-            visualHeight: Math.round(visibleHeight),
-            scaleHeight: Math.round(height),
-            heightDifferencePercent: heightDifferencePercent.toFixed(1) + '%',
-            maxHeightDifferencePercent
-          });
-        }
-        // Don't use visualViewport - use scale dimensions instead to ensure full game world is visible
-      }
+    // Use a reliable viewport height that won't shrink the world excessively on Safari
+    const reliableHeight = this.getReliableViewportHeight();
+    if (reliableHeight !== height) {
+      console.log('📱 Resize: Using reliable viewport height:', {
+        scaleHeight: Math.round(height),
+        reliableHeight: Math.round(reliableHeight)
+      });
+      height = reliableHeight;
+      this.scale.resize(width, height);
     }
     
     // Validate dimensions - ensure they're valid (prevents issues on iPhone Pro Max)
