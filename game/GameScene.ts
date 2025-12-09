@@ -136,6 +136,8 @@ const COMBO_MESSAGES = [
 ];
 
 export class GameScene extends Phaser.Scene {
+  private readonly SAFARI_FIXED_WIDTH = 800;
+  private readonly SAFARI_FIXED_HEIGHT = 600;
   private player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private ground!: Phaser.Physics.Arcade.StaticGroup;
   private obstacles!: Phaser.GameObjects.Group;
@@ -354,23 +356,33 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' });
   }
 
+  private isSafariMobile(): boolean {
+    const ua = navigator.userAgent;
+    const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
+    const isMobile = /iPhone|iPad|iPod/.test(ua);
+    return isSafari && isMobile;
+  }
+
   init() {
-    this.scale.on('resize', this.handleResize, this);
-    
-    // CRITICAL FIX for Safari Mobile: Listen for visual viewport changes
-    // This handles Safari UI (address bar, tab bar) changes when multiple tabs are open
-    if (window.visualViewport) {
-      // Store the handler so we can remove it later
-      this.visualViewportResizeHandler = () => {
-        // Debounce resize to prevent excessive updates
-        if (this.visualViewportResizeTimer) {
-          clearTimeout(this.visualViewportResizeTimer);
-        }
-        this.visualViewportResizeTimer = setTimeout(() => {
-          this.handleVisualViewportResize();
-        }, 100);
-      };
-      window.visualViewport.addEventListener('resize', this.visualViewportResizeHandler);
+    // Only attach resize handling for non-Safari mobile
+    if (!this.isSafariMobile()) {
+      this.scale.on('resize', this.handleResize, this);
+      
+      // CRITICAL FIX for Safari Mobile: Listen for visual viewport changes
+      // This handles Safari UI (address bar, tab bar) changes when multiple tabs are open
+      if (window.visualViewport) {
+        // Store the handler so we can remove it later
+        this.visualViewportResizeHandler = () => {
+          // Debounce resize to prevent excessive updates
+          if (this.visualViewportResizeTimer) {
+            clearTimeout(this.visualViewportResizeTimer);
+          }
+          this.visualViewportResizeTimer = setTimeout(() => {
+            this.handleVisualViewportResize();
+          }, 100);
+        };
+        window.visualViewport.addEventListener('resize', this.visualViewportResizeHandler);
+      }
     }
   }
   
@@ -517,20 +529,23 @@ export class GameScene extends Phaser.Scene {
     // CRITICAL: Mark as initializing to prevent visual viewport resize during create()
     this.isInitializing = true;
     
-    // Get actual canvas dimensions (no fixed 1920x1080)
-    // CRITICAL FIX for Safari Mobile: Use visualViewport to account for Safari UI
-    // When Safari has multiple tabs, the UI takes up more space, reducing visible viewport
+    // Determine dimensions: fixed for Safari mobile, dynamic otherwise
     let { width, height } = this.scale;
-    
-    // Use a reliable viewport height that won't shrink the world excessively on Safari
-    const reliableHeight = this.getReliableViewportHeight();
-    if (reliableHeight !== height) {
-      console.log('📱 Using reliable viewport height:', {
-        scaleHeight: Math.round(height),
-        reliableHeight: Math.round(reliableHeight)
-      });
-      height = reliableHeight;
+    if (this.isSafariMobile()) {
+      width = this.SAFARI_FIXED_WIDTH;
+      height = this.SAFARI_FIXED_HEIGHT;
       this.scale.resize(width, height);
+    } else {
+      // Use a reliable viewport height that won't shrink the world excessively on Safari
+      const reliableHeight = this.getReliableViewportHeight();
+      if (reliableHeight !== height) {
+        console.log('📱 Using reliable viewport height:', {
+          scaleHeight: Math.round(height),
+          reliableHeight: Math.round(reliableHeight)
+        });
+        height = reliableHeight;
+        this.scale.resize(width, height);
+      }
     }
     
     // CRITICAL FIX for Safari Mobile: Additional validation
@@ -3613,9 +3628,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleResize() {
-    // With RESIZE mode, game world adapts to screen size
-    // CRITICAL FIX for Safari Mobile: Use visualViewport to account for Safari UI changes
-    // When Safari has multiple tabs, the UI takes up more space, reducing visible viewport
+    // Safari mobile uses fixed dimensions; skip resize adjustments
+    if (this.isSafariMobile()) {
+      const width = this.SAFARI_FIXED_WIDTH;
+      const height = this.SAFARI_FIXED_HEIGHT;
+      this.scale.resize(width, height);
+      this.physics.world.setBounds(0, 0, width, height);
+      if (this.cameras && this.cameras.main) {
+        this.cameras.main.setBounds(0, 0, width, height);
+        this.cameras.main.setScroll(0, 0);
+      }
+      return;
+    }
+
+    // With RESIZE mode, game world adapts to screen size (non-Safari)
     let { width, height } = this.scale; // These are the actual game world dimensions (adapts to screen)
     
     // Use a reliable viewport height that won't shrink the world excessively on Safari

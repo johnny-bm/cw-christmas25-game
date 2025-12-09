@@ -73,18 +73,31 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     // Get device pixel ratio for high DPI displays
     const devicePixelRatio = window.devicePixelRatio || 1;
     
-    // Use RESIZE mode to make the game world adapt to screen size
-    // Get initial container dimensions for responsive game world
-    // CRITICAL FIX for iPhone Pro Max: Use multiple methods to get accurate dimensions
-    // This ensures the game world matches the actual visible area, preventing ground/character from being off-screen
+    // Safari mobile detection
+    const isSafariMobile = () => {
+      const ua = navigator.userAgent;
+      const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
+      const isMobile = /iPhone|iPad|iPod/.test(ua);
+      return isSafari && isMobile;
+    };
+
+    // Conditional sizing: fixed for Safari mobile, dynamic for others
     let initialWidth: number;
     let initialHeight: number;
-    
+    const useFitMode = isSafariMobile();
+
+    if (useFitMode) {
+      // Fixed dimensions to avoid Safari visualViewport shrink issues
+      initialWidth = 800;
+      initialHeight = 600;
+      initializeGame();
+      return;
+    }
+
+    // Non-Safari: keep existing dynamic dimension discovery
     // CRITICAL FIX for Safari Mobile: Function to get accurate viewport dimensions
     // Safari mobile has timing issues where dimensions aren't ready immediately
     const getViewportDimensions = (): { width: number; height: number } => {
-      // Priority 1: Use container's actual rendered dimensions (most reliable)
-      // Wait a bit for container to be properly sized by React/CSS
       if (container.clientWidth > 0 && container.clientHeight > 0) {
         return {
           width: container.clientWidth,
@@ -92,7 +105,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         };
       }
       
-      // Priority 2: Use visual viewport (accounts for Safari browser UI)
       if (window.visualViewport && window.visualViewport.width > 0 && window.visualViewport.height > 0) {
         return {
           width: window.visualViewport.width,
@@ -100,7 +112,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         };
       }
       
-      // Priority 3: Use window inner dimensions
       if (window.innerWidth > 0 && window.innerHeight > 0) {
         return {
           width: window.innerWidth,
@@ -108,46 +119,37 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         };
       }
       
-      // Final fallback (shouldn't happen in practice)
       return {
         width: 1920,
         height: 1080
       };
     };
     
-    // CRITICAL FIX for Safari Mobile: Wait for container to have valid dimensions
-    // Safari mobile often reports 0x0 initially, so we need to wait and retry
     const waitForValidDimensions = (attempts = 0): void => {
       const maxAttempts = 20; // Increased attempts for Safari
       const dimensions = getViewportDimensions();
       
-      // Check if we have valid dimensions (increased minimum to 200px for safety)
       if (dimensions.width > 200 && dimensions.height > 200) {
         initialWidth = dimensions.width;
         initialHeight = dimensions.height;
         initializeGame();
       } else if (attempts < maxAttempts) {
-        // Retry after a delay (longer delay for Safari)
         setTimeout(() => waitForValidDimensions(attempts + 1), 100);
       } else {
-        // Last resort: use window dimensions
         initialWidth = window.innerWidth || window.screen.width || 1920;
         initialHeight = window.innerHeight || window.screen.height || 1080;
         initializeGame();
       }
     };
     
-    // Start waiting for valid dimensions
     waitForValidDimensions();
-    
-    // Don't continue with initialization here - it will happen in initializeGame()
     return;
     
     function initializeGame() {
       const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.CANVAS,
-      width: initialWidth, // Game world adapts to screen width
-      height: initialHeight, // Game world adapts to screen height
+      width: useFitMode ? 800 : initialWidth,
+      height: useFitMode ? 600 : initialHeight,
       parent: container,
       backgroundColor: getElementColor('background'), // White background
       audio: {
@@ -172,10 +174,10 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
       },
       scene: [GameScene],
       scale: {
-        mode: Phaser.Scale.RESIZE, // RESIZE mode makes game world adapt to container size
-        // No autoCenter needed - RESIZE mode fills container completely
-        // No fixed width/height - game world will match container size exactly
-        // This allows the design to adapt to any screen size proportionally
+        mode: useFitMode ? Phaser.Scale.FIT : Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: useFitMode ? 800 : undefined,
+        height: useFitMode ? 600 : undefined
       },
       render: {
         pixelArt: false,
