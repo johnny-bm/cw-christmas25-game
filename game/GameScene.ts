@@ -109,35 +109,32 @@ const EASTER_EGG_MESSAGES = [
 
 // Combo messages
 const COMBO_MESSAGES = [
-  'Santa just handed you the express lane. GO.',
-  'You\'re sprinting. The Grinch is trembling.',
+  'Santa just handed me the express lane. GO.',
+  'I\'m sprinting. The Grinch is trembling.',
   'North Pole turbo unlocked, outrun every deadline.',
-  'Combo cracked! You\'re faster than Santa on the 24th.',
+  'Combo cracked! I\'m faster than Santa on the 24th.',
   'Holiday hyper-speed: engaged. The Grinch can\'t keep up.',
-  'Your momentum just got wrapped and delivered.',
+  'My momentum just got wrapped and delivered.',
   'Elf-powered boost activated.',
   'Combo miracle! Even Santa\'s impressed.',
   'Festive frenzy mode: ON. Deadlines fear you now.',
-  'You hit 5. The universe rewards your chaos mastery.',
-  'You\'re officially on Santa\'s speed list!',
-  '5 collectibles?! Santa just promoted you to Senior Sleigh Driver.',
-  'You\'re running so fast the Grinch filed a complaint.',
+  'I\'m officially on Santa\'s speed list!',
+  'I\'m running so fast the Grinch filed a complaint.',
   'Combo unlocked! Santa said, "Finally, someone useful."',
-  'Your speed just made Rudolph insecure.',
+  'My speed just made Rudolph insecure.',
   'The elves can\'t keep up!',
-  'You hit x10. The Grinch is now questioning his life choices.',
-  'Turbo mode: You\'re basically Santa\'s Wi-Fi now.',
-  'Combo cracked, HR is drafting your "Elf of the Month" post.',
-  'You\'re sprinting. Even Santa\'s beard is blown back.',
+  'Turbo mode: I\'m basically Santa\'s Wi-Fi now.',
+  'Combo cracked, HR is drafting my "Elf of the Month" post.',
+  'I\'m speeding up. Even Santa\'s beard is blown back.',
   'This speed is illegal in all North Pole districts.',
   'Combo achieved! Make the Grinch rage-quit.',
-  'Santa saw your speed and whispered… "Ho-ho-HOLY MOLY!"',
-  'Boost activated. You\'re running like the deadline is watching!'
+  'Santa saw my speed and whispered… "Ho-ho-HOLY MOLY!"',
+  'Boost activated. I\'m running like the deadline is watching!'
 ];
 
 export class GameScene extends Phaser.Scene {
   private readonly SAFARI_FIXED_WIDTH = 800;
-  private readonly SAFARI_FIXED_HEIGHT = 600;
+  private readonly SAFARI_FIXED_HEIGHT = 400; // Reduced from 600 to fit Safari mobile viewport
   private player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private ground!: Phaser.Physics.Arcade.StaticGroup;
   private obstacles!: Phaser.GameObjects.Group;
@@ -533,7 +530,7 @@ export class GameScene extends Phaser.Scene {
     // For Safari mobile: use fixed dimensions, skip all complex logic
     if (isSafariMobile) {
       width = 800;
-      height = 600;
+      height = 400; // Reduced from 600 to fit Safari mobile viewport
       // Don't call resize - let Phaser handle it with FIT mode
     } else {
       // Desktop/other mobile: keep existing dynamic logic
@@ -581,16 +578,18 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, width, height);
     this.cameras.main.setBackgroundColor(getElementColorPhaser('background')); // White background
     
-    // CRITICAL FIX for Safari Mobile: Ensure camera shows full world from (0,0) to (width, height)
-    // Reset camera scroll to origin to ensure we see the full world from top-left
-    // This ensures ground (at bottom) and character are always visible
-    this.cameras.main.setScroll(0, 0);
-    
-    // CRITICAL: Force camera to show the full world - ensure viewport matches game world
-    this.cameras.main.setViewport(0, 0, width, height);
-    
-    // CRITICAL: Ensure camera follows the world properly
-    this.cameras.main.setDeadzone(0, 0); // No deadzone - show full world
+    if (isSafariMobile) {
+      // Safari mobile: FIXED camera, no scrolling, no following
+      this.cameras.main.setScroll(0, 0);
+      this.cameras.main.scrollX = 0;
+      this.cameras.main.scrollY = 0;
+      this.cameras.main.stopFollow();
+    } else {
+      // Desktop: allow camera setup as normal
+      this.cameras.main.setScroll(0, 0);
+      this.cameras.main.setViewport(0, 0, width, height);
+      this.cameras.main.setDeadzone(0, 0); // No deadzone - show full world
+    }
     
     // Debug: Log camera and world info
     console.log('🎥 Camera setup:', {
@@ -623,7 +622,7 @@ export class GameScene extends Phaser.Scene {
     this.createParallaxBackground();
 
     // GROUND SETUP - Complete reset for Safari mobile
-    const FIXED_GAME_HEIGHT = 600;
+    const FIXED_GAME_HEIGHT = 400; // Reduced from 600 to fit Safari mobile viewport
     const FIXED_GAME_WIDTH = 800;
     
     let groundHeight: number;
@@ -631,8 +630,8 @@ export class GameScene extends Phaser.Scene {
     
     if (isSafariMobile) {
       // Safari mobile: simple fixed values
-      groundHeight = 100;
-      this.groundY = FIXED_GAME_HEIGHT - groundHeight; // 500px - ground top edge
+      groundHeight = 80; // Smaller ground for 400px height
+      this.groundY = FIXED_GAME_HEIGHT - groundHeight; // 320px - ground top edge
       groundWidth = FIXED_GAME_WIDTH * 3;
     } else {
       // Desktop: existing logic
@@ -670,7 +669,7 @@ export class GameScene extends Phaser.Scene {
       // Safari mobile: center origin positioning
       const groundRect = this.add.rectangle(
         FIXED_GAME_WIDTH / 2,  // Center X
-        FIXED_GAME_HEIGHT - (groundHeight / 2),  // Center Y = 600 - 50 = 550
+        FIXED_GAME_HEIGHT - (groundHeight / 2),  // Center Y = 400 - 40 = 360
         groundWidth, 
         groundHeight, 
         groundColor, 
@@ -703,7 +702,7 @@ export class GameScene extends Phaser.Scene {
       // Safari mobile: simple fixed values
       const PLAYER_SIZE = 64; // Fixed 64x64 size
       const PLAYER_START_X = 100; // Left side of screen, not center
-      const PLAYER_Y = FIXED_GAME_HEIGHT - groundHeight - (PLAYER_SIZE / 2); // Above ground: 600 - 100 - 32 = 468px
+      const PLAYER_Y = FIXED_GAME_HEIGHT - groundHeight - (PLAYER_SIZE / 2); // Above ground: 400 - 80 - 32 = 288px
       
       this.player = this.physics.add.sprite(PLAYER_START_X, PLAYER_Y, 'character-pushing-01');
       this.player.setDisplaySize(PLAYER_SIZE, PLAYER_SIZE);
@@ -1663,6 +1662,9 @@ export class GameScene extends Phaser.Scene {
       
       if (Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, obstacleBounds)) {
         if (this.sprintMode) {
+          // Show combo messages during sprint mode
+          const message = Phaser.Math.RND.pick(COMBO_MESSAGES);
+          this.showMessage(message);
           this.createCollisionEffect(obstacle.x, obstacle.y);
           obstacle.destroy();
           this.obstacles.remove(obstacle);
@@ -1716,17 +1718,7 @@ export class GameScene extends Phaser.Scene {
             this.activateSprintMode();
           }
           
-          // Show combo messages
-          if (this.combo >= 3) {
-            // Special message for x5 combo
-            if (this.combo === 5) {
-              this.showMessage('Five in a row? Santa calls that elite behavior.');
-            } else {
-              // Random combo message for other combos
-              const message = Phaser.Math.RND.pick(COMBO_MESSAGES);
-              this.showMessage(message);
-            }
-          }
+          // Combo messages are now only shown during sprint mode
           
           if (this.combo > this.maxCombo) {
             this.maxCombo = this.combo;
@@ -1744,6 +1736,9 @@ export class GameScene extends Phaser.Scene {
       
       if (Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, obstacleBounds)) {
         if (this.sprintMode) {
+          // Show combo messages during sprint mode
+          const message = Phaser.Math.RND.pick(COMBO_MESSAGES);
+          this.showMessage(message);
           this.createCollisionEffect(obstacle.x, obstacle.y);
           obstacle.destroy();
           this.floatingObstacles.remove(obstacle);
@@ -1809,18 +1804,7 @@ export class GameScene extends Phaser.Scene {
             this.activateSprintMode();
           }
           
-          // Show combo messages with milestone rewards
-          if (this.combo === GameConfig.combo.milestone3) {
-            // First milestone - encouraging message
-            this.showMessage('🔥 3 in a row! You\'re getting the hang of this!');
-          } else if (this.combo === GameConfig.combo.milestone5) {
-            // Second milestone - special message
-            this.showMessage('Five in a row? Santa calls that elite behavior.');
-          } else if (this.combo >= 3 && this.combo < GameConfig.combo.sprintThreshold) {
-            // Random combo message for other combos before sprint
-            const message = Phaser.Math.RND.pick(COMBO_MESSAGES);
-            this.showMessage(message);
-          }
+          // Combo messages are now only shown during sprint mode
           
           if (this.combo > this.maxCombo) {
             this.maxCombo = this.combo;
@@ -1838,6 +1822,9 @@ export class GameScene extends Phaser.Scene {
       
       if (Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, projectileBounds)) {
         if (this.sprintMode) {
+          // Show combo messages during sprint mode
+          const message = Phaser.Math.RND.pick(COMBO_MESSAGES);
+          this.showMessage(message);
           this.createCollisionEffect(projectile.x, projectile.y);
           projectile.destroy();
           this.projectileObstacles.remove(projectile);
@@ -1972,6 +1959,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   showMessage(message: string) {
+    // During sprint mode, only show combo messages
+    if (this.sprintMode) {
+      const isComboMessage = COMBO_MESSAGES.includes(message) || message === 'Five in a row? Santa calls that elite behavior.';
+      if (!isComboMessage) {
+        return; // Skip non-combo messages during sprint mode
+      }
+    }
+    
     // Check cooldown timer - only allow messages every X seconds (except for special messages)
     const isSpecialMessage = message.includes('SPRINT') || message.includes('ON FIRE') || message.includes('🔥');
     if (!isSpecialMessage && this.messageTimer > 0) {
@@ -2153,6 +2148,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   public update(time: number, delta: number) {
+    // CRITICAL: Lock camera for Safari mobile - prevent any scrolling
+    if (this.isSafariMobile()) {
+      this.cameras.main.scrollX = 0;
+      this.cameras.main.scrollY = 0;
+    }
+    
     if (this.isGameOver || !this.isGameStarted) {
       return;
     }
@@ -2825,7 +2826,10 @@ export class GameScene extends Phaser.Scene {
     
     // Ensure camera shows full world
     this.cameras.main.setBounds(0, 0, width, height);
-    this.cameras.main.setScroll(0, 0);
+    // CRITICAL: Only set scroll for desktop, Safari mobile camera is locked
+    if (!this.isSafariMobile()) {
+      this.cameras.main.setScroll(0, 0);
+    }
     
     // CRITICAL: Reposition player at ground level before starting game
     // This ensures player is always on ground, especially after orientation changes
@@ -3151,7 +3155,6 @@ export class GameScene extends Phaser.Scene {
     this.sprintTimer = GameConfig.sprint.duration;
     this.energy = GameConfig.sprint.energyRestore;
     this.sprintGlow.setAlpha(0.5);
-    this.showMessage('💨 SPRINT MODE! UNSTOPPABLE!');
     
     // Switch to sprint animations
     const isOnGround = this.player.body.touching.down;
@@ -3526,8 +3529,11 @@ export class GameScene extends Phaser.Scene {
     if (this.cameras && this.cameras.main) {
       this.cameras.main.setBounds(0, 0, width, height);
       this.cameras.main.setBackgroundColor(getElementColorPhaser('background'));
-      // Reset camera scroll to origin to ensure full world is visible (ground at bottom)
-      this.cameras.main.setScroll(0, 0);
+      // CRITICAL: Only set scroll for desktop, Safari mobile camera is locked
+      if (!this.isSafariMobile()) {
+        // Reset camera scroll to origin to ensure full world is visible (ground at bottom)
+        this.cameras.main.setScroll(0, 0);
+      }
     }
     
     // Update gravity - scale based on actual screen height for consistent physics

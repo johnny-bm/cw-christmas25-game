@@ -146,11 +146,11 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     return;
     
     function initializeGame() {
-      // EMERGENCY FIX: Absolute basics for Safari mobile - fixed 800x600
+      // EMERGENCY FIX: Absolute basics for Safari mobile - fixed 800x400
       const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
       width: useFitMode ? 800 : initialWidth,
-      height: useFitMode ? 600 : initialHeight,
+      height: useFitMode ? 400 : initialHeight, // Reduced from 600 to fit Safari mobile viewport
       parent: container,
       backgroundColor: getElementColor('background'), // White background
       audio: {
