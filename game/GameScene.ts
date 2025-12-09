@@ -1043,13 +1043,16 @@ export class GameScene extends Phaser.Scene {
     
     // EMERGENCY DEBUG: Add visual debug info for Safari mobile
     if (isSafariMobile) {
-      // Create debug text that shows on screen
-      this.debugText = this.add.text(10, 10, '', {
+      // Create debug text that shows on screen - centered
+      const centerX = width / 2;
+      const centerY = height / 2;
+      this.debugText = this.add.text(centerX, centerY, '', {
         fontSize: '12px',
         color: '#00ff00',
         backgroundColor: '#000000',
         padding: { x: 5, y: 5 }
       });
+      this.debugText.setOrigin(0.5, 0.5); // Center the text
       this.debugText.setDepth(1000); // Always on top
       this.debugText.setScrollFactor(0); // Fixed to camera
     }
