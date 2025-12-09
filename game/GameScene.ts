@@ -526,76 +526,54 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    // CRITICAL: Mark as initializing to prevent visual viewport resize during create()
-    this.isInitializing = true;
-    
-    // Determine dimensions: fixed for Safari mobile, dynamic otherwise
+    // EMERGENCY FIX: Absolute basics for Safari mobile
+    const isSafariMobile = this.isSafariMobile();
     let { width, height } = this.scale;
-    if (this.isSafariMobile()) {
-      width = this.SAFARI_FIXED_WIDTH;
-      height = this.SAFARI_FIXED_HEIGHT;
-      this.scale.resize(width, height);
+    
+    // For Safari mobile: use fixed dimensions, skip all complex logic
+    if (isSafariMobile) {
+      width = 800;
+      height = 600;
+      // Don't call resize - let Phaser handle it with FIT mode
     } else {
-      // Use a reliable viewport height that won't shrink the world excessively on Safari
+      // Desktop/other mobile: keep existing dynamic logic
+      this.isInitializing = true;
       const reliableHeight = this.getReliableViewportHeight();
       if (reliableHeight !== height) {
-        console.log('📱 Using reliable viewport height:', {
-          scaleHeight: Math.round(height),
-          reliableHeight: Math.round(reliableHeight)
-        });
         height = reliableHeight;
         this.scale.resize(width, height);
       }
-    }
-    
-    // CRITICAL FIX for Safari Mobile: Additional validation
-    // Safari mobile sometimes reports incorrect dimensions initially
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    const isMobile = width <= 768 || height <= 768;
-    
-    // Validate and correct dimensions if invalid (prevents issues on iPhone Pro Max and Safari)
-    if (width <= 0 || height <= 0 || !isFinite(width) || !isFinite(height)) {
-      console.warn('⚠️ Invalid game dimensions detected, using fallback:', width, height);
-      // Use visualViewport as fallback if available, otherwise window dimensions
-      if (window.visualViewport && window.visualViewport.width > 0 && window.visualViewport.height > 0) {
-        width = window.visualViewport.width;
-        height = window.visualViewport.height;
-      } else {
-        width = window.innerWidth || 1920;
-        height = window.innerHeight || 1080;
-      }
-      // Force resize to valid dimensions
-      this.scale.resize(width, height);
-    }
-    
-    // CRITICAL FIX for Safari Mobile: Ensure minimum dimensions
-    // Safari mobile can report very small or very large dimensions
-    if (isSafari && isMobile) {
-      const minWidth = 300;
-      const minHeight = 400;
-      const maxWidth = 2000;
-      const maxHeight = 2000;
       
-      if (width < minWidth || width > maxWidth) {
-        console.warn('⚠️ Safari mobile width out of range, adjusting:', width);
-        width = Math.max(minWidth, Math.min(maxWidth, width || window.innerWidth || 750));
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isMobile = width <= 768 || height <= 768;
+      
+      if (width <= 0 || height <= 0 || !isFinite(width) || !isFinite(height)) {
+        if (window.visualViewport && window.visualViewport.width > 0 && window.visualViewport.height > 0) {
+          width = window.visualViewport.width;
+          height = window.visualViewport.height;
+        } else {
+          width = window.innerWidth || 1920;
+          height = window.innerHeight || 1080;
+        }
         this.scale.resize(width, height);
       }
-      if (height < minHeight || height > maxHeight) {
-        console.warn('⚠️ Safari mobile height out of range, adjusting:', height);
-        height = Math.max(minHeight, Math.min(maxHeight, height || window.innerHeight || 402));
-        this.scale.resize(width, height);
+      
+      if (isSafari && isMobile) {
+        const minWidth = 300;
+        const minHeight = 400;
+        const maxWidth = 2000;
+        const maxHeight = 2000;
+        
+        if (width < minWidth || width > maxWidth) {
+          width = Math.max(minWidth, Math.min(maxWidth, width || window.innerWidth || 750));
+          this.scale.resize(width, height);
+        }
+        if (height < minHeight || height > maxHeight) {
+          height = Math.max(minHeight, Math.min(maxHeight, height || window.innerHeight || 402));
+          this.scale.resize(width, height);
+        }
       }
     }
-    
-    // Debug: Log final dimensions
-    console.log('📐 Final game dimensions:', {
-      width: Math.round(width),
-      height: Math.round(height),
-      aspectRatio: (width / height).toFixed(2),
-      isSafari,
-      isMobile
-    });
 
     // Set camera bounds to match actual canvas size
     // With RESIZE mode, the camera automatically shows the full game world (0, 0, width, height)
@@ -630,7 +608,7 @@ export class GameScene extends Phaser.Scene {
     
     // Scale gravity relative to screen height for responsive jump physics
     // Reduced gravity for lighter, more responsive feel
-    // Note: isMobile is already declared above
+    const isMobile = width <= 768 || height <= 768;
     const mobileGravityMultiplier = isMobile ? GameConfig.physics.mobileGravityMultiplier : 1.0;
     // Use slightly lower base gravity (2200 instead of 2000) for better jump feel
     const baseGravity = 2200;
@@ -644,41 +622,37 @@ export class GameScene extends Phaser.Scene {
     // Parallax background
     this.createParallaxBackground();
 
-    // Ground setup - responsive to aspect ratio
-    // CRITICAL FIX for Safari Mobile: Use fixed positioning for Safari mobile
-    const isSafariMobile = this.isSafariMobile();
-    const aspectRatio = width / height;
-    const isIPhoneProMax = /iPhone/.test(navigator.userAgent) && (window.screen.height >= 926 || window.screen.width >= 926);
-    const isShortViewport = height < 500; // CRITICAL: Detect very short viewports (like 402px height)
-    
-    // CRITICAL FIX: For Safari mobile, use fixed ground position relative to fixed height (600px)
+    // EMERGENCY FIX: Absolute basics for Safari mobile - fixed ground
     let groundHeight: number;
     if (isSafariMobile) {
-      // Fixed positioning for Safari mobile - ground at 85% from top (15% from bottom)
-      const FIXED_HEIGHT = this.SAFARI_FIXED_HEIGHT; // 600
-      groundHeight = FIXED_HEIGHT * 0.15; // 15% of fixed height = 90px
-      this.groundY = FIXED_HEIGHT - groundHeight; // 600 - 90 = 510
+      // Fixed ground position for Safari mobile
+      groundHeight = 100;
+      this.groundY = 550; // Fixed at 550px (600 - 50px from bottom)
     } else {
-      // Dynamic positioning for other browsers
-      let groundHeightRatio = 0.15; // Default 15%
+      // Desktop/other mobile: keep existing dynamic logic
+      const aspectRatio = width / height;
+      const isIPhoneProMax = /iPhone/.test(navigator.userAgent) && (window.screen.height >= 926 || window.screen.width >= 926);
+      const isShortViewport = height < 500;
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      
+      let groundHeightRatio = 0.15;
       
       if (isShortViewport) {
-        // Very short viewport (height < 500px) - use moderate ground ratio
         if (aspectRatio > 1.8) {
-          groundHeightRatio = 0.20; // 20% for wide + short viewports
+          groundHeightRatio = 0.20;
         } else {
-          groundHeightRatio = 0.18; // 18% for short viewports
+          groundHeightRatio = 0.18;
         }
       } else if (aspectRatio > 2.2) {
-        groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.24 : 0.22; // 24% on Safari/Pro Max, 22% otherwise
+        groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.24 : 0.22;
       } else if (aspectRatio > 1.8) {
-        groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.20 : 0.18; // 20% on Safari/Pro Max, 18% otherwise
+        groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.20 : 0.18;
       } else if (isSafari || isIPhoneProMax) {
-        groundHeightRatio = 0.17; // 17% on Safari/Pro Max for normal screens
+        groundHeightRatio = 0.17;
       }
       
-      groundHeight = height * groundHeightRatio; // Scale proportionally
-      this.groundY = height - groundHeight; // Ground top edge at this Y position
+      groundHeight = height * groundHeightRatio;
+      this.groundY = height - groundHeight;
     }
     
     // CRITICAL: Ensure groundY is within valid bounds (0 to height)
@@ -694,11 +668,12 @@ export class GameScene extends Phaser.Scene {
     
     // Debug: Log ground positioning
     const groundHeightRatio = isSafariMobile ? 0.15 : (groundHeight / height);
+    const isShortViewport = !isSafariMobile && height < 500;
     console.log('🌍 Ground setup:', {
       width,
       height,
       aspectRatio: (width / height).toFixed(2),
-      isShortViewport,
+      isShortViewport: isSafariMobile ? false : isShortViewport,
       isSafariMobile,
       groundHeightRatio: (groundHeightRatio * 100).toFixed(1) + '%',
       groundHeight: Math.round(groundHeight),
@@ -745,256 +720,70 @@ export class GameScene extends Phaser.Scene {
     }
     this.ground.add(groundRect);
 
-    // Character setup - CRITICAL FIX for Safari Mobile: Use original sprite dimensions to prevent stretching
-    // CRITICAL: Check if texture exists before creating sprite
-    if (!this.textures.exists('character-pushing-01')) {
-      console.error('❌ CRITICAL: Character texture "character-pushing-01" does not exist!');
-      console.log('Available textures:', Object.keys(this.textures.list));
-      // Create a placeholder rectangle so we can see something
-      const placeholder = this.add.rectangle(width * 0.25, height * 0.5, 40, 60, 0xff0000, 1.0);
-      placeholder.setDepth(20);
-      console.warn('⚠️ Created red placeholder rectangle at center - character texture missing!');
-    }
-    
-    // Get original sprite dimensions (base texture size, typically 160px height)
-    const originalSpriteHeight = 160; // Base sprite height
-    const originalSpriteWidth = 160; // Base sprite width (assuming square)
-    
-    // CRITICAL FIX: For Safari mobile, use fixed scale based on fixed height
-    // For other browsers, use responsive scaling
-    let scale: number;
+    // EMERGENCY FIX: Absolute basics for Safari mobile - no scaling, no stretching
     if (isSafariMobile) {
-      // Fixed scale for Safari mobile - character should be ~20% of fixed height (600px)
-      const targetHeight = this.SAFARI_FIXED_HEIGHT * 0.20; // 120px (20% of 600px)
-      scale = targetHeight / originalSpriteHeight; // 120 / 160 = 0.75
+      // Safari mobile: absolute basics - no setDisplaySize, no setScale
+      this.player = this.physics.add.sprite(400, 300, 'character-pushing-01');
+      this.player.setDepth(20);
+      this.player.setVisible(true);
+      this.player.setOrigin(0.5, 1);
+      // Position at ground
+      this.player.setPosition(400, this.groundY);
     } else {
-      // Dynamic scaling for other browsers
+      // Desktop/other mobile: keep existing logic
+      if (!this.textures.exists('character-pushing-01')) {
+        console.error('❌ CRITICAL: Character texture "character-pushing-01" does not exist!');
+        console.log('Available textures:', Object.keys(this.textures.list));
+        const placeholder = this.add.rectangle(width * 0.25, height * 0.5, 40, 60, 0xff0000, 1.0);
+        placeholder.setDepth(20);
+        console.warn('⚠️ Created red placeholder rectangle at center - character texture missing!');
+      }
+      
+      const originalSpriteHeight = 160;
+      const originalSpriteWidth = 160;
       const isMobilePlayer = width <= 768 || height <= 768;
-      let characterHeightRatio = isMobilePlayer ? 0.198 : 0.15; // 19.8% on mobile, 15% on desktop
+      const isShortViewport = height < 500;
+      let characterHeightRatio = isMobilePlayer ? 0.198 : 0.15;
       if (isShortViewport) {
-        characterHeightRatio = isMobilePlayer ? 0.15 : 0.12; // Smaller on short viewports
+        characterHeightRatio = isMobilePlayer ? 0.15 : 0.12;
       }
       const targetHeight = height * characterHeightRatio;
-      scale = targetHeight / originalSpriteHeight;
-    }
-    
-    this.player = this.physics.add.sprite(width * 0.25, 0, 'character-pushing-01');
-    this.player.setDepth(20);
-    
-    // CRITICAL FIX: Use setDisplaySize instead of setScale to prevent stretching
-    // This maintains aspect ratio and uses original sprite dimensions
-    const displayWidth = originalSpriteWidth * scale;
-    const displayHeight = originalSpriteHeight * scale;
-    this.player.setDisplaySize(displayWidth, displayHeight);
-    
-    this.player.setVisible(true); // CRITICAL: Ensure character is visible
-    this.player.setAlpha(1.0); // CRITICAL: Ensure character is fully opaque
-    
-    // Set origin to BOTTOM CENTER (0.5, 1) - sprite.y will be the bottom
-    this.player.setOrigin(0.5, 1);
-    
-    // CRITICAL: Set texture filtering for crisp rendering (prevents pixelation)
-    // Use LINEAR filtering for smooth scaling without pixelation
-    if (this.player.texture) {
-      this.player.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
-    }
-    
-    // Position sprite at ground level - CRITICAL FIX for Safari Mobile
-    // With origin (0.5, 1), sprite.y is the bottom/feet position
-    // Ground is at groundY (top of ground rectangle), so character feet should be AT groundY
-    const playerX = width * 0.25; // 25% from left edge
-    
-    // CRITICAL: Position character so feet are ON the ground surface (at groundY)
-    this.player.setPosition(playerX, this.groundY);
-    
-    // Setup physics body BEFORE setting physics properties to ensure proper alignment
-    this.setupCharacterBody();
-    
-    
-    // CRITICAL FIX for iPhone Pro Max: Ensure player is fully visible
-    // Verify character fits in visible area and adjust if necessary
-    const playerHeight = this.player.displayHeight || displayHeight;
-    const playerTopY = this.groundY - playerHeight; // Top of character sprite
-    
-    if (playerTopY < 0) {
-      // Character would be cut off at top - adjust ground position or character scale
-      console.warn('⚠️ Character would be cut off at top, adjusting:', {
-        groundY: this.groundY,
-        playerHeight: playerHeight,
-        playerTopY: playerTopY,
-        screenHeight: height
-      });
+      const scale = targetHeight / originalSpriteHeight;
       
-      // Option 1: Move ground down slightly (reduce ground height ratio)
-      const minGroundY = playerHeight + 10; // Leave 10px margin at top
-      if (minGroundY < height * 0.9) {
-        // Only adjust if it doesn't make ground too small
-        this.groundY = minGroundY;
-        // Update ground position
-        const groundRect = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
-        if (groundRect) {
-          const newGroundHeight = height - this.groundY;
-          groundRect.setPosition(0, this.groundY);
-          groundRect.setSize(width * 3, newGroundHeight);
-          if (groundRect.body) {
-            const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
-            body.setSize(width * 3, newGroundHeight);
-            // CRITICAL: Update body position to match new groundY
-            body.x = 0;
-            body.y = this.groundY;
-          }
-        }
-        // Reposition player at new ground level
-        this.player.setPosition(playerX, this.groundY);
-      } else {
-        // Option 2: Reduce character scale if ground adjustment isn't possible
-        const maxPlayerHeight = height * 0.8; // Max 80% of screen height
-        const originalSpriteHeight = 160;
-        const adjustedScale = maxPlayerHeight / originalSpriteHeight;
-        const originalSpriteWidth = 160;
-        const displayWidth = originalSpriteWidth * adjustedScale;
-        const displayHeight = originalSpriteHeight * adjustedScale;
-        this.player.setDisplaySize(displayWidth, displayHeight);
-        console.warn('⚠️ Reduced character scale to fit screen:', adjustedScale);
+      this.player = this.physics.add.sprite(width * 0.25, 0, 'character-pushing-01');
+      this.player.setDepth(20);
+      const displayWidth = originalSpriteWidth * scale;
+      const displayHeight = originalSpriteHeight * scale;
+      this.player.setDisplaySize(displayWidth, displayHeight);
+      this.player.setVisible(true);
+      this.player.setAlpha(1.0);
+      this.player.setOrigin(0.5, 1);
+      
+      if (this.player.texture) {
+        this.player.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
       }
+      
+      const playerX = width * 0.25;
+      this.player.setPosition(playerX, this.groundY);
     }
     
-    // Debug: Log positioning values to verify correct setup
-    const groundRectDebug = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
-    if (groundRectDebug && this.player.body) {
-      console.log('=== GROUND & CHARACTER POSITIONING DEBUG (create) ===');
-      console.log('Screen height:', height);
-      console.log('Ground height:', groundHeight);
-      console.log('groundY (top surface):', this.groundY);
-      console.log('Ground body.y:', groundRectDebug.body ? (groundRectDebug.body as Phaser.Physics.Arcade.StaticBody).y : 'N/A');
-      console.log('Character sprite.y (feet position):', this.player.y);
-      console.log('Character body.y:', this.player.body.y);
-      console.log('Character body.height:', this.player.body.height);
-      console.log('Character body bottom (body.y + body.height):', this.player.body.y + this.player.body.height);
-      console.log('Expected: sprite.y = body bottom = groundY =', this.groundY);
-      console.log('==================================================');
-    }
-    
-    // Physics properties - normal gravity on mobile to prevent floating feeling
-    const isMobilePlayer = width <= 768 || height <= 768;
-    const mobileGravityReduction = isMobilePlayer ? 0.98 : 1.0; // Slight reduction on mobile (2% less)
-    const playerBaseGravity = 2200;
-    const playerScaledGravity = playerBaseGravity * (height / GameConfig.physics.baseGravityHeight) * mobileGravityReduction;
-    this.player.body.setGravityY(playerScaledGravity);
-    this.player.body.setBounce(0, 0);
-    this.player.body.setCollideWorldBounds(false);
-    this.player.body.setAllowGravity(true);
-    this.player.body.setMaxVelocityY(1400);
-    this.player.body.setDrag(200, 0);
-    
-    // CRITICAL: Reset velocity to 0 to prevent character from falling through ground
-    this.player.body.setVelocity(0, 0);
-    
-    // CRITICAL: Disable gravity initially since player starts on ground
-    this.player.body.setAllowGravity(false);
-    
-    // CRITICAL FIX for Safari Mobile: Re-setup body after all physics properties are set
-    // This ensures body is properly aligned with sprite position
-    this.setupCharacterBody();
-    
-    // Add collider - this is a COLLIDER (not overlap), so it will prevent penetration
-    // Arcade Physics will automatically keep player on top of ground
-    // The collider handles collision response, preventing character from sinking
-    this.physics.add.collider(this.player, this.ground);
-    
-    // CRITICAL: Final positioning check - ensure everything is aligned before game starts
-    // This prevents visible repositioning when startGame() is called
-    const finalPlayerX = width * 0.25;
-    if (Math.abs(this.player.x - finalPlayerX) > 1 || Math.abs(this.player.y - this.groundY) > 1) {
-      this.player.setPosition(finalPlayerX, this.groundY);
+    // EMERGENCY FIX: Absolute basics for Safari mobile - simple physics
+    if (isSafariMobile) {
+      // Safari mobile: absolute basics
+      this.player.body.setCollideWorldBounds(true);
+      this.player.body.setBounce(0.2);
+    } else {
+      // Desktop/other mobile: keep existing logic
       this.setupCharacterBody();
-      // Ensure body bottom aligns with ground
-      const bodyBottom = this.player.body.y + this.player.body.height;
-      if (Math.abs(bodyBottom - this.groundY) > 0.5) {
-        this.player.body.y += (this.groundY - bodyBottom);
-      }
-    }
-    
-    // CRITICAL: Final position adjustment - ensure character is exactly on ground surface
-    // Position character so physics body bottom aligns with ground top surface
-    // CRITICAL FIX for Safari Mobile: Validate groundY is within visible bounds
-    if (this.groundY < 0 || this.groundY >= height) {
-      console.error('❌ CRITICAL: groundY is out of bounds!', {
-        groundY: this.groundY,
-        height: height,
-        adjusting: true
-      });
-      // Force groundY to be within bounds
-      this.groundY = Math.max(10, Math.min(height - 50, this.groundY));
-      // Update ground position
-      const groundRect = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
-      if (groundRect) {
-        const newGroundHeight = height - this.groundY;
-        groundRect.setPosition(0, this.groundY);
-        groundRect.setSize(width * 3, newGroundHeight);
-        if (groundRect.body) {
-          const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
-          body.setSize(width * 3, newGroundHeight);
-          body.x = 0;
-          body.y = this.groundY;
-        }
-      }
-    }
-    
-    // CRITICAL: Ensure character is positioned ON the ground surface
-    // The ground surface is at groundY, so character feet (sprite.y with origin 0.5, 1) should be at groundY
-    // Don't use safeGroundY - use groundY directly to ensure character is on the ground
-    this.player.setPosition(playerX, this.groundY);
-    
-    // CRITICAL FIX for Safari Mobile: Force body bottom to align with ground surface
-    // After setting up the body, manually verify and correct body position
-    if (this.player.body) {
-      // Calculate where body bottom should be (at sprite.y / groundY)
-      // The body bottom should align with groundY (the ground surface)
-      const expectedBodyBottom = this.groundY;
-      const currentBodyBottom = this.player.body.y + this.player.body.height;
       
-      // If body bottom doesn't match groundY, adjust body position
-      if (Math.abs(currentBodyBottom - expectedBodyBottom) > 0.5) {
-        const adjustment = expectedBodyBottom - currentBodyBottom;
-        // Move body up/down to align bottom with ground
-        this.player.body.y += adjustment;
-        console.log('🔧 Adjusted character body Y by', adjustment.toFixed(1), 'to align bottom with ground');
-      }
+      const playerX = width * 0.25;
+      const playerHeight = this.player.displayHeight;
+      const playerTopY = this.groundY - playerHeight;
       
-      // CRITICAL: Also ensure sprite position matches (in case body moved)
-      // The sprite should be at groundY with origin (0.5, 1) - feet on ground surface
-      if (Math.abs(this.player.y - this.groundY) > 0.5) {
-        this.player.setPosition(playerX, this.groundY);
-        // Re-setup body after repositioning
-        this.setupCharacterBody();
-        // Re-adjust body if needed
-        const newBodyBottom = this.player.body.y + this.player.body.height;
-        if (Math.abs(newBodyBottom - this.groundY) > 0.5) {
-          this.player.body.y += (this.groundY - newBodyBottom);
-        }
-      }
-      
-      // CRITICAL FIX for Safari Mobile: Final validation - ensure character is visible
-      const characterTop = this.player.y - this.player.displayHeight;
-      const characterBottom = this.player.y;
-      if (characterTop < 0 || characterBottom > height) {
-        console.error('❌ CRITICAL: Character is outside visible bounds!', {
-          characterTop: characterTop.toFixed(1),
-          characterBottom: characterBottom.toFixed(1),
-          characterY: this.player.y.toFixed(1),
-          height: height,
-          groundY: this.groundY.toFixed(1),
-          adjusting: true
-        });
-        // Force character to be visible - but keep it on the ground
-        // Only adjust if character would be cut off, but keep feet on ground
-        const minY = this.player.displayHeight + 10;
-        const maxY = height - 10;
-        if (this.groundY < minY) {
-          // Ground is too high, move it down
-          this.groundY = minY;
-          // Update ground position
+      if (playerTopY < 0) {
+        const minGroundY = playerHeight + 10;
+        if (minGroundY < height * 0.9) {
+          this.groundY = minGroundY;
           const groundRect = this.ground.getChildren()[0] as Phaser.GameObjects.Rectangle;
           if (groundRect) {
             const newGroundHeight = height - this.groundY;
@@ -1007,12 +796,35 @@ export class GameScene extends Phaser.Scene {
               body.y = this.groundY;
             }
           }
+          this.player.setPosition(playerX, this.groundY);
+        } else {
+          const maxPlayerHeight = height * 0.8;
+          const originalSpriteHeight = 160;
+          const adjustedScale = maxPlayerHeight / originalSpriteHeight;
+          const originalSpriteWidth = 160;
+          const displayWidth = originalSpriteWidth * adjustedScale;
+          const displayHeight = originalSpriteHeight * adjustedScale;
+          this.player.setDisplaySize(displayWidth, displayHeight);
         }
-        this.player.setPosition(playerX, this.groundY);
-        this.setupCharacterBody();
       }
       
+      const isMobilePlayer = width <= 768 || height <= 768;
+      const mobileGravityReduction = isMobilePlayer ? 0.98 : 1.0;
+      const playerBaseGravity = 2200;
+      const playerScaledGravity = playerBaseGravity * (height / GameConfig.physics.baseGravityHeight) * mobileGravityReduction;
+      this.player.body.setGravityY(playerScaledGravity);
+      this.player.body.setBounce(0, 0);
+      this.player.body.setCollideWorldBounds(false);
+      this.player.body.setAllowGravity(true);
+      this.player.body.setMaxVelocityY(1400);
+      this.player.body.setDrag(200, 0);
+      this.player.body.setVelocity(0, 0);
+      this.player.body.setAllowGravity(false);
+      this.setupCharacterBody();
     }
+    
+    // Add collider for all cases
+    this.physics.add.collider(this.player, this.ground);
 
     // Setup animation
     if (this.textures.exists('character-pushing-01') && this.textures.exists('character-ollie-01')) {
@@ -1027,25 +839,39 @@ export class GameScene extends Phaser.Scene {
       if (!this.textures.exists('character-pushing-01')) {
         console.warn('⚠️ Creating placeholder for character texture');
         // Create a simple colored rectangle as placeholder
+        const placeholderX = isSafariMobile ? 400 : (width * 0.25);
         this.add.graphics()
           .fillStyle(0xff0000, 1)
-          .fillRect(playerX - 20, this.groundY - 40, 40, 40)
+          .fillRect(placeholderX - 20, this.groundY - 40, 40, 40)
           .setDepth(20);
       }
     }
     
 
-    // Sprint glow effect - scale relative to player size
-    const glowWidth = 60 * scale;
-    const glowHeight = 80 * scale;
-    this.sprintGlow = this.add.rectangle(
-      this.player.x, 
-      this.player.y, 
-      glowWidth, 
-      glowHeight, 
-      getElementColorPhaser('sprintGlow'),
-      0
-    );
+    // Sprint glow effect
+    if (isSafariMobile) {
+      this.sprintGlow = this.add.rectangle(
+        this.player.x, 
+        this.player.y, 
+        60, 
+        80, 
+        getElementColorPhaser('sprintGlow'),
+        0
+      );
+    } else {
+      // Desktop path: scale was defined earlier in the character setup
+      const glowScale = (this.player.displayHeight || 160) / 160;
+      const glowWidth = 60 * glowScale;
+      const glowHeight = 80 * glowScale;
+      this.sprintGlow = this.add.rectangle(
+        this.player.x, 
+        this.player.y, 
+        glowWidth, 
+        glowHeight, 
+        getElementColorPhaser('sprintGlow'),
+        0
+      );
+    }
     this.sprintGlow.setDepth(19);
 
     // Create deadline using image asset - positioned at far left, will move right as energy decreases

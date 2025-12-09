@@ -146,8 +146,9 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     return;
     
     function initializeGame() {
+      // EMERGENCY FIX: Absolute basics for Safari mobile - fixed 800x600
       const config: Phaser.Types.Core.GameConfig = {
-      type: Phaser.CANVAS,
+      type: Phaser.AUTO,
       width: useFitMode ? 800 : initialWidth,
       height: useFitMode ? 600 : initialHeight,
       parent: container,
@@ -155,29 +156,23 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
       audio: {
         disableWebAudio: false,
         noAudio: false,
-        // Force Web Audio API usage for better mobile support
-        // Note: iOS still respects silent mode, but Web Audio has better control
-        context: undefined // Let Phaser create its own AudioContext
+        context: undefined
       },
       physics: {
         default: 'arcade',
         arcade: {
-          gravity: { x: 0, y: 2000 },
-          debug: false,
-          fps: 60, // Target FPS for physics
-          timeScale: 1.0 // Normal time scale
+          gravity: { y: 300 },
+          debug: false
         }
       },
       fps: {
-        target: 60, // Target 60 FPS for smooth gameplay
-        forceSetTimeOut: false // Use requestAnimationFrame for better performance
+        target: 60,
+        forceSetTimeOut: false
       },
       scene: [GameScene],
       scale: {
         mode: useFitMode ? Phaser.Scale.FIT : Phaser.Scale.RESIZE,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: useFitMode ? 800 : undefined,
-        height: useFitMode ? 600 : undefined
+        autoCenter: useFitMode ? Phaser.Scale.CENTER_BOTH : undefined
       },
       render: {
         pixelArt: false,
