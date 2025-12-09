@@ -129,6 +129,14 @@ function PortraitBlocker({ gameBackgroundColor }: { gameBackgroundColor: string 
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Helper function to detect Safari mobile
+  const isSafariMobile = () => {
+    const ua = navigator.userAgent;
+    const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
+    const isMobile = /iPhone|iPad|iPod/.test(ua);
+    return isSafari && isMobile;
+  };
   const [gameState, setGameState] = useState<GameState>('start');
   const [gameReady, setGameReady] = useState(false); // Track if game is loaded
   const [loadingProgress, setLoadingProgress] = useState(0); // Track loading progress
@@ -260,8 +268,8 @@ export default function App() {
       return;
     }
     
-    // Block game start if on mobile and in portrait mode
-    if (isMobile && isPortrait) {
+    // Block game start if on mobile and in portrait mode (except Safari mobile which runs in portrait)
+    if (isMobile && isPortrait && !isSafariMobile()) {
       console.log('🚫 Game start blocked: Mobile device in portrait mode');
       return;
     }
@@ -332,7 +340,8 @@ export default function App() {
   };
 
   // Check if we should show portrait blocker
-  const showPortraitBlocker = isMobile && isPortrait;
+  // CRITICAL: Don't show portrait blocker for Safari mobile (game runs in portrait mode)
+  const showPortraitBlocker = isMobile && isPortrait && !isSafariMobile();
 
   const gameBackgroundColor = getElementColor('background');
   
