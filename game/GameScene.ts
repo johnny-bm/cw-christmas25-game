@@ -622,14 +622,20 @@ export class GameScene extends Phaser.Scene {
     // Parallax background
     this.createParallaxBackground();
 
-    // EMERGENCY FIX: Absolute basics for Safari mobile - fixed ground
+    // GROUND SETUP - Complete reset for Safari mobile
+    const FIXED_GAME_HEIGHT = 600;
+    const FIXED_GAME_WIDTH = 800;
+    
     let groundHeight: number;
+    let groundWidth: number;
+    
     if (isSafariMobile) {
-      // Fixed ground position for Safari mobile - ensure it's visible within 600px canvas
-      groundHeight = 80; // Smaller ground height
-      this.groundY = 600 - groundHeight; // Position at bottom: 520px (ground from 520-600, visible)
+      // Safari mobile: simple fixed values
+      groundHeight = 100;
+      this.groundY = FIXED_GAME_HEIGHT - groundHeight; // 500px - ground top edge
+      groundWidth = FIXED_GAME_WIDTH * 3;
     } else {
-      // Desktop/other mobile: keep existing dynamic logic
+      // Desktop: existing logic
       const aspectRatio = width / height;
       const isIPhoneProMax = /iPhone/.test(navigator.userAgent) && (window.screen.height >= 926 || window.screen.width >= 926);
       const isShortViewport = height < 500;
@@ -653,88 +659,62 @@ export class GameScene extends Phaser.Scene {
       
       groundHeight = height * groundHeightRatio;
       this.groundY = height - groundHeight;
+      groundWidth = width * 3;
     }
     
-    // CRITICAL: Ensure groundY is within valid bounds (0 to height)
-    // This prevents ground from being positioned off-screen on iPhone Pro Max
-    if (this.groundY < 0) {
-      console.warn('⚠️ Ground Y position is negative, adjusting:', this.groundY);
-      this.groundY = Math.max(0, height * 0.85); // Ensure ground is at least 15% from bottom
-    }
-    if (this.groundY >= height) {
-      console.warn('⚠️ Ground Y position exceeds height, adjusting:', this.groundY, height);
-      this.groundY = height * 0.85; // Ensure ground is at least 15% from bottom
-    }
-    
-    // Debug: Log ground positioning
-    const groundHeightRatio = isSafariMobile ? 0.15 : (groundHeight / height);
-    const isShortViewport = !isSafariMobile && height < 500;
-    console.log('🌍 Ground setup:', {
-      width,
-      height,
-      aspectRatio: (width / height).toFixed(2),
-      isShortViewport: isSafariMobile ? false : isShortViewport,
-      isSafariMobile,
-      groundHeightRatio: (groundHeightRatio * 100).toFixed(1) + '%',
-      groundHeight: Math.round(groundHeight),
-      groundY: Math.round(this.groundY),
-      groundBottom: Math.round(this.groundY + groundHeight)
-    });
-    const groundWidth = width * 3;
-    
+    // Create ground
     this.ground = this.physics.add.staticGroup();
+    const groundColor = getElementColorPhaser('ground');
     
-    // Create ground rectangle at groundY
-    const groundColor = getElementColorPhaser('ground'); // Ground color from config (#DEDCDE)
-    const groundRect = this.add.rectangle(0, this.groundY, groundWidth, groundHeight, groundColor, 1.0);
-    groundRect.setDepth(10); // Ground depth - character (20) will render above
-    groundRect.setOrigin(0, 0); // Top-left origin
-    
-    // Add physics body and configure it
-    this.physics.add.existing(groundRect, true);
-    if (groundRect.body) {
-      const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
-      // Body matches sprite exactly - full width and height
-      body.setSize(groundWidth, groundHeight);
-      body.setOffset(0, 0); // No offset with (0,0) origin
-      
-      // CRITICAL FIX: Explicitly set body position to match ground surface
-      // The ground's top surface is at groundY, so body.y should be at groundY
-      // Phaser may calculate body position differently, so we force it here
-      body.x = 0; // Ground starts at x=0
-      body.y = this.groundY; // Ground top surface is at groundY
-      
-      // Static bodies are immovable by default in Phaser - no need to call setImmovable()
-      // Static bodies cannot be moved by physics interactions
-      
-      console.log('🌍 Ground body positioned:', {
-        bodyX: body.x,
-        bodyY: body.y,
-        bodyWidth: body.width,
-        bodyHeight: body.height,
-        bodyBottom: body.y + body.height,
-        groundY: this.groundY,
-        spriteY: groundRect.y,
-        match: Math.abs(body.y - this.groundY) < 1 ? '✅' : '❌'
-      });
-    }
-    this.ground.add(groundRect);
-
-    // EMERGENCY FIX: Absolute basics for Safari mobile - scale down character
     if (isSafariMobile) {
-      // Safari mobile: scale down character to fit properly
-      const originalSpriteHeight = 160;
-      const originalSpriteWidth = 160;
-      const targetHeight = 80; // Make character smaller - 80px instead of 160px
-      const scale = targetHeight / originalSpriteHeight; // 0.5x
+      // Safari mobile: center origin positioning
+      const groundRect = this.add.rectangle(
+        FIXED_GAME_WIDTH / 2,  // Center X
+        FIXED_GAME_HEIGHT - (groundHeight / 2),  // Center Y = 600 - 50 = 550
+        groundWidth, 
+        groundHeight, 
+        groundColor, 
+        1.0
+      );
+      groundRect.setOrigin(0.5, 0.5);  // CENTER origin, not top-left
+      groundRect.setDepth(10);
       
-      this.player = this.physics.add.sprite(400, 300, 'character-pushing-01');
-      this.player.setDisplaySize(originalSpriteWidth * scale, originalSpriteHeight * scale); // 80x80px
+      this.physics.add.existing(groundRect, true);
+      this.ground.add(groundRect);
+    } else {
+      // Desktop: existing logic with top-left origin
+      const groundRect = this.add.rectangle(0, this.groundY, groundWidth, groundHeight, groundColor, 1.0);
+      groundRect.setDepth(10);
+      groundRect.setOrigin(0, 0); // Top-left origin
+      
+      this.physics.add.existing(groundRect, true);
+      if (groundRect.body) {
+        const body = groundRect.body as Phaser.Physics.Arcade.StaticBody;
+        body.setSize(groundWidth, groundHeight);
+        body.setOffset(0, 0);
+        body.x = 0;
+        body.y = this.groundY;
+      }
+      this.ground.add(groundRect);
+    }
+
+    // PLAYER SETUP - Complete reset for Safari mobile
+    if (isSafariMobile) {
+      // Safari mobile: simple fixed values
+      const PLAYER_SIZE = 64; // Fixed 64x64 size
+      const PLAYER_START_X = 100; // Left side of screen, not center
+      const PLAYER_Y = FIXED_GAME_HEIGHT - groundHeight - (PLAYER_SIZE / 2); // Above ground: 600 - 100 - 32 = 468px
+      
+      this.player = this.physics.add.sprite(PLAYER_START_X, PLAYER_Y, 'character-pushing-01');
+      this.player.setDisplaySize(PLAYER_SIZE, PLAYER_SIZE);
+      this.player.setOrigin(0.5, 0.5); // Center origin
       this.player.setDepth(20);
       this.player.setVisible(true);
-      this.player.setOrigin(0.5, 1);
-      // Position at ground - feet will be at groundY, on top of ground surface
-      this.player.setPosition(400, this.groundY);
+      
+      // Simple physics
+      this.player.body.setCollideWorldBounds(true);
+      this.player.body.setBounce(0.2);
+      this.player.body.setSize(PLAYER_SIZE * 0.6, PLAYER_SIZE * 0.8); // Smaller hitbox
     } else {
       // Desktop/other mobile: keep existing logic
       if (!this.textures.exists('character-pushing-01')) {
@@ -845,7 +825,7 @@ export class GameScene extends Phaser.Scene {
       if (!this.textures.exists('character-pushing-01')) {
         console.warn('⚠️ Creating placeholder for character texture');
         // Create a simple colored rectangle as placeholder
-        const placeholderX = isSafariMobile ? 400 : (width * 0.25);
+        const placeholderX = isSafariMobile ? 100 : (width * 0.25);
         this.add.graphics()
           .fillStyle(0xff0000, 1)
           .fillRect(placeholderX - 20, this.groundY - 40, 40, 40)
