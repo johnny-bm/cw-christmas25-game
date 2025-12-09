@@ -625,9 +625,9 @@ export class GameScene extends Phaser.Scene {
     // EMERGENCY FIX: Absolute basics for Safari mobile - fixed ground
     let groundHeight: number;
     if (isSafariMobile) {
-      // Fixed ground position for Safari mobile
-      groundHeight = 100;
-      this.groundY = 550; // Fixed at 550px (600 - 50px from bottom)
+      // Fixed ground position for Safari mobile - ensure it's visible within 600px canvas
+      groundHeight = 80; // Smaller ground height
+      this.groundY = 600 - groundHeight; // Position at bottom: 520px (ground from 520-600, visible)
     } else {
       // Desktop/other mobile: keep existing dynamic logic
       const aspectRatio = width / height;
@@ -720,14 +720,20 @@ export class GameScene extends Phaser.Scene {
     }
     this.ground.add(groundRect);
 
-    // EMERGENCY FIX: Absolute basics for Safari mobile - no scaling, no stretching
+    // EMERGENCY FIX: Absolute basics for Safari mobile - scale down character
     if (isSafariMobile) {
-      // Safari mobile: absolute basics - no setDisplaySize, no setScale
+      // Safari mobile: scale down character to fit properly
+      const originalSpriteHeight = 160;
+      const originalSpriteWidth = 160;
+      const targetHeight = 80; // Make character smaller - 80px instead of 160px
+      const scale = targetHeight / originalSpriteHeight; // 0.5x
+      
       this.player = this.physics.add.sprite(400, 300, 'character-pushing-01');
+      this.player.setDisplaySize(originalSpriteWidth * scale, originalSpriteHeight * scale); // 80x80px
       this.player.setDepth(20);
       this.player.setVisible(true);
       this.player.setOrigin(0.5, 1);
-      // Position at ground
+      // Position at ground - feet will be at groundY, on top of ground surface
       this.player.setPosition(400, this.groundY);
     } else {
       // Desktop/other mobile: keep existing logic
