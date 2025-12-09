@@ -645,35 +645,41 @@ export class GameScene extends Phaser.Scene {
     this.createParallaxBackground();
 
     // Ground setup - responsive to aspect ratio
-    // CRITICAL FIX for Safari Mobile: Ensure ground is always within visible bounds
-    // Special handling for short viewports (like 750x402) where height is very limited
-    // Note: isSafari is already declared above
+    // CRITICAL FIX for Safari Mobile: Use fixed positioning for Safari mobile
+    const isSafariMobile = this.isSafariMobile();
     const aspectRatio = width / height;
     const isIPhoneProMax = /iPhone/.test(navigator.userAgent) && (window.screen.height >= 926 || window.screen.width >= 926);
     const isShortViewport = height < 500; // CRITICAL: Detect very short viewports (like 402px height)
     
-    // CRITICAL FIX: For very short viewports, use moderate ground ratio
-    // Reduced from 30% to 20% for better proportions
-    let groundHeightRatio = 0.15; // Default 15%
-    
-    if (isShortViewport) {
-      // Very short viewport (height < 500px) - use moderate ground ratio
-      // Reduced from 30% to 20% for better proportions
-      if (aspectRatio > 1.8) {
-        groundHeightRatio = 0.20; // 20% for wide + short viewports (reduced from 30%)
-      } else {
-        groundHeightRatio = 0.18; // 18% for short viewports (reduced from 25%)
+    // CRITICAL FIX: For Safari mobile, use fixed ground position relative to fixed height (600px)
+    let groundHeight: number;
+    if (isSafariMobile) {
+      // Fixed positioning for Safari mobile - ground at 85% from top (15% from bottom)
+      const FIXED_HEIGHT = this.SAFARI_FIXED_HEIGHT; // 600
+      groundHeight = FIXED_HEIGHT * 0.15; // 15% of fixed height = 90px
+      this.groundY = FIXED_HEIGHT - groundHeight; // 600 - 90 = 510
+    } else {
+      // Dynamic positioning for other browsers
+      let groundHeightRatio = 0.15; // Default 15%
+      
+      if (isShortViewport) {
+        // Very short viewport (height < 500px) - use moderate ground ratio
+        if (aspectRatio > 1.8) {
+          groundHeightRatio = 0.20; // 20% for wide + short viewports
+        } else {
+          groundHeightRatio = 0.18; // 18% for short viewports
+        }
+      } else if (aspectRatio > 2.2) {
+        groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.24 : 0.22; // 24% on Safari/Pro Max, 22% otherwise
+      } else if (aspectRatio > 1.8) {
+        groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.20 : 0.18; // 20% on Safari/Pro Max, 18% otherwise
+      } else if (isSafari || isIPhoneProMax) {
+        groundHeightRatio = 0.17; // 17% on Safari/Pro Max for normal screens
       }
-    } else if (aspectRatio > 2.2) {
-      groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.24 : 0.22; // 24% on Safari/Pro Max, 22% otherwise
-    } else if (aspectRatio > 1.8) {
-      groundHeightRatio = (isSafari || isIPhoneProMax) ? 0.20 : 0.18; // 20% on Safari/Pro Max, 18% otherwise
-    } else if (isSafari || isIPhoneProMax) {
-      groundHeightRatio = 0.17; // 17% on Safari/Pro Max for normal screens
+      
+      groundHeight = height * groundHeightRatio; // Scale proportionally
+      this.groundY = height - groundHeight; // Ground top edge at this Y position
     }
-    
-    const groundHeight = height * groundHeightRatio; // Scale proportionally
-    this.groundY = height - groundHeight; // Ground top edge at this Y position
     
     // CRITICAL: Ensure groundY is within valid bounds (0 to height)
     // This prevents ground from being positioned off-screen on iPhone Pro Max
@@ -687,11 +693,13 @@ export class GameScene extends Phaser.Scene {
     }
     
     // Debug: Log ground positioning
+    const groundHeightRatio = isSafariMobile ? 0.15 : (groundHeight / height);
     console.log('🌍 Ground setup:', {
       width,
       height,
       aspectRatio: (width / height).toFixed(2),
       isShortViewport,
+      isSafariMobile,
       groundHeightRatio: (groundHeightRatio * 100).toFixed(1) + '%',
       groundHeight: Math.round(groundHeight),
       groundY: Math.round(this.groundY),
@@ -737,21 +745,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.ground.add(groundRect);
 
-    // Character setup with square bounding box - responsive
-    // CRITICAL FIX for short viewports: Reduce character size if viewport is very short
-    const isMobilePlayer = width <= 768 || height <= 768;
-    // Note: isShortViewport is already declared above in ground setup section
-    
-    // For short viewports, use smaller character to ensure it fits above ground
-    let characterHeightRatio = isMobilePlayer ? 0.198 : 0.15; // 19.8% on mobile (10% bigger), 15% on desktop
-    if (isShortViewport) {
-      // Reduce character size for short viewports to ensure it fits
-      characterHeightRatio = isMobilePlayer ? 0.15 : 0.12; // Smaller on short viewports
-    }
-    
-    const targetHeight = height * characterHeightRatio;
-    const scale = targetHeight / 160;
-    
+    // Character setup - CRITICAL FIX for Safari Mobile: Use original sprite dimensions to prevent stretching
     // CRITICAL: Check if texture exists before creating sprite
     if (!this.textures.exists('character-pushing-01')) {
       console.error('❌ CRITICAL: Character texture "character-pushing-01" does not exist!');
@@ -762,9 +756,37 @@ export class GameScene extends Phaser.Scene {
       console.warn('⚠️ Created red placeholder rectangle at center - character texture missing!');
     }
     
+    // Get original sprite dimensions (base texture size, typically 160px height)
+    const originalSpriteHeight = 160; // Base sprite height
+    const originalSpriteWidth = 160; // Base sprite width (assuming square)
+    
+    // CRITICAL FIX: For Safari mobile, use fixed scale based on fixed height
+    // For other browsers, use responsive scaling
+    let scale: number;
+    if (isSafariMobile) {
+      // Fixed scale for Safari mobile - character should be ~20% of fixed height (600px)
+      const targetHeight = this.SAFARI_FIXED_HEIGHT * 0.20; // 120px (20% of 600px)
+      scale = targetHeight / originalSpriteHeight; // 120 / 160 = 0.75
+    } else {
+      // Dynamic scaling for other browsers
+      const isMobilePlayer = width <= 768 || height <= 768;
+      let characterHeightRatio = isMobilePlayer ? 0.198 : 0.15; // 19.8% on mobile, 15% on desktop
+      if (isShortViewport) {
+        characterHeightRatio = isMobilePlayer ? 0.15 : 0.12; // Smaller on short viewports
+      }
+      const targetHeight = height * characterHeightRatio;
+      scale = targetHeight / originalSpriteHeight;
+    }
+    
     this.player = this.physics.add.sprite(width * 0.25, 0, 'character-pushing-01');
     this.player.setDepth(20);
-    this.player.setScale(scale);
+    
+    // CRITICAL FIX: Use setDisplaySize instead of setScale to prevent stretching
+    // This maintains aspect ratio and uses original sprite dimensions
+    const displayWidth = originalSpriteWidth * scale;
+    const displayHeight = originalSpriteHeight * scale;
+    this.player.setDisplaySize(displayWidth, displayHeight);
+    
     this.player.setVisible(true); // CRITICAL: Ensure character is visible
     this.player.setAlpha(1.0); // CRITICAL: Ensure character is fully opaque
     
@@ -780,12 +802,9 @@ export class GameScene extends Phaser.Scene {
     // Position sprite at ground level - CRITICAL FIX for Safari Mobile
     // With origin (0.5, 1), sprite.y is the bottom/feet position
     // Ground is at groundY (top of ground rectangle), so character feet should be AT groundY
-    // But we need to ensure the physics body bottom aligns with ground surface
     const playerX = width * 0.25; // 25% from left edge
     
     // CRITICAL: Position character so feet are ON the ground surface (at groundY)
-    // The ground's top surface is at groundY, so character feet should be at groundY
-    // Use groundY directly (not safeGroundY) to ensure character is on the ground
     this.player.setPosition(playerX, this.groundY);
     
     // Setup physics body BEFORE setting physics properties to ensure proper alignment
@@ -794,7 +813,7 @@ export class GameScene extends Phaser.Scene {
     
     // CRITICAL FIX for iPhone Pro Max: Ensure player is fully visible
     // Verify character fits in visible area and adjust if necessary
-    const playerHeight = this.player.displayHeight || targetHeight;
+    const playerHeight = this.player.displayHeight || displayHeight;
     const playerTopY = this.groundY - playerHeight; // Top of character sprite
     
     if (playerTopY < 0) {
@@ -830,8 +849,12 @@ export class GameScene extends Phaser.Scene {
       } else {
         // Option 2: Reduce character scale if ground adjustment isn't possible
         const maxPlayerHeight = height * 0.8; // Max 80% of screen height
-        const adjustedScale = (maxPlayerHeight / 160);
-        this.player.setScale(adjustedScale);
+        const originalSpriteHeight = 160;
+        const adjustedScale = maxPlayerHeight / originalSpriteHeight;
+        const originalSpriteWidth = 160;
+        const displayWidth = originalSpriteWidth * adjustedScale;
+        const displayHeight = originalSpriteHeight * adjustedScale;
+        this.player.setDisplaySize(displayWidth, displayHeight);
         console.warn('⚠️ Reduced character scale to fit screen:', adjustedScale);
       }
     }
@@ -853,6 +876,7 @@ export class GameScene extends Phaser.Scene {
     }
     
     // Physics properties - normal gravity on mobile to prevent floating feeling
+    const isMobilePlayer = width <= 768 || height <= 768;
     const mobileGravityReduction = isMobilePlayer ? 0.98 : 1.0; // Slight reduction on mobile (2% less)
     const playerBaseGravity = 2200;
     const playerScaledGravity = playerBaseGravity * (height / GameConfig.physics.baseGravityHeight) * mobileGravityReduction;
@@ -2270,7 +2294,7 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  endGame() {
+  public endGame() {
     if (this.isGameOver) return;
     
     this.isGameOver = true;
@@ -2316,7 +2340,7 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  update(time: number, delta: number) {
+  public update(time: number, delta: number) {
     if (this.isGameOver || !this.isGameStarted) {
       return;
     }
@@ -2494,22 +2518,26 @@ export class GameScene extends Phaser.Scene {
       }
       
       // CRITICAL: Always ensure pushing animation is playing when on ground
-      // Only switch if animation is NOT currently playing AND cooldown has expired
-      if (!isCurrentlyPlayingPushing && this.animationSwitchCooldown === 0) {
-        console.log('▶️ SWITCHING TO PUSHING ANIMATION:', {
-          targetAnim: pushingAnim,
-          currentAnimKey: currentAnim?.key || 'none',
-          wasOllie: currentAnim && (currentAnim.key === 'ollie' || currentAnim.key === 'sprint-ollie'),
-          cooldown: this.animationSwitchCooldown,
-          animExists: this.anims.exists(pushingAnim)
-        });
+      // CRITICAL FIX: Reduce cooldown and ensure animation plays immediately
+      if (!isCurrentlyPlayingPushing) {
+        // Only apply cooldown if we're switching from a different animation
+        const shouldApplyCooldown = currentAnim && currentAnim.key !== pushingAnim;
         
-        // Play the animation - restart from beginning when transitioning from ollie
-        const wasOllie = currentAnim && (currentAnim.key === 'ollie' || currentAnim.key === 'sprint-ollie');
-        this.player.play(pushingAnim, !wasOllie); // Restart if coming from ollie, otherwise ignoreIfPlaying
-        this.lastAnimationKey = pushingAnim;
-        this.animationSwitchCooldown = 10; // Cooldown to prevent rapid switching
-        this.lastOnGroundState = true;
+        if (!shouldApplyCooldown || this.animationSwitchCooldown === 0) {
+          console.log('▶️ SWITCHING TO PUSHING ANIMATION:', {
+            targetAnim: pushingAnim,
+            currentAnimKey: currentAnim?.key || 'none',
+            wasOllie: currentAnim && (currentAnim.key === 'ollie' || currentAnim.key === 'sprint-ollie'),
+            cooldown: this.animationSwitchCooldown,
+            animExists: this.anims.exists(pushingAnim)
+          });
+          
+          // Play the animation - restart from beginning when transitioning from ollie
+          const wasOllie = currentAnim && (currentAnim.key === 'ollie' || currentAnim.key === 'sprint-ollie');
+          this.player.play(pushingAnim, !wasOllie); // Restart if coming from ollie, otherwise ignoreIfPlaying
+          this.lastAnimationKey = pushingAnim;
+          this.animationSwitchCooldown = shouldApplyCooldown ? 5 : 0; // Reduced cooldown (5 frames instead of 10)
+          this.lastOnGroundState = true;
         
         // Verify animation started
         const verifyAnim = this.player.anims.currentAnim;
@@ -2549,6 +2577,7 @@ export class GameScene extends Phaser.Scene {
             console.warn('⚠️ Failed to update skateboard sound rate:', error);
           }
         }
+        }
       }
     } else {
       // Switch to ollie animation when in air
@@ -2569,34 +2598,39 @@ export class GameScene extends Phaser.Scene {
       }
       
       // CRITICAL: Always ensure ollie animation is playing when in air
-      // Only switch if animation is NOT currently playing AND cooldown has expired
-      if (!isCurrentlyPlayingOllie && this.animationSwitchCooldown === 0) {
-        console.log('▶️ SWITCHING TO OLLIE ANIMATION:', {
-          targetAnim: ollieAnim,
-          currentAnimKey: currentAnim?.key || 'none',
-          cooldown: this.animationSwitchCooldown,
-          animExists: this.anims.exists(ollieAnim)
-        });
+      // CRITICAL FIX: Reduce cooldown and ensure animation plays immediately
+      if (!isCurrentlyPlayingOllie) {
+        // Only apply cooldown if we're switching from a different animation
+        const shouldApplyCooldown = currentAnim && currentAnim.key !== ollieAnim;
         
-        // Always restart ollie from beginning when jumping
-        this.player.play(ollieAnim, false);
-        this.lastAnimationKey = ollieAnim;
-        this.animationSwitchCooldown = 10; // Cooldown to prevent rapid switching
-        this.lastOnGroundState = false;
-        
-        // Verify animation started
-        const verifyAnim = this.player.anims.currentAnim;
-        console.log('✅ OLLIE ANIMATION STARTED:', {
-          playing: verifyAnim?.key || 'none',
-          isPlaying: verifyAnim !== null
-        });
-        
-        // Stop skateboard sound when jumping
-        if (this.skateboardSound && this.skateboardSound.isPlaying) {
-          try {
-            this.skateboardSound.stop();
-          } catch (error) {
-            console.warn('⚠️ Failed to stop skateboard sound:', error);
+        if (!shouldApplyCooldown || this.animationSwitchCooldown === 0) {
+          console.log('▶️ SWITCHING TO OLLIE ANIMATION:', {
+            targetAnim: ollieAnim,
+            currentAnimKey: currentAnim?.key || 'none',
+            cooldown: this.animationSwitchCooldown,
+            animExists: this.anims.exists(ollieAnim)
+          });
+          
+          // Always restart ollie from beginning when jumping
+          this.player.play(ollieAnim, false);
+          this.lastAnimationKey = ollieAnim;
+          this.animationSwitchCooldown = shouldApplyCooldown ? 5 : 0; // Reduced cooldown (5 frames instead of 10)
+          this.lastOnGroundState = false;
+          
+          // Verify animation started
+          const verifyAnim = this.player.anims.currentAnim;
+          console.log('✅ OLLIE ANIMATION STARTED:', {
+            playing: verifyAnim?.key || 'none',
+            isPlaying: verifyAnim !== null
+          });
+          
+          // Stop skateboard sound when jumping
+          if (this.skateboardSound && this.skateboardSound.isPlaying) {
+            try {
+              this.skateboardSound.stop();
+            } catch (error) {
+              console.warn('⚠️ Failed to stop skateboard sound:', error);
+            }
           }
         }
       }
@@ -2861,7 +2895,7 @@ export class GameScene extends Phaser.Scene {
     this.updateGameData();
   }
 
-  startGame() {
+  public startGame(): void {
     console.log('🎮 startGame() called');
     
     // CRITICAL: Prevent double call to startGame() - if game is already started, don't reset
@@ -3120,7 +3154,7 @@ export class GameScene extends Phaser.Scene {
     this.updateGameData();
   }
 
-  resetGame() {
+  public resetGame() {
     this.isGameStarted = false;
     this.isGameOver = false;
     
@@ -3186,7 +3220,7 @@ export class GameScene extends Phaser.Scene {
     this.updateGameData();
   }
 
-  createCollisionEffect(x: number, y: number) {
+  private createCollisionEffect(x: number, y: number) {
     for (let i = 0; i < 15; i++) {
       const particle = this.add.circle(x, y, Phaser.Math.Between(3, 6), Phaser.Math.RND.pick(explosionColors));
       const angle = Phaser.Math.Between(0, 360);
@@ -3207,7 +3241,7 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  createCollectEffect(x: number, y: number, color: number) {
+  private createCollectEffect(x: number, y: number, color: number) {
     for (let i = 0; i < 8; i++) {
       const particle = this.add.circle(x, y, Phaser.Math.Between(2, 5), color);
       const angle = Phaser.Math.Between(0, 360);
@@ -3241,7 +3275,7 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  createSpecialCollectEffect(x: number, y: number) {
+  private createSpecialCollectEffect(x: number, y: number) {
     for (let i = 0; i < 25; i++) {
       const isRect = Math.random() > 0.5;
       const color = Phaser.Math.RND.pick(confettiColors);
@@ -3773,8 +3807,14 @@ export class GameScene extends Phaser.Scene {
       }
       
       const targetHeight = height * characterHeightRatio;
-      const playerScale = targetHeight / 160; // 160 is the raw image height
-      this.player.setScale(playerScale);
+      const originalSpriteHeight = 160; // Base sprite height
+      const originalSpriteWidth = 160; // Base sprite width
+      const playerScale = targetHeight / originalSpriteHeight;
+      
+      // CRITICAL FIX: Use setDisplaySize instead of setScale to prevent stretching
+      const displayWidth = originalSpriteWidth * playerScale;
+      const displayHeight = originalSpriteHeight * playerScale;
+      this.player.setDisplaySize(displayWidth, displayHeight);
       
       // Recalculate player position - with origin (0.5, 1), sprite.y is the bottom
       // Position at groundY to ensure feet align with ground surface
@@ -3818,8 +3858,12 @@ export class GameScene extends Phaser.Scene {
         } else {
           // Reduce character scale if needed
           const maxPlayerHeight = height * 0.8;
-          const adjustedScale = (maxPlayerHeight / 160);
-          this.player.setScale(adjustedScale);
+          const originalSpriteHeight = 160;
+          const originalSpriteWidth = 160;
+          const adjustedScale = maxPlayerHeight / originalSpriteHeight;
+          const displayWidth = originalSpriteWidth * adjustedScale;
+          const displayHeight = originalSpriteHeight * adjustedScale;
+          this.player.setDisplaySize(displayWidth, displayHeight);
           // Reposition at adjusted scale
           this.player.setPosition(playerX, this.groundY);
         }
