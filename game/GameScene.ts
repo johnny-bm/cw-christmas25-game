@@ -716,10 +716,10 @@ export class GameScene extends Phaser.Scene {
       // Safari mobile: simple fixed values
       const PLAYER_SIZE = 64; // Fixed 64x64 size
       const PLAYER_START_X = 100; // Left side of screen, not center
-      // FIXED: Position player ON the ground surface, not below it
-      // With center origin (0.5, 0.5), player.y should be groundY - (PLAYER_SIZE/2) - 2
-      // The -2 ensures player bottom is just above ground surface to ensure collision
-      const PLAYER_Y = this.groundY - (PLAYER_SIZE / 2) - 2; // 321.6 - 32 - 2 = 287.6
+      // FIXED: Position player ABOVE the ground surface
+      // With center origin (0.5, 0.5), player.y should be groundY - (PLAYER_SIZE/2) - 5
+      // The -5 ensures player bottom is above ground surface (ground starts at groundY)
+      const PLAYER_Y = this.groundY - (PLAYER_SIZE / 2) - 5; // 320 - 32 - 5 = 283
       
       this.player = this.physics.add.sprite(PLAYER_START_X, PLAYER_Y, 'character-pushing-01');
       this.player.setDisplaySize(PLAYER_SIZE, PLAYER_SIZE);
@@ -731,14 +731,12 @@ export class GameScene extends Phaser.Scene {
       this.player.body.setCollideWorldBounds(true);
       this.player.body.setBounce(0.2);
       
-      // Center the physics body on the sprite (which has center origin)
+      // For center-origin sprites, setSize automatically centers the body
+      // DO NOT use setOffset - it breaks collision detection for center-origin sprites
       const bodyWidth = PLAYER_SIZE * 0.6;
       const bodyHeight = PLAYER_SIZE * 0.8;
       this.player.body.setSize(bodyWidth, bodyHeight);
-      this.player.body.setOffset(
-        (PLAYER_SIZE - bodyWidth) / 2,
-        (PLAYER_SIZE - bodyHeight) / 2
-      );
+      // No offset needed - Phaser centers it automatically for center-origin sprites
       
       // CRITICAL: Verify gravity is working
       console.log('🔧 Safari Mobile Physics Setup:', {
