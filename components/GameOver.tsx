@@ -299,7 +299,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
             )}
           </div>
           <p className="text-gray-600 italic mt-2 sm:mt-2.5 md:mt-3 text-xs sm:text-sm md:text-base">
-            But hey, the holidays are here anyway
+            But hey, the holidays still showed up for you!
           </p>
         </div>
 
@@ -324,7 +324,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                 className="group/btn relative px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2.5 bg-black text-white text-[9px] sm:text-[10px] md:text-xs overflow-hidden transition-all hover:scale-105 active:scale-95 whitespace-nowrap rounded-lg font-medium min-h-[2.25rem] sm:min-h-[2.5rem] flex items-center justify-center mt-auto"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-red-500 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
-                <span className="relative z-10 tracking-wide">ONE MORE LAP</span>
+                <span className="relative z-10 tracking-wide">Roll One More Time</span>
               </button>
             </div>
           </div>
@@ -339,12 +339,12 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
               {isTopScore && (
                 <div className="flex items-center gap-1 sm:gap-1.5 mb-2 sm:mb-2.5">
                   <Trophy className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 text-yellow-600 flex-shrink-0" />
-                  <span className="text-yellow-600 text-[8px] sm:text-[9px] md:text-[10px] font-medium leading-tight">TOP 10 ESCAPE!</span>
+                  <span className="text-yellow-600 text-[8px] sm:text-[9px] md:text-[10px] font-medium leading-tight">Leaderboard</span>
                 </div>
               )}
               {!isTopScore && (
                 <div className="mb-2 sm:mb-2.5">
-                  <span className="text-gray-700 text-[8px] sm:text-[9px] md:text-[10px] font-medium">SAVE YOUR ESCAPE</span>
+                  <span className="text-gray-700 text-[8px] sm:text-[9px] md:text-[10px] font-medium">SAVE YOUR SCORE</span>
                 </div>
               )}
               <form onSubmit={handleSaveScore} className="space-y-1.5 sm:space-y-2 flex-1 flex flex-col">

@@ -103,10 +103,10 @@ export const GameConfig = {
   speed: {
     initial: 300,               // Starting game speed
     max: 1000,                   // Maximum game speed
-    acceleration: 1.2,         // Speed increase per millisecond (when scaled) - increased for faster ramp
-    distanceSpeedBonus: 12,      // Speed bonus per 10 meters traveled - increased for faster progression
-    distanceSpeedInterval: 10,  // Meters needed for speed bonus - reduced for more frequent boosts
-    distanceSpeedCap: 200,      // Maximum speed bonus from distance - increased cap
+    acceleration: 2.5,         // Speed increase per millisecond (when scaled) - significantly increased for much faster ramp
+    distanceSpeedBonus: 18,      // Speed bonus per 10 meters traveled - increased for faster progression
+    distanceSpeedInterval: 8,  // Meters needed for speed bonus - reduced for more frequent boosts
+    distanceSpeedCap: 250,      // Maximum speed bonus from distance - increased cap
     mobileMultiplier: 1.2,     // Speed multiplier on mobile devices (1.2 = 20% faster, reduced from 1.5 for better mobile experience)
     mobileHorizontalMultiplier: 1.0, // Speed multiplier on mobile horizontal (1.0 = same as desktop, slower than portrait)
   },

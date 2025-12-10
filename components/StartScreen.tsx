@@ -237,7 +237,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
             ESCAPE THE DEADLINE
           </h1>
           <p className="text-[10px] sm:text-xs md:text-sm text-gray-600">
-            Outrun the year. Enter the holidays.
+            Skate fast, dodge sabotage, and collect whatever the Grinch didn’t manage to destroy. Outrun the final deadline of the year!
           </p>
         </div>
 
@@ -255,7 +255,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
                 : 'bg-gray-400 text-gray-200 cursor-not-allowed'
             }`}
           >
-            {gameReady ? 'LET\'S RUN' : 'LOADING...'}
+            {gameReady ? 'LET\'S ROLL' : 'LOADING...'}
           </button>
           
           <p className="text-[8px] sm:text-[10px] md:text-xs text-gray-500">
@@ -278,7 +278,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
               ESCAPE THE DEADLINE
             </h1>
             <p className="text-xs text-gray-600">
-              Outrun the year. Enter the holidays.
+              Skate fast, dodge sabotage, and collect whatever the Grinch didn’t manage to destroy. Outrun the final deadline of the year!
             </p>
           </div>
 
@@ -296,7 +296,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
                   : 'bg-gray-400 text-gray-200 cursor-not-allowed'
               }`}
             >
-              {gameReady ? 'LET\'S RUN' : 'LOADING...'}
+              {gameReady ? 'LET\'S ROLL' : 'LOADING...'}
             </button>
             
             <p className="text-[10px] text-gray-500">
