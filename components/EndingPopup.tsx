@@ -34,9 +34,11 @@ export function EndingPopup({
   // Countdown timer to January 5th, 2025
   useEffect(() => {
     const updateTimer = () => {
-      const deadline = new Date('2025-01-05T23:59:59').getTime();
-      const now = new Date().getTime();
-      const diff = deadline - now;
+      // Create deadline date explicitly: January 5, 2025 at 23:59:59 in local timezone
+      // Month is 0-indexed (0 = January)
+      const deadline = new Date(2025, 0, 5, 23, 59, 59, 999);
+      const now = new Date();
+      const diff = deadline.getTime() - now.getTime();
 
       if (diff <= 0) {
         setTimeRemaining('Deadline passed');
@@ -48,9 +50,16 @@ export function EndingPopup({
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-      setTimeRemaining(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+      // Format with proper padding for single digits
+      const formattedDays = days.toString().padStart(1, '0');
+      const formattedHours = hours.toString().padStart(2, '0');
+      const formattedMinutes = minutes.toString().padStart(2, '0');
+      const formattedSeconds = seconds.toString().padStart(2, '0');
+
+      setTimeRemaining(`${formattedDays}d ${formattedHours}h ${formattedMinutes}m ${formattedSeconds}s`);
     };
 
+    // Run immediately and then every second
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);

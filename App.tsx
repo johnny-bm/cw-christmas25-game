@@ -180,8 +180,20 @@ export default function App() {
       // Don't redirect if in debug mode or if already on landing
       // Note: location.pathname is relative to basename when basename is set
       const currentPath = location.pathname;
+      console.log('📍 Initial load - current pathname:', currentPath, 'full URL:', window.location.href);
       if ((currentPath === '/' || (currentPath !== '/landing' && currentPath !== '/game' && currentPath !== '/ending')) && !isDebugMode) {
+        console.log('🔄 Redirecting to /landing');
         navigate('/landing', { replace: true });
+        
+        // Workaround: Ensure URL updates if React Router doesn't handle it
+        if (window.location.pathname.startsWith('/game/Christmas25') && window.location.pathname !== '/game/Christmas25/landing') {
+          setTimeout(() => {
+            if (window.location.pathname !== '/game/Christmas25/landing') {
+              window.history.replaceState({}, '', '/game/Christmas25/landing');
+              console.log('🔧 Manually updated URL to:', '/game/Christmas25/landing');
+            }
+          }, 100);
+        }
       }
     }
   }, [hasInitialized, location.pathname, location.search, navigate]);
@@ -229,6 +241,9 @@ export default function App() {
     const path = location.pathname;
     const urlParams = new URLSearchParams(location.search);
     const isDebugMode = urlParams.get('debug') === 'popup';
+    
+    // Debug: Log route changes
+    console.log('🛣️ Route changed - pathname:', path, 'full URL:', window.location.href, 'gameState:', gameState);
     
     // In debug mode, set gameover state immediately
     if (isDebugMode && path === '/ending') {
@@ -353,7 +368,24 @@ export default function App() {
       messageTimer: 0,
       combo: 0
     });
+    console.log('🎮 Navigating to /game, current pathname:', location.pathname, 'full URL:', window.location.href);
+    
+    // Navigate using React Router
     navigate('/game', { replace: false });
+    
+    // Workaround: Ensure URL updates if React Router doesn't handle it
+    // Check if we're on the /game/Christmas25 path and update URL manually if needed
+    if (window.location.pathname.startsWith('/game/Christmas25')) {
+      const newPath = '/game/Christmas25/game';
+      if (window.location.pathname !== newPath) {
+        setTimeout(() => {
+          if (window.location.pathname !== newPath) {
+            window.history.pushState({}, '', newPath);
+            console.log('🔧 Manually updated URL to:', newPath);
+          }
+        }, 100);
+      }
+    }
   };
 
   const handleGameOver = useCallback((finalDist: number, maxCombo: number, grinchScore?: number, elfScore?: number) => {
@@ -375,8 +407,24 @@ export default function App() {
       (window as any).__finalElfScore = elfScore;
     }
     
+    console.log('🏁 Navigating to /ending, current pathname:', location.pathname, 'full URL:', window.location.href);
+    
+    // Navigate using React Router
     navigate('/ending', { replace: false });
-  }, [bestDistance, navigate]);
+    
+    // Workaround: Ensure URL updates if React Router doesn't handle it
+    if (window.location.pathname.startsWith('/game/Christmas25')) {
+      const newPath = '/game/Christmas25/ending';
+      if (window.location.pathname !== newPath) {
+        setTimeout(() => {
+          if (window.location.pathname !== newPath) {
+            window.history.pushState({}, '', newPath);
+            console.log('🔧 Manually updated URL to:', newPath);
+          }
+        }, 100);
+      }
+    }
+  }, [bestDistance, navigate, location.pathname]);
 
   const handleUpdateGameData = useCallback((data: GameData) => {
     setGameData(data);
@@ -404,6 +452,17 @@ export default function App() {
     setTimeout(() => {
       setGameState('playing');
       navigate('/game', { replace: false });
+      
+      // Workaround: Ensure URL updates if React Router doesn't handle it
+      if (window.location.pathname.startsWith('/game/Christmas25')) {
+        const newPath = '/game/Christmas25/game';
+        setTimeout(() => {
+          if (window.location.pathname !== newPath) {
+            window.history.pushState({}, '', newPath);
+            console.log('🔧 Manually updated URL to:', newPath);
+          }
+        }, 100);
+      }
     }, 150);
     
     setLeaderboardRefresh(prev => prev + 1);
