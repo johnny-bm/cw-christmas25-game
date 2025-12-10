@@ -1360,8 +1360,8 @@ export class GameScene extends Phaser.Scene {
     
     if (isSafariMobile) {
       // Safari mobile: much smaller obstacles for 700px height
-      baseObstacleSize = height * 0.05; // 5% of height = 35px
-      maxObstacleSize = 50; // Cap at 50px for Safari
+      baseObstacleSize = height * 0.035; // 3.5% of height = 24.5px
+      maxObstacleSize = 35; // Cap at 35px for Safari (reduced from 50px)
     } else if (isMobile) {
       baseObstacleSize = height * 0.0735; // 7.35% on mobile (5% bigger), 6% on desktop
       maxObstacleSize = 105; // Proportional cap on mobile (105px, 5% bigger) vs desktop (80px)
@@ -1504,8 +1504,8 @@ export class GameScene extends Phaser.Scene {
     
     if (isSafariMobile) {
       // Safari mobile: smaller floating obstacles
-      baseObstacleSize = height * 0.06; // 6% of height = 42px
-      maxObstacleSize = 55; // Cap at 55px for Safari
+      baseObstacleSize = height * 0.04; // 4% of height = 28px
+      maxObstacleSize = 40; // Cap at 40px for Safari (reduced from 55px)
     } else if (isMobile) {
       baseObstacleSize = height * 0.0847; // 8.47% on mobile (10% bigger than before), 6.6% on desktop (10% bigger)
       maxObstacleSize = 121; // Proportional cap on mobile (121px, 10% bigger) vs desktop (88px, 10% bigger)
@@ -1656,8 +1656,8 @@ export class GameScene extends Phaser.Scene {
     
     if (isSafariMobile) {
       // Safari mobile: smaller projectile obstacles
-      baseObstacleSize = height * 0.055; // 5.5% of height = 38.5px
-      maxObstacleSize = 50; // Cap at 50px for Safari
+      baseObstacleSize = height * 0.035; // 3.5% of height = 24.5px
+      maxObstacleSize = 35; // Cap at 35px for Safari (reduced from 50px)
     } else if (isMobile) {
       baseObstacleSize = height * 0.077; // 7.7% on mobile (10% bigger), 6% on desktop
       maxObstacleSize = 110; // Proportional cap on mobile (110px, 10% bigger) vs desktop (80px)
@@ -1733,8 +1733,8 @@ export class GameScene extends Phaser.Scene {
     
     if (isSafariMobile) {
       // Safari mobile: smaller collectibles
-      baseCollectibleSize = height * 0.04; // 4% of height = 28px
-      maxCollectibleSize = 30; // Cap at 30px for Safari
+      baseCollectibleSize = height * 0.025; // 2.5% of height = 17.5px
+      maxCollectibleSize = 20; // Cap at 20px for Safari (reduced from 30px)
     } else if (isMobile) {
       baseCollectibleSize = height * 0.0088; // 0.88% on mobile (10% bigger), 2.5% on desktop (larger)
       maxCollectibleSize = 27; // Mobile: 27px (10% bigger), Desktop: 60px (larger)
@@ -3836,14 +3836,28 @@ export class GameScene extends Phaser.Scene {
   private createParallaxBackground() {
     const { width, height } = this.scale;
     
+    // Detect mobile horizontal orientation
+    const isMobile = width <= 768 || height <= 768;
+    const isMobileHorizontal = isMobile && width > height;
+    
     // Track recently used building images to avoid repetition
     const recentlyUsedBuildings: string[] = [];
     const maxRecentHistory = 2; // Avoid repeating the last 2 buildings
     
     // Scale building sizes relative to screen
+    // On mobile horizontal, use larger percentages since height is small
     for (let i = 0; i < 8; i++) {
       const buildingWidth = Phaser.Math.Between(width * 0.031, width * 0.063); // ~3.1% to 6.3% of screen width
-      const buildingHeight = Phaser.Math.Between(height * 0.093, height * 0.185); // ~9.3% to 18.5% of screen height
+      // Mobile horizontal: use larger height percentage since screen height is small
+      const heightMultiplier = isMobileHorizontal ? 0.25 : 0.093; // 25% on mobile horizontal vs 9.3% normal
+      const heightMaxMultiplier = isMobileHorizontal ? 0.40 : 0.185; // 40% on mobile horizontal vs 18.5% normal
+      let buildingHeight = Phaser.Math.Between(height * heightMultiplier, height * heightMaxMultiplier);
+      
+      // Ensure minimum building height for visibility (especially on mobile horizontal)
+      const minBuildingHeight = isMobileHorizontal ? 60 : 40; // Minimum 60px on mobile horizontal, 40px otherwise
+      if (buildingHeight < minBuildingHeight) {
+        buildingHeight = minBuildingHeight;
+      }
       
       // Pick a random parallax image, avoiding recently used ones
       const availableImages = this.parallaxImageKeys.filter(key => !recentlyUsedBuildings.includes(key));

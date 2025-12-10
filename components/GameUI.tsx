@@ -142,50 +142,80 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
 
       {/* Character Scores - Below Distance Counter - Responsive - Bigger on mobile - Closer on mobile */}
       <div 
-        className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 sm:gap-4 md:gap-6"
+        className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         style={{
           top: isMobile 
             ? 'max(3.5rem, env(safe-area-inset-top, 0.75rem) + 3rem)'
             : 'max(5.5rem, env(safe-area-inset-top, 0.75rem) + 5rem)'
         }}
       >
-        {/* Grinch Score */}
-        <div id="grinch-score-display" className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
-          <img 
-            src={
-              grinchScore > elfScore 
-                ? "/Assets/Characters/Grinch-Happy.svg"
-                : grinchScore < elfScore
-                ? "/Assets/Characters/Grinch-Sad.svg"
-                : "/Assets/Characters/Grinch.svg"
-            }
-            alt="Grinch" 
-            className="w-8 h-8 max-md:landscape:w-7 max-md:landscape:h-7 sm:w-10 sm:h-10 md:w-10 md:h-10"
-            style={{ objectFit: 'contain' }}
-          />
-          <span className="text-xl max-md:landscape:text-lg sm:text-2xl md:text-3xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-            {grinchScore}
-          </span>
-        </div>
+        {/* Elf vs Grinch Scores - Side by side */}
+        <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
+          {/* Grinch Score */}
+          <div id="grinch-score-display" className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+            <img 
+              src={
+                grinchScore > elfScore 
+                  ? "/Assets/Characters/Grinch-Happy.svg"
+                  : grinchScore < elfScore
+                  ? "/Assets/Characters/Grinch-Sad.svg"
+                  : "/Assets/Characters/Grinch.svg"
+              }
+              alt="Grinch" 
+              className="w-8 h-8 max-md:landscape:w-7 max-md:landscape:h-7 sm:w-10 sm:h-10 md:w-10 md:h-10"
+              style={{ objectFit: 'contain' }}
+            />
+            <span className="text-xl max-md:landscape:text-lg sm:text-2xl md:text-3xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+              {grinchScore}
+            </span>
+          </div>
 
-        {/* Elf Score */}
-        <div id="elf-score-display" className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
-          <img 
-            src={
-              elfScore > grinchScore 
-                ? "/Assets/Characters/Elf-Happy-Color.svg"
-                : elfScore < grinchScore
-                ? "/Assets/Characters/Elf-Sad-Grey.svg"
-                : "/Assets/Characters/Elf.svg"
-            }
-            alt="Elf" 
-            className="w-8 h-8 max-md:landscape:w-7 max-md:landscape:h-7 sm:w-10 sm:h-10 md:w-10 md:h-10"
-            style={{ objectFit: 'contain' }}
-          />
-          <span className="text-xl max-md:landscape:text-lg sm:text-2xl md:text-3xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-            {elfScore}
-          </span>
+          {/* Elf Score */}
+          <div id="elf-score-display" className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+            <img 
+              src={
+                elfScore > grinchScore 
+                  ? "/Assets/Characters/Elf-Happy-Color.svg"
+                  : elfScore < grinchScore
+                  ? "/Assets/Characters/Elf-Sad-Grey.svg"
+                  : "/Assets/Characters/Elf.svg"
+              }
+              alt="Elf" 
+              className="w-8 h-8 max-md:landscape:w-7 max-md:landscape:h-7 sm:w-10 sm:h-10 md:w-10 md:h-10"
+              style={{ objectFit: 'contain' }}
+            />
+            <span className="text-xl max-md:landscape:text-lg sm:text-2xl md:text-3xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+              {elfScore}
+            </span>
+          </div>
         </div>
+        
+        {/* Energy Counter - Below Elf vs Grinch on Safari mobile */}
+        {isSafariMobileDevice && (
+          <div className="bg-white rounded-lg p-2 min-w-[120px] flex flex-col justify-between">
+            <div className="flex items-center justify-between w-full mb-1">
+              <div className="flex items-center gap-0.5">
+                <img 
+                  src="/Assets/Energy.svg" 
+                  alt="Energy" 
+                  className="w-3 h-3"
+                />
+                <span className="text-[#312f31] text-[10px] font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  ENERGY
+                </span>
+              </div>
+              <span className="text-[#312f31] text-[10px] font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                {Math.round(energy)}%
+              </span>
+            </div>
+            <div className="relative h-2 w-full rounded-full border border-[#00a994]">
+              <div 
+                className="absolute h-full bg-[#00a994] rounded-full transition-all duration-200"
+                style={{ width: `${energy}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Top HUD - Figma Design - Safe area support */}
@@ -295,36 +325,36 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       ) : (
         /* Safari Mobile: Meters at bottom center in ground area */
         <>
-          {/* Mute Button - Top Right for Safari mobile */}
+          {/* Mute Button - Top Right for Safari mobile - Ensure it's on screen */}
           <div 
-            className="absolute top-0 right-0"
+            className="absolute top-0 right-0 z-30"
             style={{
-              paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
-              paddingRight: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
+              top: 'max(0.25rem, env(safe-area-inset-top, 0.25rem))',
+              right: 'max(0.25rem, env(safe-area-inset-right, 0.25rem))',
             }}
           >
             <button
               onClick={handleToggleMute}
-              className="pointer-events-auto bg-white rounded-lg w-14 h-14 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
+              className="pointer-events-auto bg-white rounded-lg w-12 h-12 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150 shadow-md"
               aria-label={isMuted ? 'Unmute' : 'Mute'}
             >
               {isMuted ? (
                 <img 
                   src="/Assets/Mute.svg" 
                   alt="Muted" 
-                  className="w-6 h-6"
+                  className="w-5 h-5"
                 />
               ) : (
                 <img 
                   src="/Assets/Unmute.svg" 
                   alt="Unmuted" 
-                  className="w-6 h-6"
+                  className="w-5 h-5"
                 />
               )}
             </button>
           </div>
 
-          {/* Energy and Combo Meters - Bottom Center in Ground Area for Safari mobile */}
+          {/* Combo Meters - Bottom Center in Ground Area for Safari mobile (Energy moved to top) */}
           <div 
             className="absolute left-1/2 -translate-x-1/2 flex flex-col gap-3"
             style={{
@@ -333,31 +363,6 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
               maxWidth: '380px'
             }}
           >
-            {/* Energy Bar - Bigger for Safari mobile */}
-            <div className="bg-white rounded-xl p-3 h-18 min-w-[200px] w-full flex flex-col justify-between">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-1.5">
-                  <img 
-                    src="/Assets/Energy.svg" 
-                    alt="Energy" 
-                    className="w-5 h-5"
-                  />
-                  <span className="text-[#312f31] text-sm font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                    ENERGY
-                  </span>
-                </div>
-                <span className="text-[#312f31] text-lg font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                  {Math.round(energy)}%
-                </span>
-              </div>
-              <div className="relative h-4 w-full rounded-full border-2 border-[#00a994]">
-                <div 
-                  className="absolute h-full bg-[#00a994] rounded-full transition-all duration-200"
-                  style={{ width: `${energy}%` }}
-                />
-              </div>
-            </div>
-
             {/* Combo Counter - Bigger for Safari mobile - Only show when combo >= 2 */}
             {combo >= 2 && (
               <div id="combo-display" className="bg-[#645290] rounded-xl p-3 h-18 min-w-[200px] w-full flex items-center justify-between">
