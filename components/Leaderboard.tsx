@@ -219,7 +219,7 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
   const hasMore = displayLimit < totalCount;
 
   return (
-    <div className={`${bgClass} rounded border ${borderClass} ${compact ? 'p-2 sm:p-3' : 'p-3 sm:p-4 md:p-5'} backdrop-blur-sm`}>
+    <div id="leaderboard-view" className={`${bgClass} rounded border ${borderClass} ${compact ? 'p-2 sm:p-3' : 'p-3 sm:p-4 md:p-5'} backdrop-blur-sm`}>
       {/* Table */}
       {/* RESPONSIVE: Use viewport-relative units (vh) instead of fixed pixels for better mobile support */}
       <div 

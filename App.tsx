@@ -158,19 +158,82 @@ export default function App() {
   const [hasInitialized, setHasInitialized] = useState(false);
 
   // On initial mount, redirect to landing if not already there
+  // BUT: Allow debug mode to bypass redirect
   useEffect(() => {
     if (!hasInitialized) {
       setHasInitialized(true);
-      if (location.pathname !== '/landing' && location.pathname !== '/') {
+      // Check for debug mode in URL params
+      const urlParams = new URLSearchParams(location.search);
+      const isDebugMode = urlParams.get('debug') === 'popup';
+      
+      // If debug mode on /ending, initialize values and set game state
+      if (isDebugMode && location.pathname === '/ending') {
+        const debugScore = parseInt(urlParams.get('score') || '0') || 1200;
+        setFinalDistance(debugScore);
+        setFinalMaxCombo(urlParams.get('top3') === 'true' ? 10 : 3);
+        (window as any).__finalGrinchScore = Math.floor(debugScore / 2);
+        (window as any).__finalElfScore = Math.floor(debugScore / 2);
+        setGameState('gameover');
+        return; // Don't redirect
+      }
+      
+      // Don't redirect if in debug mode or if already on landing
+      if (location.pathname !== '/landing' && location.pathname !== '/' && !isDebugMode) {
         navigate('/landing', { replace: true });
       }
     }
-  }, [hasInitialized, location.pathname, navigate]);
+  }, [hasInitialized, location.pathname, location.search, navigate]);
+
+  // Setup debug mode commands
+  useEffect(() => {
+    // Add debug commands to window object for console testing
+    (window as any).debugGame = {
+      showRegularPopup: () => {
+        // Navigate to ending with mock data
+        setFinalDistance(1200);
+        setFinalMaxCombo(3);
+        (window as any).__finalGrinchScore = 600;
+        (window as any).__finalElfScore = 600;
+        setGameState('gameover');
+        navigate('/ending?debug=popup&score=1200', { replace: false });
+      },
+      showTop3Popup: (position: number = 1) => {
+        const scores = [5000, 4500, 4000];
+        const score = scores[position - 1] || 4000;
+        setFinalDistance(score);
+        setFinalMaxCombo(10);
+        (window as any).__finalGrinchScore = Math.floor(score / 2);
+        (window as any).__finalElfScore = Math.floor(score / 2);
+        setGameState('gameover');
+        navigate(`/ending?debug=popup&top3=true&position=${position}&score=${score}`, { replace: false });
+      }
+    };
+    
+    console.log('🎮 Debug commands available:');
+    console.log('  debugGame.showRegularPopup() - Test regular score popup');
+    console.log('  debugGame.showTop3Popup(1) - Test 1st place popup');
+    console.log('  debugGame.showTop3Popup(2) - Test 2nd place popup');
+    console.log('  debugGame.showTop3Popup(3) - Test 3rd place popup');
+    console.log('');
+    console.log('🌐 Or use URL parameters:');
+    console.log('  /ending?debug=popup&score=1200');
+    console.log('  /ending?debug=popup&top3=true&position=1&score=5000');
+  }, [navigate]);
 
   // Sync route with game state on initial load or direct navigation
   // Only sync if gameState doesn't already match the route
+  // BUT: Allow debug mode to bypass state sync
   useEffect(() => {
     const path = location.pathname;
+    const urlParams = new URLSearchParams(location.search);
+    const isDebugMode = urlParams.get('debug') === 'popup';
+    
+    // In debug mode, set gameover state immediately
+    if (isDebugMode && path === '/ending') {
+      setGameState('gameover');
+      return;
+    }
+    
     if (path === '/landing' && gameState !== 'start') {
       setGameState('start');
     } else if (path === '/game' && gameState !== 'playing') {
@@ -178,7 +241,7 @@ export default function App() {
     } else if (path === '/ending' && gameState !== 'gameover') {
       setGameState('gameover');
     }
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     // Load best distance from local storage
@@ -350,8 +413,14 @@ export default function App() {
   // This ensures the container always fills the visible viewport
   const viewportHeight = '100dvh'; // Use CSS dvh directly - Safari handles this better
 
+  // Map gameState to scene name for analytics
+  const sceneName = gameState === 'start' ? 'main-menu' : gameState === 'playing' ? 'gameplay' : 'ending';
+  
   return (
     <div 
+      id="game-container"
+      data-game-state={gameState}
+      data-scene={sceneName}
       className="w-full overflow-hidden relative" 
       style={{ 
         margin: 0, 
@@ -466,7 +535,7 @@ export default function App() {
       )}
       
       <Routes>
-        {/* Root redirect to landing */}
+        {/* Root redirect to landing - but allow debug mode */}
         <Route path="/" element={<Navigate to="/landing" replace />} />
         
         {/* Landing route */}

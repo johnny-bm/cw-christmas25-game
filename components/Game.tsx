@@ -596,6 +596,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     <>
       <div 
         ref={containerRef} 
+        id="game-canvas"
         className="w-full h-full overflow-hidden" 
         style={{ 
           margin: 0, 

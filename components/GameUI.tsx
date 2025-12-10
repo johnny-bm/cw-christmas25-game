@@ -113,6 +113,9 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10 flex flex-col">
+      {/* Hidden meter counter for Google Analytics tracking */}
+      <span id="meter-counter" style={{ display: 'none' }}>{distance}</span>
+      
       {/* Distance Counter - Top Center, no box - Better mobile sizing - Safe area support */}
       <div 
         className="absolute left-1/2 -translate-x-1/2"
@@ -135,7 +138,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         }}
       >
         {/* Grinch Score */}
-        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+        <div id="grinch-score-display" className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
           <img 
             src={
               grinchScore > elfScore 
@@ -154,7 +157,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         </div>
 
         {/* Elf Score */}
-        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+        <div id="elf-score-display" className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
           <img 
             src={
               elfScore > grinchScore 
@@ -234,7 +237,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         {/* Combo Counter - Purple background - Only show when combo >= 2 */}
         {/* RESPONSIVE: Use min-width with responsive scaling instead of fixed pixels */}
         {combo >= 2 && (
-          <div className="bg-[#645290] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 min-w-[184px] sm:min-w-[210px] md:min-w-[236px] w-auto flex items-center justify-between">
+          <div id="combo-display" className="bg-[#645290] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 min-w-[184px] sm:min-w-[210px] md:min-w-[236px] w-auto flex items-center justify-between">
             <div className="flex items-center gap-0.5 sm:gap-1">
               <img 
                 src="/Assets/Combo.svg" 

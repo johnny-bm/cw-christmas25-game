@@ -18,6 +18,7 @@ export interface ScoreEntry {
   grinch_score?: number;
   elf_score?: number;
   email?: string;
+  prize_selection?: 'consultation' | 'discount';
   created_at: string;
 }
 
@@ -49,6 +50,7 @@ class ScoreService {
           grinch_score: data.grinch_score,
           elf_score: data.elf_score,
           email: data.email, // Note: email is not displayed in UI, only stored
+          prize_selection: data.prize_selection,
           created_at: data.created_at ?? new Date().toISOString(),
         };
       });
@@ -62,7 +64,7 @@ class ScoreService {
   }
 
   // Firebase version of saveScore
-  async saveScore(playerName: string, distance: number, maxCombo?: number, grinchScore?: number, elfScore?: number, email?: string): Promise<ScoreEntry> {
+  async saveScore(playerName: string, distance: number, maxCombo?: number, grinchScore?: number, elfScore?: number, email?: string, prizeSelection?: 'consultation' | 'discount'): Promise<ScoreEntry> {
     const newScore: ScoreEntry = {
       id: Date.now().toString(),
       player_name: playerName,
@@ -71,6 +73,7 @@ class ScoreService {
       grinch_score: grinchScore,
       elf_score: elfScore,
       email: email,
+      prize_selection: prizeSelection,
       created_at: new Date().toISOString(),
     };
 
@@ -89,13 +92,18 @@ class ScoreService {
         docData.email = email.trim();
       }
       
+      // Only include prize selection if provided
+      if (prizeSelection) {
+        docData.prize_selection = prizeSelection;
+      }
+      
       const docRef = await addDoc(this.scoresCollection, docData);
 
       return { ...newScore, id: docRef.id };
     } catch (error) {
       console.error("Error saving score to Firebase:", error);
       // fall back to local storage
-      return this.saveLocalScore(playerName, distance, maxCombo, grinchScore, elfScore, email);
+      return this.saveLocalScore(playerName, distance, maxCombo, grinchScore, elfScore, email, prizeSelection);
     }
   }
 
@@ -108,6 +116,34 @@ class ScoreService {
     }
     
     return distance > topScores[topScores.length - 1].distance;
+  }
+
+  // Check if a score is in top 3 and get position
+  async getTop3Position(distance: number): Promise<{ isTop3: boolean; position: number | null }> {
+    const topScores = await this.getTopScores(3);
+    
+    if (topScores.length === 0) {
+      return { isTop3: true, position: 1 };
+    }
+    
+    // Check if score would be in top 3
+    for (let i = 0; i < topScores.length; i++) {
+      if (distance > topScores[i].distance) {
+        return { isTop3: true, position: i + 1 };
+      }
+    }
+    
+    // Check if score equals the 3rd place (or if there are fewer than 3 scores)
+    if (topScores.length < 3) {
+      return { isTop3: true, position: topScores.length + 1 };
+    }
+    
+    // If score equals 3rd place, it's still top 3
+    if (distance === topScores[2].distance) {
+      return { isTop3: true, position: 3 };
+    }
+    
+    return { isTop3: false, position: null };
   }
 
   // Get total count of scores
@@ -154,7 +190,7 @@ class ScoreService {
   }
 
   // Helper: Save score to localStorage
-  private saveLocalScore(playerName: string, distance: number, maxCombo?: number, grinchScore?: number, elfScore?: number, email?: string): ScoreEntry {
+  private saveLocalScore(playerName: string, distance: number, maxCombo?: number, grinchScore?: number, elfScore?: number, email?: string, prizeSelection?: 'consultation' | 'discount'): ScoreEntry {
     const newScore: ScoreEntry = {
       id: Date.now().toString(),
       player_name: playerName,
@@ -163,6 +199,7 @@ class ScoreService {
       grinch_score: grinchScore,
       elf_score: elfScore,
       email: email,
+      prize_selection: prizeSelection,
       created_at: new Date().toISOString()
     };
 

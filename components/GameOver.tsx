@@ -1,9 +1,11 @@
 import { Trophy, Navigation } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { scoreService } from '../lib/scoreService';
 import { Leaderboard } from './Leaderboard';
 import { formatNumber } from '../lib/formatNumber';
 import { getElementColor } from '../game/colorConfig';
+import { EndingPopup } from './EndingPopup';
 
 interface GameOverProps {
   distance: number;
@@ -15,6 +17,7 @@ interface GameOverProps {
 }
 
 export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, elfScore = 0, onRestart }: GameOverProps) {
+  const location = useLocation();
   const isNewBest = distance === bestDistance && distance > 0;
   const [showContent, setShowContent] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -25,14 +28,53 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
   const [scoreSaved, setScoreSaved] = useState(false);
   const [savedScoreId, setSavedScoreId] = useState<string | null>(null);
   const [isTopScore, setIsTopScore] = useState(false);
+  const [isTop3, setIsTop3] = useState(false);
+  const [top3Position, setTop3Position] = useState<number | null>(null);
+  const [showPopup, setShowPopup] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugDistance, setDebugDistance] = useState<number | null>(null);
+  const [debugMaxCombo, setDebugMaxCombo] = useState<number | null>(null);
+  const [debugGrinchScore, setDebugGrinchScore] = useState<number | null>(null);
+  const [debugElfScore, setDebugElfScore] = useState<number | null>(null);
   const [isMuted, setIsMuted] = useState(() => {
     // Check localStorage for saved mute state
     return localStorage.getItem('escapeTheDeadline_muted') === 'true';
   });
 
   useEffect(() => {
-    // Check if this is a top score
+    // Check for debug mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const debugParam = urlParams.get('debug');
+    
+    if (debugParam === 'popup') {
+      const debugScore = parseInt(urlParams.get('score') || '0') || distance;
+      const debugTop3 = urlParams.get('top3') === 'true';
+      const debugPosition = parseInt(urlParams.get('position') || '0') || null;
+      
+      // Set debug values
+      setDebugMode(true);
+      setDebugDistance(debugScore);
+      setDebugMaxCombo(debugTop3 ? 10 : 5);
+      setDebugGrinchScore(debugTop3 ? Math.floor(debugScore / 2) : Math.floor(debugScore / 2));
+      setDebugElfScore(debugTop3 ? Math.floor(debugScore / 2) : Math.floor(debugScore / 2));
+      setIsTop3(debugTop3);
+      setTop3Position(debugTop3 && debugPosition ? debugPosition : null);
+      
+      // Show popup immediately in debug mode
+      setTimeout(() => {
+        setShowPopup(true);
+      }, 100);
+      return;
+    }
+    
+    // Normal mode - check if this is a top score and top 3
     checkTopScore();
+    checkTop3();
+    
+    // Show popup after a short delay
+    const popupTimer = setTimeout(() => {
+      setShowPopup(true);
+    }, 500);
     
     // Stagger the animations
     const timer1 = setTimeout(() => setShowContent(true), 300);
@@ -43,8 +85,9 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
+      clearTimeout(popupTimer);
     };
-  }, [distance]); // Add distance as dependency
+  }, [distance, location.search]); // Add location.search to detect URL param changes
 
   useEffect(() => {
     // Sync with Phaser game mute state
@@ -79,6 +122,15 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
     setIsTopScore(isTop && distance > 0);
   };
 
+  const checkTop3 = async () => {
+    if (distance <= 0) return;
+    console.log('🏆 Checking if score is top 3:', distance);
+    const { isTop3: top3, position } = await scoreService.getTop3Position(distance);
+    console.log('🏆 Is top 3?', top3, 'Position:', position);
+    setIsTop3(top3);
+    setTop3Position(position);
+  };
+
   const handleSaveScore = async (e: React.FormEvent) => {
     e.preventDefault();
     // Validation: If email is provided, all 3 initials are required
@@ -93,7 +145,8 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
         maxCombo, 
         grinchScore, 
         elfScore,
-        email.trim() || undefined // Only pass email if it's not empty
+        email.trim() || undefined, // Only pass email if it's not empty
+        undefined // Prize selection handled by popup
       );
       setSavedScoreId(savedScore.id);
       setScoreSaved(true);
@@ -102,6 +155,30 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
       // Show error but don't block UI
       setScoreSaved(true); // Still mark as "saved" to prevent retry loops
       alert('Failed to save score. It has been saved locally instead.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePopupSave = async (playerName: string, email: string, prizeSelection?: 'consultation' | 'discount') => {
+    setIsSaving(true);
+    try {
+      const savedScore = await scoreService.saveScore(
+        playerName,
+        distance,
+        maxCombo,
+        grinchScore,
+        elfScore,
+        email || undefined,
+        prizeSelection
+      );
+      setSavedScoreId(savedScore.id);
+      setScoreSaved(true);
+      setShowPopup(false);
+    } catch (error) {
+      console.error('Failed to save score:', error);
+      alert('Failed to save score. Please try again.');
+      throw error;
     } finally {
       setIsSaving(false);
     }
@@ -118,6 +195,19 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
   
   return (
     <div className="w-full h-full overflow-y-auto animate-in fade-in duration-500 relative" style={{ backgroundColor: gameBackgroundColor }}>
+      {/* Enhanced Ending Popup */}
+      {showPopup && !scoreSaved && (
+        <EndingPopup
+          distance={debugMode && debugDistance !== null ? debugDistance : distance}
+          maxCombo={debugMode && debugMaxCombo !== null ? debugMaxCombo : maxCombo}
+          grinchScore={debugMode && debugGrinchScore !== null ? debugGrinchScore : grinchScore}
+          elfScore={debugMode && debugElfScore !== null ? debugElfScore : elfScore}
+          isTop3={isTop3}
+          position={top3Position}
+          onSave={handlePopupSave}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
       {/* CW Logo - Top Center */}
       <div
         className="absolute z-20 left-1/2 transform -translate-x-1/2"
@@ -197,6 +287,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
               </div>
               {/* RESPONSIVE: Use rem-based min-height for better scaling across devices */}
               <button
+                id="replay-btn"
                 onClick={onRestart}
                 className="group/btn relative px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2.5 bg-black text-white text-[9px] sm:text-[10px] md:text-xs overflow-hidden transition-all hover:scale-105 active:scale-95 whitespace-nowrap rounded-lg font-medium min-h-[2.25rem] sm:min-h-[2.5rem] flex items-center justify-center mt-auto"
               >
@@ -228,6 +319,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                 <div className="flex gap-1 sm:gap-1.5">
                   {/* RESPONSIVE: Use rem-based min-height for better scaling across devices */}
                   <input
+                    id="player-initials"
                     type="text"
                     value={playerName}
                     onChange={(e) => {
@@ -243,6 +335,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                   />
                   {/* RESPONSIVE: Use rem-based min-height for better scaling across devices */}
                   <button
+                    id="submit-score-btn"
                     type="submit"
                     disabled={
                       !playerName.trim() || 
@@ -258,6 +351,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                 </div>
                 {/* RESPONSIVE: Use rem-based min-height for better scaling across devices */}
                 <input
+                  id="player-email"
                   type="email"
                   value={email}
                   onChange={(e) => {
