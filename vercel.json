@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    {
+      "source": "/game/Christmas25/:path*",
+      "destination": "/game/Christmas25/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/game/Christmas25/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ]
+}
+

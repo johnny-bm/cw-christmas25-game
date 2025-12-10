@@ -180,20 +180,30 @@ export default function App() {
       // Don't redirect if in debug mode or if already on landing
       // Note: location.pathname is relative to basename when basename is set
       const currentPath = location.pathname;
-      console.log('📍 Initial load - current pathname:', currentPath, 'full URL:', window.location.href);
+      const currentFullPath = window.location.pathname;
+      const newPath = '/game/Christmas25/landing';
+      console.log('📍 Initial load');
+      console.log('  React Router pathname:', currentPath);
+      console.log('  Browser pathname:', currentFullPath);
+      console.log('  Full URL:', window.location.href);
+      console.log('  Target path:', newPath);
+      
       if ((currentPath === '/' || (currentPath !== '/landing' && currentPath !== '/game' && currentPath !== '/ending')) && !isDebugMode) {
         console.log('🔄 Redirecting to /landing');
-        navigate('/landing', { replace: true });
         
-        // Workaround: Ensure URL updates if React Router doesn't handle it
-        if (window.location.pathname.startsWith('/game/Christmas25') && window.location.pathname !== '/game/Christmas25/landing') {
-          setTimeout(() => {
-            if (window.location.pathname !== '/game/Christmas25/landing') {
-              window.history.replaceState({}, '', '/game/Christmas25/landing');
-              console.log('🔧 Manually updated URL to:', '/game/Christmas25/landing');
-            }
-          }, 100);
+        // Always manually update URL first
+        if (currentFullPath !== newPath) {
+          try {
+            window.history.replaceState({}, '', newPath);
+            console.log('✅ Successfully updated URL to:', window.location.href);
+            // Force React Router to recognize the change
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          } catch (e) {
+            console.error('❌ Failed to update URL:', e);
+          }
         }
+        
+        navigate('/landing', { replace: true });
       }
     }
   }, [hasInitialized, location.pathname, location.search, navigate]);
@@ -368,24 +378,28 @@ export default function App() {
       messageTimer: 0,
       combo: 0
     });
-    console.log('🎮 Navigating to /game, current pathname:', location.pathname, 'full URL:', window.location.href);
     
-    // Navigate using React Router
-    navigate('/game', { replace: false });
+    const currentPath = window.location.pathname;
+    const newPath = '/game/Christmas25/game';
+    console.log('🎮 Navigating to /game');
+    console.log('  Current pathname:', currentPath);
+    console.log('  Current full URL:', window.location.href);
+    console.log('  Target path:', newPath);
     
-    // Workaround: Ensure URL updates if React Router doesn't handle it
-    // Check if we're on the /game/Christmas25 path and update URL manually if needed
-    if (window.location.pathname.startsWith('/game/Christmas25')) {
-      const newPath = '/game/Christmas25/game';
-      if (window.location.pathname !== newPath) {
-        setTimeout(() => {
-          if (window.location.pathname !== newPath) {
-            window.history.pushState({}, '', newPath);
-            console.log('🔧 Manually updated URL to:', newPath);
-          }
-        }, 100);
+    // Always manually update URL first
+    if (currentPath !== newPath) {
+      try {
+        window.history.pushState({}, '', newPath);
+        console.log('✅ Successfully updated URL to:', window.location.href);
+        // Force React Router to recognize the change
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } catch (e) {
+        console.error('❌ Failed to update URL:', e);
       }
     }
+    
+    // Navigate using React Router (should sync with the URL we just set)
+    navigate('/game', { replace: false });
   };
 
   const handleGameOver = useCallback((finalDist: number, maxCombo: number, grinchScore?: number, elfScore?: number) => {
@@ -407,24 +421,28 @@ export default function App() {
       (window as any).__finalElfScore = elfScore;
     }
     
-    console.log('🏁 Navigating to /ending, current pathname:', location.pathname, 'full URL:', window.location.href);
+    const currentPath = window.location.pathname;
+    const newPath = '/game/Christmas25/ending';
+    console.log('🏁 Navigating to /ending');
+    console.log('  Current pathname:', currentPath);
+    console.log('  Current full URL:', window.location.href);
+    console.log('  Target path:', newPath);
     
-    // Navigate using React Router
-    navigate('/ending', { replace: false });
-    
-    // Workaround: Ensure URL updates if React Router doesn't handle it
-    if (window.location.pathname.startsWith('/game/Christmas25')) {
-      const newPath = '/game/Christmas25/ending';
-      if (window.location.pathname !== newPath) {
-        setTimeout(() => {
-          if (window.location.pathname !== newPath) {
-            window.history.pushState({}, '', newPath);
-            console.log('🔧 Manually updated URL to:', newPath);
-          }
-        }, 100);
+    // Always manually update URL first
+    if (currentPath !== newPath) {
+      try {
+        window.history.pushState({}, '', newPath);
+        console.log('✅ Successfully updated URL to:', window.location.href);
+        // Force React Router to recognize the change
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } catch (e) {
+        console.error('❌ Failed to update URL:', e);
       }
     }
-  }, [bestDistance, navigate, location.pathname]);
+    
+    // Navigate using React Router (should sync with the URL we just set)
+    navigate('/ending', { replace: false });
+  }, [bestDistance, navigate]);
 
   const handleUpdateGameData = useCallback((data: GameData) => {
     setGameData(data);
@@ -451,18 +469,17 @@ export default function App() {
     // After a brief delay, transition to playing state to ensure game scene resets properly
     setTimeout(() => {
       setGameState('playing');
-      navigate('/game', { replace: false });
       
-      // Workaround: Ensure URL updates if React Router doesn't handle it
-      if (window.location.pathname.startsWith('/game/Christmas25')) {
-        const newPath = '/game/Christmas25/game';
-        setTimeout(() => {
-          if (window.location.pathname !== newPath) {
-            window.history.pushState({}, '', newPath);
-            console.log('🔧 Manually updated URL to:', newPath);
-          }
-        }, 100);
+      // Always manually update URL first
+      const newPath = '/game/Christmas25/game';
+      if (window.location.pathname !== newPath) {
+        window.history.pushState({}, '', newPath);
+        console.log('🔧 Manually updated URL to:', newPath);
+        // Force React Router to recognize the change
+        window.dispatchEvent(new PopStateEvent('popstate'));
       }
+      
+      navigate('/game', { replace: false });
     }, 150);
     
     setLeaderboardRefresh(prev => prev + 1);
