@@ -141,7 +141,6 @@ export class GameScene extends Phaser.Scene {
   private readonly SAFARI_FIXED_HEIGHT = 700; // Portrait height for Safari mobile
   private lastJumpTime: number = 0;
   private jumpCooldown: number = 300; // 300ms cooldown between jumps
-  private debugText?: Phaser.GameObjects.Text;
   private player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private ground!: Phaser.Physics.Arcade.StaticGroup;
   private obstacles!: Phaser.GameObjects.Group;
@@ -781,6 +780,10 @@ export class GameScene extends Phaser.Scene {
       // Offset for bottom-center origin - body should be centered horizontally and positioned from bottom
       this.player.body.setOffset((PLAYER_SIZE - bodyWidth) / 2, PLAYER_SIZE - bodyHeight);
       
+      // CRITICAL: Ensure character is positioned exactly on top of ground
+      // With bottom-center origin, player.y should equal groundY for feet to be on ground
+      this.player.y = this.groundY;
+      
       // CRITICAL: Verify gravity is working
       console.log('🔧 Safari Mobile Physics Setup:', {
         gravityY: this.physics.world.gravity.y,
@@ -1105,21 +1108,7 @@ export class GameScene extends Phaser.Scene {
     // This prevents visual viewport resize from interfering during create()
     this.isInitializing = false;
     
-    // EMERGENCY DEBUG: Add visual debug info for Safari mobile
-    if (isSafariMobile) {
-      // Create debug text that shows on screen - centered
-      const centerX = width / 2;
-      const centerY = height / 2;
-      this.debugText = this.add.text(centerX, centerY, '', {
-        fontSize: '12px',
-        color: '#00ff00',
-        backgroundColor: '#000000',
-        padding: { x: 5, y: 5 }
-      });
-      this.debugText.setOrigin(0.5, 0.5); // Center the text
-      this.debugText.setDepth(1000); // Always on top
-      this.debugText.setScrollFactor(0); // Fixed to camera
-    }
+    // Debug text removed - no longer needed
   }
   
   // Helper function to safely get audio context
@@ -1155,31 +1144,34 @@ export class GameScene extends Phaser.Scene {
       this.sound.unlock();
     }
     
-    // Reliable ground detection - use collision flags ONLY for jump detection
-    // CRITICAL: Use both collision flags AND position-based detection for reliable ground detection
-    // Position-based detection is needed because collision flags can be unreliable
+    // Reliable ground detection - use collision flags AND position-based detection
+    // CRITICAL: Position-based detection is essential for Safari where collision flags can be unreliable
     const touchingGround = this.player.body.touching.down || this.player.body.blocked.down;
-    const nearGround = Math.abs(this.player.y - this.groundY) < 5; // Within 5px of ground
+    // For Safari mobile with bottom-center origin, check if player.y is at or very close to groundY
+    const distanceFromGround = Math.abs(this.player.y - this.groundY);
+    const nearGround = distanceFromGround < 10; // Within 10px of ground (increased tolerance for Safari)
     const velocityDownward = this.player.body.velocity.y >= 0; // Not moving up
     // Use collision OR (position near ground AND not moving up) for reliable detection
     const onGround = touchingGround || (nearGround && velocityDownward);
     
     // Scale jump velocity relative to screen height for responsive jump physics
-    // CRITICAL FIX: Reduce jump height for Safari mobile
     const { width, height } = this.scale;
     let jumpVelocity: number;
     
+    const isMobileJump = width <= 768 || height <= 768;
+    // Use config value for mobile jump multiplier (reduced for better balance)
+    const mobileJumpMultiplier = isMobileJump ? GameConfig.physics.mobileJumpMultiplier : 1.0;
+    // Use base velocity for consistent jump feel - reduced for better balance
+    const baseJumpVelocity = -1100; // Reduced from -1200 for better balance
+    jumpVelocity = baseJumpVelocity * (height / GameConfig.physics.baseGravityHeight) * mobileJumpMultiplier;
+    
+    // Safari mobile: use same scaling but ensure it's not too weak
     if (this.isSafariMobile()) {
-      // Safari mobile: reduced jump velocity
-      jumpVelocity = -250;
-    } else {
-      // Desktop: normal jump physics
-      const isMobileJump = width <= 768 || height <= 768;
-      // Use config value for mobile jump multiplier (1.05 = 5% stronger on mobile)
-      const mobileJumpMultiplier = isMobileJump ? GameConfig.physics.mobileJumpMultiplier : 1.0;
-      // Use base velocity for consistent jump feel - increased for better obstacle clearance
-      const baseJumpVelocity = -1200;
-      jumpVelocity = baseJumpVelocity * (height / GameConfig.physics.baseGravityHeight) * mobileJumpMultiplier;
+      // Safari uses same physics as other mobile, but ensure minimum jump height
+      const minJumpVelocity = -350; // Minimum jump velocity for Safari
+      if (jumpVelocity > minJumpVelocity) {
+        jumpVelocity = minJumpVelocity;
+      }
     }
     
     // CRITICAL: Allow jumping immediately when on ground, regardless of jumpsRemaining
@@ -2628,33 +2620,7 @@ export class GameScene extends Phaser.Scene {
       }
     }
     
-    // Visual debugging for Safari mobile - includes animation state
-    if (this.isSafariMobile() && this.debugText) {
-      const currentAnim = this.player?.anims?.currentAnim;
-      const targetAnim = this.getAnimationName(isOnGround);
-      
-      const info = [
-        `=== ANIMATION DEBUG ===`,
-        `Current: ${currentAnim?.key || 'none'}`,
-        `Target: ${targetAnim}`,
-        `State: ${this.animationState}`,
-        `Match: ${currentAnim?.key === targetAnim ? 'YES' : 'NO'}`,
-        `Time Since Change: ${(time - this.animationStateChangeTime).toFixed(0)}ms`,
-        ``,
-        `=== GROUND STATE ===`,
-        `IsOnGround: ${isOnGround ? 'YES' : 'NO'}`,
-        `Touching: ${touchingGround ? 'YES' : 'NO'}`,
-        `Moving Up: ${isMovingUpward ? 'YES' : 'NO'}`,
-        `Velocity Y: ${(this.player?.body?.velocity.y || 0).toFixed(1)}`,
-        `Distance: ${(Math.abs((this.player?.y || 0) - this.groundY)).toFixed(1)}px`,
-        ``,
-        `=== POSITION ===`,
-        `Player Y: ${Math.round(this.player?.y || 0)}`,
-        `Ground Y: ${Math.round(this.groundY)}`,
-        `Gravity: ${this.player?.body?.allowGravity ? 'ON' : 'OFF'}`
-      ];
-      this.debugText.setText(info.join('\n'));
-    }
+    // Debug text removed - no longer needed
     
     // Animation state is now managed by the simplified system above
     
@@ -2924,11 +2890,17 @@ export class GameScene extends Phaser.Scene {
       this.spawnSpecialCollectible();
     }
 
-    // Energy drain
+    // Energy drain - slightly faster on mobile for better challenge
     this.energyDrainTimer += delta;
-    if (this.energyDrainTimer >= GameConfig.energy.drainInterval) {
+    const { width: screenWidth, height: screenHeight } = this.scale;
+    const isMobileDevice = screenWidth <= 768 || screenHeight <= 768;
+    // Mobile: 10% faster drain (900ms vs 1000ms) and 5% more drain per cycle
+    const drainInterval = isMobileDevice ? GameConfig.energy.drainInterval * 0.9 : GameConfig.energy.drainInterval;
+    const drainAmount = isMobileDevice ? GameConfig.energy.drainAmount * 1.05 : GameConfig.energy.drainAmount;
+    
+    if (this.energyDrainTimer >= drainInterval) {
       if (!this.sprintMode) {
-        this.energy = Math.max(0, this.energy - GameConfig.energy.drainAmount);
+        this.energy = Math.max(0, this.energy - drainAmount);
       }
       this.energyDrainTimer = 0;
       
@@ -3019,7 +2991,7 @@ export class GameScene extends Phaser.Scene {
     // Move deadline - starts far left, moves right as energy decreases
     // When energy is max (100), deadline stays far left (off-screen)
     // When energy is 0, deadline moves right toward player position
-    const { width } = this.scale;
+    const { width: deadlineScreenWidth } = this.scale;
     const energyRatio = this.energy / GameConfig.energy.max; // 1.0 = full energy, 0.0 = no energy
     
     // Calculate start position based on deadline width to ensure it's fully off-screen

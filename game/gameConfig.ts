@@ -161,7 +161,7 @@ export const GameConfig = {
     baseGravityHeight: 1080,    // Reference screen height for gravity scaling
     baseJumpVelocity: -800,      // Base jump velocity (scaled by screen height)
     mobileGravityMultiplier: 0.98, // Gravity multiplier on mobile (0.98 = 2% less)
-    mobileJumpMultiplier: 1.15,   // Jump velocity multiplier on mobile (1.15 = 15% stronger for better obstacle clearance)
+    mobileJumpMultiplier: 0.95,   // Jump velocity multiplier on mobile (0.95 = 5% weaker for better balance)
   },
 
   // ============================================
