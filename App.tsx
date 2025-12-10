@@ -178,7 +178,9 @@ export default function App() {
       }
       
       // Don't redirect if in debug mode or if already on landing
-      if (location.pathname !== '/landing' && location.pathname !== '/' && !isDebugMode) {
+      // Note: location.pathname is relative to basename when basename is set
+      const currentPath = location.pathname;
+      if ((currentPath === '/' || (currentPath !== '/landing' && currentPath !== '/game' && currentPath !== '/ending')) && !isDebugMode) {
         navigate('/landing', { replace: true });
       }
     }
@@ -234,14 +236,19 @@ export default function App() {
       return;
     }
     
+    // Sync game state with route
+    // Note: location.pathname is relative to basename when basename is set
     if (path === '/landing' && gameState !== 'start') {
       setGameState('start');
     } else if (path === '/game' && gameState !== 'playing') {
       setGameState('playing');
     } else if (path === '/ending' && gameState !== 'gameover') {
       setGameState('gameover');
+    } else if (path === '/' && gameState !== 'start') {
+      // Handle root path - should redirect to landing
+      setGameState('start');
     }
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, gameState]);
 
   useEffect(() => {
     // Load best distance from local storage
@@ -346,7 +353,7 @@ export default function App() {
       messageTimer: 0,
       combo: 0
     });
-    navigate('/game');
+    navigate('/game', { replace: false });
   };
 
   const handleGameOver = useCallback((finalDist: number, maxCombo: number, grinchScore?: number, elfScore?: number) => {
@@ -368,7 +375,7 @@ export default function App() {
       (window as any).__finalElfScore = elfScore;
     }
     
-    navigate('/ending');
+    navigate('/ending', { replace: false });
   }, [bestDistance, navigate]);
 
   const handleUpdateGameData = useCallback((data: GameData) => {
@@ -396,7 +403,7 @@ export default function App() {
     // After a brief delay, transition to playing state to ensure game scene resets properly
     setTimeout(() => {
       setGameState('playing');
-      navigate('/game');
+      navigate('/game', { replace: false });
     }, 150);
     
     setLeaderboardRefresh(prev => prev + 1);
