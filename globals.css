@@ -194,6 +194,18 @@
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
+    /* Crisp rendering on high DPI displays - let browser handle scaling smoothly */
+    image-rendering: auto !important;
+    /* Better font rendering */
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    /* Hardware acceleration for better performance and crisp rendering */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+    /* Prevent subpixel rendering issues */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
   }
   
   /* Safe area insets for notched devices */

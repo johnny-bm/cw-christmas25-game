@@ -769,6 +769,11 @@ export class GameScene extends Phaser.Scene {
       this.player.setDepth(20);
       this.player.setVisible(true);
       
+      // Ensure crisp rendering on high DPI displays
+      if (this.player.texture) {
+        this.player.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+      }
+      
       // Simple physics
       this.player.body.setCollideWorldBounds(true);
       this.player.body.setBounce(0.2);
@@ -782,7 +787,17 @@ export class GameScene extends Phaser.Scene {
       
       // CRITICAL: Ensure character is positioned exactly on top of ground
       // With bottom-center origin, player.y should equal groundY for feet to be on ground
+      // But we need to account for the body offset - position slightly above to ensure feet are on ground
       this.player.y = this.groundY;
+      
+      // Ensure body is properly positioned - body bottom should be at groundY
+      // With bottom-center origin and body offset, we may need to adjust
+      const bodyBottom = this.player.body.y + this.player.body.height;
+      if (Math.abs(bodyBottom - this.groundY) > 2) {
+        // Adjust player position to ensure body bottom aligns with ground
+        const adjustment = this.groundY - bodyBottom;
+        this.player.y += adjustment;
+      }
       
       // CRITICAL: Verify gravity is working
       console.log('🔧 Safari Mobile Physics Setup:', {
@@ -1165,13 +1180,12 @@ export class GameScene extends Phaser.Scene {
     const baseJumpVelocity = -1100; // Reduced from -1200 for better balance
     jumpVelocity = baseJumpVelocity * (height / GameConfig.physics.baseGravityHeight) * mobileJumpMultiplier;
     
-    // Safari mobile: use same scaling but ensure it's not too weak
+    // Safari mobile: use proper scaling for 700px height screen
     if (this.isSafariMobile()) {
-      // Safari uses same physics as other mobile, but ensure minimum jump height
-      const minJumpVelocity = -350; // Minimum jump velocity for Safari
-      if (jumpVelocity > minJumpVelocity) {
-        jumpVelocity = minJumpVelocity;
-      }
+      // Safari mobile has fixed 700px height, so calculate jump properly
+      // For 700px height: -1100 * (700/1080) * 0.95 = -677
+      // But we want a good jump height, so use a fixed value that works well
+      jumpVelocity = -600; // Good jump height for Safari mobile (can clear obstacles)
     }
     
     // CRITICAL: Allow jumping immediately when on ground, regardless of jumpsRemaining
@@ -1336,10 +1350,24 @@ export class GameScene extends Phaser.Scene {
       part.charAt(0).toUpperCase() + part.slice(1)
     ).join('-');
     
-    // Scale obstacle size relative to screen height - 5% bigger on mobile
+    // Scale obstacle size relative to screen height
     const isMobile = width <= 768 || height <= 768;
-    const baseObstacleSize = isMobile ? height * 0.0735 : height * 0.06; // 7.35% on mobile (5% bigger), 6% on desktop
-    const maxObstacleSize = isMobile ? 105 : 80; // Proportional cap on mobile (105px, 5% bigger) vs desktop (80px)
+    // Safari mobile: smaller obstacles (400x700 viewport needs smaller obstacles)
+    const isSafariMobile = this.isSafariMobile();
+    let baseObstacleSize: number;
+    let maxObstacleSize: number;
+    
+    if (isSafariMobile) {
+      // Safari mobile: much smaller obstacles for 700px height
+      baseObstacleSize = height * 0.05; // 5% of height = 35px
+      maxObstacleSize = 50; // Cap at 50px for Safari
+    } else if (isMobile) {
+      baseObstacleSize = height * 0.0735; // 7.35% on mobile (5% bigger), 6% on desktop
+      maxObstacleSize = 105; // Proportional cap on mobile (105px, 5% bigger) vs desktop (80px)
+    } else {
+      baseObstacleSize = height * 0.06; // 6% on desktop
+      maxObstacleSize = 80; // Desktop cap
+    }
     const obstacleSize = Math.min(baseObstacleSize, maxObstacleSize);
     
     // Create obstacle image
@@ -1467,10 +1495,23 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     
-    // Scale obstacle size relative to screen height - 10% bigger on mobile, Obstacle-03 is 10% bigger
+    // Scale obstacle size relative to screen height
     const isMobile = width <= 768 || height <= 768;
-    const baseObstacleSize = isMobile ? height * 0.0847 : height * 0.066; // 8.47% on mobile (10% bigger than before), 6.6% on desktop (10% bigger)
-    const maxObstacleSize = isMobile ? 121 : 88; // Proportional cap on mobile (121px, 10% bigger) vs desktop (88px, 10% bigger)
+    const isSafariMobile = this.isSafariMobile();
+    let baseObstacleSize: number;
+    let maxObstacleSize: number;
+    
+    if (isSafariMobile) {
+      // Safari mobile: smaller floating obstacles
+      baseObstacleSize = height * 0.06; // 6% of height = 42px
+      maxObstacleSize = 55; // Cap at 55px for Safari
+    } else if (isMobile) {
+      baseObstacleSize = height * 0.0847; // 8.47% on mobile (10% bigger than before), 6.6% on desktop (10% bigger)
+      maxObstacleSize = 121; // Proportional cap on mobile (121px, 10% bigger) vs desktop (88px, 10% bigger)
+    } else {
+      baseObstacleSize = height * 0.066; // 6.6% on desktop
+      maxObstacleSize = 88; // Desktop cap
+    }
     const obstacleSize = Math.min(baseObstacleSize, maxObstacleSize);
     
     // Create obstacle image
@@ -1608,8 +1649,21 @@ export class GameScene extends Phaser.Scene {
     
     // Scale projectile size relative to screen height - 10% bigger on mobile
     const isMobile = width <= 768 || height <= 768;
-    const baseObstacleSize = isMobile ? height * 0.077 : height * 0.06; // 7.7% on mobile (10% bigger), 6% on desktop
-    const maxObstacleSize = isMobile ? 110 : 80; // Proportional cap on mobile (110px, 10% bigger) vs desktop (80px)
+    const isSafariMobile = this.isSafariMobile();
+    let baseObstacleSize: number;
+    let maxObstacleSize: number;
+    
+    if (isSafariMobile) {
+      // Safari mobile: smaller projectile obstacles
+      baseObstacleSize = height * 0.055; // 5.5% of height = 38.5px
+      maxObstacleSize = 50; // Cap at 50px for Safari
+    } else if (isMobile) {
+      baseObstacleSize = height * 0.077; // 7.7% on mobile (10% bigger), 6% on desktop
+      maxObstacleSize = 110; // Proportional cap on mobile (110px, 10% bigger) vs desktop (80px)
+    } else {
+      baseObstacleSize = height * 0.06; // 6% on desktop
+      maxObstacleSize = 80; // Desktop cap
+    }
     const obstacleSize = Math.min(baseObstacleSize, maxObstacleSize);
     
     // Create projectile obstacle image
@@ -1671,9 +1725,22 @@ export class GameScene extends Phaser.Scene {
     const baseSpeed = isMobileSpeedCollectible ? Math.max(width / 1920, 0.5) : width / 1920;
     // Detect mobile - use appropriate size on mobile devices
     const isMobile = width <= 768 || height <= 768;
-    // Desktop: larger size for better visibility, Mobile: 10% bigger but still smaller than obstacles
-    const baseCollectibleSize = isMobile ? height * 0.0088 : height * 0.025; // 0.88% on mobile (10% bigger), 2.5% on desktop (larger)
-    const maxCollectibleSize = isMobile ? 27 : 60; // Mobile: 27px (10% bigger), Desktop: 60px (larger)
+    // Desktop: larger size for better visibility, Mobile: smaller for Safari
+    const isSafariMobile = this.isSafariMobile();
+    let baseCollectibleSize: number;
+    let maxCollectibleSize: number;
+    
+    if (isSafariMobile) {
+      // Safari mobile: smaller collectibles
+      baseCollectibleSize = height * 0.04; // 4% of height = 28px
+      maxCollectibleSize = 30; // Cap at 30px for Safari
+    } else if (isMobile) {
+      baseCollectibleSize = height * 0.0088; // 0.88% on mobile (10% bigger), 2.5% on desktop (larger)
+      maxCollectibleSize = 27; // Mobile: 27px (10% bigger), Desktop: 60px (larger)
+    } else {
+      baseCollectibleSize = height * 0.025; // 2.5% on desktop
+      maxCollectibleSize = 60; // Desktop cap
+    }
     const collectibleSize = Math.min(baseCollectibleSize, maxCollectibleSize);
     const heights = [
       this.groundY - height * 0.028,  // ~2.8% from ground
@@ -2334,8 +2401,9 @@ export class GameScene extends Phaser.Scene {
     const textColor = getColorToken('white'); // White text for all messages
     
     // Match text resolution to canvas resolution for crisp rendering on mobile
-    // Use higher resolution on mobile to prevent pixelation
-    const textResolution = isMobile ? Math.max(window.devicePixelRatio || 1, 3) : Math.max(window.devicePixelRatio || 1, 2); // Higher on mobile (3x) for crisp text
+    // Use device pixel ratio for sharp text rendering (capped at 3 for performance)
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const textResolution = Math.min(devicePixelRatio, 3); // Cap at 3x for performance, but use actual DPR for sharpness
     
     // Max width for text wrapping - responsive (increased)
     const maxTextWidth = isMobile ? 280 : 400;
@@ -2636,13 +2704,21 @@ export class GameScene extends Phaser.Scene {
       });
       
       // Character is below ground - correct it immediately
-      // CRITICAL FIX: Only apply this correction for desktop (bottom origin), not Safari mobile (center origin)
-      if (!this.isSafariMobile()) {
+      if (this.isSafariMobile()) {
+        // Safari mobile: with bottom-center origin, player.y should be at groundY
+        this.player.y = this.groundY;
+        // Ensure body bottom aligns with ground
+        const bodyBottom = this.player.body.y + this.player.body.height;
+        if (bodyBottom > this.groundY) {
+          const adjustment = this.groundY - bodyBottom;
+          this.player.y += adjustment;
+        }
+      } else {
+        // Desktop: use existing correction
         this.player.y = this.groundY;
         // Fix body position using setupCharacterBody logic
         this.setupCharacterBody();
       }
-      // Safari mobile doesn't need this correction - it uses center origin and physics handles it
       
       // Reset vertical velocity and disable gravity when on ground
       this.player.body.setVelocityY(0);
@@ -3227,9 +3303,14 @@ export class GameScene extends Phaser.Scene {
     this.messageBubbles.forEach(bubble => bubble.container.destroy());
     this.messageBubbles = [];
     
-    this.obstacleTimer = 1000;
-    this.floatingObstacleTimer = 2000;
-    this.projectileObstacleTimer = 3000;
+    // Faster initial spawns on mobile for more engaging gameplay
+    const { width: startWidth, height: startHeight } = this.scale;
+    const isMobileStart = startWidth <= 768 || startHeight <= 768;
+    
+    // Mobile: spawn obstacles much faster (50% faster) to keep game engaging
+    this.obstacleTimer = isMobileStart ? 500 : 1000; // 0.5s on mobile vs 1s on desktop
+    this.floatingObstacleTimer = isMobileStart ? 1000 : 2000; // 1s on mobile vs 2s on desktop
+    this.projectileObstacleTimer = isMobileStart ? 1500 : 3000; // 1.5s on mobile vs 3s on desktop
     this.collectibleTimer = 2000;
     this.specialCollectibleTimer = 5000;
     this.energyDrainTimer = 0;
@@ -3323,9 +3404,14 @@ export class GameScene extends Phaser.Scene {
     this.grinchScore = 0;
     this.elfScore = 0;
     
-    this.obstacleTimer = 1000;
-    this.floatingObstacleTimer = 2000;
-    this.projectileObstacleTimer = 3000;
+    // Faster initial spawns on mobile for more engaging gameplay
+    const { width: resetWidth, height: resetHeight } = this.scale;
+    const isMobileReset = resetWidth <= 768 || resetHeight <= 768;
+    
+    // Mobile: spawn obstacles much faster (50% faster) to keep game engaging
+    this.obstacleTimer = isMobileReset ? 500 : 1000; // 0.5s on mobile vs 1s on desktop
+    this.floatingObstacleTimer = isMobileReset ? 1000 : 2000; // 1s on mobile vs 2s on desktop
+    this.projectileObstacleTimer = isMobileReset ? 1500 : 3000; // 1.5s on mobile vs 3s on desktop
     this.collectibleTimer = 2000;
     this.specialCollectibleTimer = 5000;
     this.energyDrainTimer = 0;

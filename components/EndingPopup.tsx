@@ -32,6 +32,17 @@ export function EndingPopup({
   const [isSaving, setIsSaving] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [emailError, setEmailError] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768 || window.innerHeight <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Countdown timer to January 5th, 2026
   useEffect(() => {
@@ -78,6 +89,21 @@ export function EndingPopup({
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [onClose]);
+
+  // Scroll popup to top on mobile when it opens
+  useEffect(() => {
+    const popup = document.getElementById('ending-popup');
+    if (popup) {
+      // Scroll to top immediately
+      popup.scrollTop = 0;
+      // Also scroll the window to top if needed (for mobile browsers)
+      window.scrollTo(0, 0);
+      // Use requestAnimationFrame to ensure it happens after render
+      requestAnimationFrame(() => {
+        popup.scrollTop = 0;
+      });
+    }
+  }, []);
 
   // Email validation
   const isValidEmail = (email: string) => {
@@ -313,7 +339,7 @@ export function EndingPopup({
                 required
                 className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base bg-white border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none text-black"
                 disabled={isSaving}
-                autoFocus
+                autoFocus={!isMobile}
               />
             </div>
 
