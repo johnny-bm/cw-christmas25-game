@@ -30,6 +30,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
   const [isTopScore, setIsTopScore] = useState(false);
   const [isTop3, setIsTop3] = useState(false);
   const [top3Position, setTop3Position] = useState<number | null>(null);
+  const [scorePosition, setScorePosition] = useState<number | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [debugDistance, setDebugDistance] = useState<number | null>(null);
@@ -59,6 +60,12 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
       setDebugElfScore(debugTop3 ? Math.floor(debugScore / 2) : Math.floor(debugScore / 2));
       setIsTop3(debugTop3);
       setTop3Position(debugTop3 && debugPosition ? debugPosition : null);
+      // For debug mode, set a mock overall position if not top 3
+      if (!debugTop3) {
+        setScorePosition(debugPosition || 10); // Default to rank 10 for regular scores in debug
+      } else {
+        setScorePosition(debugPosition);
+      }
       
       // Show popup immediately in debug mode
       setTimeout(() => {
@@ -67,26 +74,46 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
       return;
     }
     
+    // Check if a game was just completed (not a page refresh)
+    const shouldShowPopup = sessionStorage.getItem('escapeTheDeadline_showEndingPopup') === 'true';
+    
     // Normal mode - check if this is a top score and top 3
     checkTopScore();
     checkTop3();
     
-    // Show popup after a short delay
-    const popupTimer = setTimeout(() => {
-      setShowPopup(true);
-    }, 500);
-    
-    // Stagger the animations
-    const timer1 = setTimeout(() => setShowContent(true), 300);
-    const timer2 = setTimeout(() => setShowStats(true), 800);
-    const timer3 = setTimeout(() => setShowButton(true), 1200);
+    // Only show popup if a game was just completed
+    if (shouldShowPopup) {
+      // Clear the flag so it doesn't show on refresh
+      sessionStorage.removeItem('escapeTheDeadline_showEndingPopup');
+      
+      // Show popup after a short delay
+      const popupTimer = setTimeout(() => {
+        setShowPopup(true);
+      }, 500);
+      
+      // Stagger the animations
+      const timer1 = setTimeout(() => setShowContent(true), 300);
+      const timer2 = setTimeout(() => setShowStats(true), 800);
+      const timer3 = setTimeout(() => setShowButton(true), 1200);
 
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(popupTimer);
-    };
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+        clearTimeout(popupTimer);
+      };
+    } else {
+      // Still show animations even if popup shouldn't show
+      const timer1 = setTimeout(() => setShowContent(true), 300);
+      const timer2 = setTimeout(() => setShowStats(true), 800);
+      const timer3 = setTimeout(() => setShowButton(true), 1200);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
+    }
   }, [distance, location.search]); // Add location.search to detect URL param changes
 
   useEffect(() => {
@@ -129,6 +156,10 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
     console.log('🏆 Is top 3?', top3, 'Position:', position);
     setIsTop3(top3);
     setTop3Position(position);
+    
+    // Also get the overall position for all scores
+    const overallPosition = await scoreService.getScorePosition(distance);
+    setScorePosition(overallPosition);
   };
 
   const handleSaveScore = async (e: React.FormEvent) => {
@@ -204,6 +235,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
           elfScore={debugMode && debugElfScore !== null ? debugElfScore : elfScore}
           isTop3={isTop3}
           position={top3Position}
+          overallPosition={scorePosition}
           onSave={handlePopupSave}
           onClose={() => setShowPopup(false)}
         />

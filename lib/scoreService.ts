@@ -146,6 +146,34 @@ class ScoreService {
     return { isTop3: false, position: null };
   }
 
+  // Get the rank/position for any score (not just top 3)
+  async getScorePosition(distance: number): Promise<number | null> {
+    try {
+      // Get all scores to find the position
+      const allScores = await this.getTopScores(100); // Get top 100 to find position
+      
+      if (allScores.length === 0) {
+        return 1; // First score
+      }
+      
+      // Find where this score would rank
+      for (let i = 0; i < allScores.length; i++) {
+        if (distance > allScores[i].distance) {
+          return i + 1;
+        }
+        if (distance === allScores[i].distance) {
+          return i + 1; // Same score gets the same rank
+        }
+      }
+      
+      // If score is lower than all existing scores
+      return allScores.length + 1;
+    } catch (error) {
+      console.error('Error getting score position:', error);
+      return null;
+    }
+  }
+
   // Get total count of scores
   async getTotalCount(): Promise<number> {
     try {

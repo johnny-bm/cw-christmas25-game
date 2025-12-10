@@ -57,23 +57,23 @@ export const GameConfig = {
   obstacles: {
     regular: {
       damage: 12,               // Energy cost when hitting regular obstacle (more punishing = skill matters)
-      spawnIntervalMin: 700,    // Minimum milliseconds between spawns (more frequent = more challenging)
-      spawnIntervalMax: 2200,    // Maximum milliseconds between spawns (more frequent = more challenging)
-      difficultyRampDistance: 1000, // Distance (meters) to reach full difficulty (gradual ramp - longer = easier start)
+      spawnIntervalMin: 500,    // Minimum milliseconds between spawns (more frequent = more challenging)
+      spawnIntervalMax: 1800,    // Maximum milliseconds between spawns (more frequent = more challenging)
+      difficultyRampDistance: 500, // Distance (meters) to reach full difficulty (faster ramp = harder sooner)
     },
     floating: {
       damage: 12,               // Energy cost when hitting floating obstacle (more punishing = skill matters)
-      spawnIntervalMin: 1200,   // Minimum milliseconds between spawns (more frequent = more challenging)
-      spawnIntervalMax: 3200,   // Maximum milliseconds between spawns (more frequent = more challenging)
-      unlockDistance: 3000,      // Distance (meters) before floating obstacles appear (earlier = more challenge)
-      difficultyRampDistance: 1000, // Distance (meters) after unlock to reach full difficulty (longer = easier start)
+      spawnIntervalMin: 900,   // Minimum milliseconds between spawns (more frequent = more challenging)
+      spawnIntervalMax: 2600,   // Maximum milliseconds between spawns (more frequent = more challenging)
+      unlockDistance: 500,      // Distance (meters) before floating obstacles appear (earlier = more challenge)
+      difficultyRampDistance: 500, // Distance (meters) after unlock to reach full difficulty (faster ramp = harder sooner)
     },
     projectile: {
       damage: 18,               // Energy cost when hitting projectile (high risk = high skill requirement)
-      spawnIntervalMin: 1500,   // Minimum milliseconds between spawns (more frequent = more challenging)
-      spawnIntervalMax: 4500,   // Maximum milliseconds between spawns (more frequent = more challenging)
-      unlockDistance: 2000,      // Distance (meters) before projectile obstacles appear (earlier = more challenge)
-      difficultyRampDistance: 1000, // Distance (meters) after unlock to reach full difficulty (longer = easier start)
+      spawnIntervalMin: 1200,   // Minimum milliseconds between spawns (more frequent = more challenging)
+      spawnIntervalMax: 3800,   // Maximum milliseconds between spawns (more frequent = more challenging)
+      unlockDistance: 1000,      // Distance (meters) before projectile obstacles appear (earlier = more challenge)
+      difficultyRampDistance: 500, // Distance (meters) after unlock to reach full difficulty (faster ramp = harder sooner)
     },
   },
 
@@ -103,11 +103,12 @@ export const GameConfig = {
   speed: {
     initial: 300,               // Starting game speed
     max: 1000,                   // Maximum game speed
-    acceleration: 0.5,         // Speed increase per millisecond (when scaled)
-    distanceSpeedBonus: 8,      // Speed bonus per 15 meters traveled
-    distanceSpeedInterval: 15,  // Meters needed for speed bonus
-    distanceSpeedCap: 180,      // Maximum speed bonus from distance
-    mobileMultiplier: 1.5,     // Speed multiplier on mobile devices (1.5 = 50% faster)
+    acceleration: 1.2,         // Speed increase per millisecond (when scaled) - increased for faster ramp
+    distanceSpeedBonus: 12,      // Speed bonus per 10 meters traveled - increased for faster progression
+    distanceSpeedInterval: 10,  // Meters needed for speed bonus - reduced for more frequent boosts
+    distanceSpeedCap: 200,      // Maximum speed bonus from distance - increased cap
+    mobileMultiplier: 1.2,     // Speed multiplier on mobile devices (1.2 = 20% faster, reduced from 1.5 for better mobile experience)
+    mobileHorizontalMultiplier: 1.0, // Speed multiplier on mobile horizontal (1.0 = same as desktop, slower than portrait)
   },
 
   // ============================================
@@ -142,10 +143,10 @@ export const GameConfig = {
   // TIMERS & INTERVALS
   // ============================================
   timers: {
-    distanceUpdateInterval: 100, // Milliseconds between distance updates
-    obstacleInitial: 10000,      // Initial obstacle spawn timer (much easier start = very forgiving)
-    floatingObstacleInitial: 12000, // Initial floating obstacle spawn timer (much easier start)
-    projectileObstacleInitial: 15000, // Initial projectile obstacle spawn timer (much easier start)
+    distanceUpdateInterval: 200, // Milliseconds between distance updates
+    obstacleInitial: 6000,      // Initial obstacle spawn timer (faster start = more challenging)
+    floatingObstacleInitial: 8000, // Initial floating obstacle spawn timer (faster start)
+    projectileObstacleInitial: 10000, // Initial projectile obstacle spawn timer (faster start)
     collectibleInitial: 2000,   // Initial collectible spawn timer (balanced rewards)
     specialCollectibleInitial: 5000, // Initial special collectible spawn timer (rarer = more valuable)
   },

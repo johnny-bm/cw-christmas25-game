@@ -10,6 +10,7 @@ interface EndingPopupProps {
   elfScore: number;
   isTop3: boolean;
   position: number | null;
+  overallPosition?: number | null;
   onSave: (playerName: string, email: string, prizeSelection?: 'consultation' | 'discount') => Promise<void>;
   onClose: () => void;
 }
@@ -21,6 +22,7 @@ export function EndingPopup({
   elfScore, 
   isTop3, 
   position,
+  overallPosition,
   onSave,
   onClose 
 }: EndingPopupProps) {
@@ -64,6 +66,18 @@ export function EndingPopup({
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Handle Escape key to close popup
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
   // Email validation
   const isValidEmail = (email: string) => {
@@ -121,7 +135,7 @@ export function EndingPopup({
       if (position === 2) return "🥈 Amazing! You're #2!";
       if (position === 3) return "🥉 Excellent! You're #3!";
     }
-    return Math.random() > 0.5 ? "Nice Try!" : "Great Effort!";
+    return "Great ride!";
   };
 
   const getBodyMessage = () => {
@@ -129,18 +143,16 @@ export function EndingPopup({
       return (
         <>
           <p className="mb-2 sm:mb-3">
-            🎉 You've secured a spot in the <strong>TOP 3</strong>!
+            You're Santa's New Favorite!
           </p>
           <p className="mb-2 sm:mb-3">
             Your score: <strong>{formatNumber(distance)}m</strong>
           </p>
           <p className="mb-2 sm:mb-3 text-sm sm:text-base">
-            The leaderboard closes on <strong>January 5th, 2026</strong>. If you're still in the 
-            top 3 by then, you can claim your prize! Keep an eye on the leaderboard—
-            someone might challenge your position.
+            Leaderboard closes on <strong>January 5th, 2026</strong> stay <strong>TOP 3</strong> to claim your win! Refresh often... competitors roll in fast.
           </p>
           <p className="text-sm sm:text-base">
-            Choose your reward below and we'll contact you if you win!
+            Choose your treat below! We'll contact you if you win!
           </p>
         </>
       );
@@ -148,10 +160,10 @@ export function EndingPopup({
     return (
       <>
         <p className="mb-2 sm:mb-3">
-          Great job escaping The Deadline! Your score shows real determination.
+          Your elf almost out-skated the Deadline, but the Grinch caught up.
         </p>
         <p className="text-sm sm:text-base">
-          Want to try again and beat your best? Every run is a chance to improve!
+          Try again and push that score higher. Practice makes perfect!
         </p>
       </>
     );
@@ -162,12 +174,16 @@ export function EndingPopup({
     : "/Assets/Characters/Grinch-Happy.svg";
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+    <div 
+      className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-3 sm:p-4 md:p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto"
+      onClick={onClose}
+    >
       <div 
         id="ending-popup"
         data-popup-type={isTop3 ? 'top3' : 'regular'}
         data-position={position || null}
-        className="relative bg-white rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300"
+        className="relative bg-white rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl max-w-lg w-full my-2 sm:my-0 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Confetti for top 3 */}
         {isTop3 && <Confetti active={true} />}
@@ -255,9 +271,21 @@ export function EndingPopup({
             </div>
           )}
 
-          {/* Countdown Timer for Regular Scores */}
+          {/* Countdown Timer and Rank for Regular Scores */}
           {!isTop3 && (
-            <div className="mb-4 sm:mb-6">
+            <div className="mb-4 sm:mb-6 space-y-3">
+              {/* Rank Badge */}
+              {overallPosition && (
+                <div className="text-center">
+                  <div className="inline-block bg-gray-100 border-2 border-gray-400 rounded-full px-4 py-2">
+                    <span className="text-base sm:text-lg md:text-xl font-bold text-gray-700">
+                      Rank #{overallPosition}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Countdown Timer */}
               <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-3 text-center">
                 <p className="text-xs sm:text-sm text-gray-600 mb-1">Leaderboard closes on January 5th, 2026</p>
                 <p className="text-base sm:text-lg md:text-xl font-bold text-gray-700">{timeRemaining}</p>

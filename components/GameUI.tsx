@@ -22,6 +22,17 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
     return false;
   });
 
+  // Detect Safari mobile
+  const isSafariMobile = () => {
+    if (typeof window === 'undefined') return false;
+    const ua = navigator.userAgent;
+    const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
+    const isMobile = /iPhone|iPad|iPod/.test(ua);
+    return isSafari && isMobile;
+  };
+
+  const isSafariMobileDevice = isSafariMobile();
+
   useEffect(() => {
     // Sync with Phaser game mute state
     const checkMuteState = () => {
@@ -117,13 +128,14 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       <span id="meter-counter" style={{ display: 'none' }}>{distance}</span>
       
       {/* Distance Counter - Top Center, no box - Better mobile sizing - Safe area support */}
+      {/* Bigger for Safari mobile */}
       <div 
         className="absolute left-1/2 -translate-x-1/2"
         style={{
           top: 'max(0.75rem, env(safe-area-inset-top, 0.75rem) + 0.25rem)'
         }}
       >
-        <div className="text-4xl max-md:landscape:text-3xl sm:text-5xl md:text-7xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+        <div className={`text-4xl max-md:landscape:text-3xl sm:text-5xl md:text-7xl ${isSafariMobileDevice ? 'text-6xl' : ''} text-black opacity-40 font-bold`} style={{ fontFamily: '"Urbanist", sans-serif' }}>
           {formatNumber(distance)}m
         </div>
       </div>
@@ -177,107 +189,219 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       </div>
 
       {/* Top HUD - Figma Design - Safe area support */}
-      <div 
-        className="absolute top-0 right-0 flex flex-col gap-2 sm:gap-3"
-        style={{
-          paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
-          paddingRight: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
-        }}
-      >
-        {/* Energy Bar and Mute Button - Top Right Row */}
-        <div className="flex items-center justify-end gap-2 sm:gap-3">
-          {/* Energy Bar - White background, teal progress */}
-          {/* RESPONSIVE: Use min-width with responsive scaling instead of fixed pixels */}
-          <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 min-w-[120px] sm:min-w-[140px] md:min-w-[160px] w-auto flex flex-col justify-between">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-0.5 sm:gap-1">
-                <img 
-                  src="/Assets/Energy.svg" 
-                  alt="Energy" 
-                  className="w-3 h-3 sm:w-4 sm:h-4"
-                />
-                <span className="text-[#312f31] text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                  ENERGY
+      {/* For Safari mobile: Move meters to bottom center in ground area */}
+      {!isSafariMobileDevice ? (
+        <div 
+          className="absolute top-0 right-0 flex flex-col gap-2 sm:gap-3"
+          style={{
+            paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
+            paddingRight: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
+          }}
+        >
+          {/* Energy Bar and Mute Button - Top Right Row */}
+          <div className="flex items-center justify-end gap-2 sm:gap-3">
+            {/* Energy Bar - White background, teal progress */}
+            {/* RESPONSIVE: Use min-width with responsive scaling instead of fixed pixels */}
+            <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 min-w-[120px] sm:min-w-[140px] md:min-w-[160px] w-auto flex flex-col justify-between">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-0.5 sm:gap-1">
+                  <img 
+                    src="/Assets/Energy.svg" 
+                    alt="Energy" 
+                    className="w-3 h-3 sm:w-4 sm:h-4"
+                  />
+                  <span className="text-[#312f31] text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                    ENERGY
+                  </span>
+                </div>
+                <span className="text-[#312f31] text-[10px] sm:text-xs font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  {Math.round(energy)}%
                 </span>
               </div>
-              <span className="text-[#312f31] text-[10px] sm:text-xs font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                {Math.round(energy)}%
+              <div className="relative h-2.5 sm:h-3.5 w-full rounded-full border border-[#00a994]">
+                <div 
+                  className="absolute h-full bg-[#00a994] rounded-full transition-all duration-200"
+                  style={{ width: `${energy}%` }}
+                />
+              </div>
+            </div>
+            
+            {/* Mute/Unmute Button - White square */}
+            <button
+              onClick={handleToggleMute}
+              className="pointer-events-auto bg-white rounded-lg sm:rounded-xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
+              aria-label={isMuted ? 'Unmute' : 'Mute'}
+            >
+              {isMuted ? (
+                <img 
+                  src="/Assets/Mute.svg" 
+                  alt="Muted" 
+                  className="w-6 h-6 sm:w-7 sm:h-7"
+                />
+              ) : (
+                <img 
+                  src="/Assets/Unmute.svg" 
+                  alt="Unmuted" 
+                  className="w-6 h-6 sm:w-7 sm:h-7"
+                />
+              )}
+            </button>
+          </div>
+
+          {/* Combo Counter - Purple background - Only show when combo >= 2 */}
+          {/* RESPONSIVE: Use min-width with responsive scaling instead of fixed pixels */}
+          {combo >= 2 && (
+            <div id="combo-display" className="bg-[#645290] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 min-w-[184px] sm:min-w-[210px] md:min-w-[236px] w-auto flex items-center justify-between">
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <img 
+                  src="/Assets/Combo.svg" 
+                  alt="Combo" 
+                  className="w-3 h-3 sm:w-4 sm:h-4"
+                />
+                <span className="text-white text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  COMBO
+                </span>
+              </div>
+              <span className="text-white text-3xl sm:text-5xl font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                {combo}x
               </span>
             </div>
-            <div className="relative h-2.5 sm:h-3.5 w-full rounded-full border border-[#00a994]">
-              <div 
-                className="absolute h-full bg-[#00a994] rounded-full transition-all duration-200"
-                style={{ width: `${energy}%` }}
-              />
+          )}
+
+          {/* Combo Rush - Only show when active - Under combo counter */}
+          {/* RESPONSIVE: Use min-width with responsive scaling instead of fixed pixels */}
+          {sprintMode && sprintTimer !== undefined && sprintTimer > 0 && (
+            <div className="bg-[#F6A288] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 min-w-[184px] sm:min-w-[210px] md:min-w-[236px] w-auto flex flex-col justify-between">
+              <div className="flex items-center justify-between w-full">
+                <span className="text-white text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  COMBO RUSH
+                </span>
+                <span className="text-white text-[10px] sm:text-xs font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  {Math.ceil(sprintTimer / 1000)}s
+                </span>
+              </div>
+              <div className="relative h-2.5 sm:h-3.5 w-full rounded-full border border-white bg-white/20 overflow-hidden">
+                <div 
+                  key={`progress-${Math.floor(sprintTimer)}`}
+                  className="absolute h-full bg-white rounded-full"
+                  style={{ 
+                    width: `${Math.max(0, Math.min(100, (sprintTimer / GameConfig.sprint.duration) * 100))}%`
+                  }}
+                />
+              </div>
             </div>
-          </div>
-          
-          {/* Mute/Unmute Button - White square */}
-          <button
-            onClick={handleToggleMute}
-            className="pointer-events-auto bg-white rounded-lg sm:rounded-xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
-            aria-label={isMuted ? 'Unmute' : 'Mute'}
-          >
-            {isMuted ? (
-              <img 
-                src="/Assets/Mute.svg" 
-                alt="Muted" 
-                className="w-6 h-6 sm:w-7 sm:h-7"
-              />
-            ) : (
-              <img 
-                src="/Assets/Unmute.svg" 
-                alt="Unmuted" 
-                className="w-6 h-6 sm:w-7 sm:h-7"
-              />
-            )}
-          </button>
+          )}
         </div>
-
-        {/* Combo Counter - Purple background - Only show when combo >= 2 */}
-        {/* RESPONSIVE: Use min-width with responsive scaling instead of fixed pixels */}
-        {combo >= 2 && (
-          <div id="combo-display" className="bg-[#645290] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 min-w-[184px] sm:min-w-[210px] md:min-w-[236px] w-auto flex items-center justify-between">
-            <div className="flex items-center gap-0.5 sm:gap-1">
-              <img 
-                src="/Assets/Combo.svg" 
-                alt="Combo" 
-                className="w-3 h-3 sm:w-4 sm:h-4"
-              />
-              <span className="text-white text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                COMBO
-              </span>
-            </div>
-            <span className="text-white text-3xl sm:text-5xl font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-              {combo}x
-            </span>
+      ) : (
+        /* Safari Mobile: Meters at bottom center in ground area */
+        <>
+          {/* Mute Button - Top Right for Safari mobile */}
+          <div 
+            className="absolute top-0 right-0"
+            style={{
+              paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
+              paddingRight: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
+            }}
+          >
+            <button
+              onClick={handleToggleMute}
+              className="pointer-events-auto bg-white rounded-lg w-14 h-14 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
+              aria-label={isMuted ? 'Unmute' : 'Mute'}
+            >
+              {isMuted ? (
+                <img 
+                  src="/Assets/Mute.svg" 
+                  alt="Muted" 
+                  className="w-6 h-6"
+                />
+              ) : (
+                <img 
+                  src="/Assets/Unmute.svg" 
+                  alt="Unmuted" 
+                  className="w-6 h-6"
+                />
+              )}
+            </button>
           </div>
-        )}
 
-        {/* Combo Rush - Only show when active - Under combo counter */}
-        {/* RESPONSIVE: Use min-width with responsive scaling instead of fixed pixels */}
-        {sprintMode && sprintTimer !== undefined && sprintTimer > 0 && (
-          <div className="bg-[#F6A288] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 min-w-[184px] sm:min-w-[210px] md:min-w-[236px] w-auto flex flex-col justify-between">
-            <div className="flex items-center justify-between w-full">
-              <span className="text-white text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                COMBO RUSH
-              </span>
-              <span className="text-white text-[10px] sm:text-xs font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                {Math.ceil(sprintTimer / 1000)}s
-              </span>
+          {/* Energy and Combo Meters - Bottom Center in Ground Area for Safari mobile */}
+          <div 
+            className="absolute left-1/2 -translate-x-1/2 flex flex-col gap-3"
+            style={{
+              bottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem) + 0.5rem)',
+              width: '90%',
+              maxWidth: '380px'
+            }}
+          >
+            {/* Energy Bar - Bigger for Safari mobile */}
+            <div className="bg-white rounded-xl p-3 h-18 min-w-[200px] w-full flex flex-col justify-between">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-1.5">
+                  <img 
+                    src="/Assets/Energy.svg" 
+                    alt="Energy" 
+                    className="w-5 h-5"
+                  />
+                  <span className="text-[#312f31] text-sm font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                    ENERGY
+                  </span>
+                </div>
+                <span className="text-[#312f31] text-lg font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  {Math.round(energy)}%
+                </span>
+              </div>
+              <div className="relative h-4 w-full rounded-full border-2 border-[#00a994]">
+                <div 
+                  className="absolute h-full bg-[#00a994] rounded-full transition-all duration-200"
+                  style={{ width: `${energy}%` }}
+                />
+              </div>
             </div>
-            <div className="relative h-2.5 sm:h-3.5 w-full rounded-full border border-white bg-white/20 overflow-hidden">
-              <div 
-                key={`progress-${Math.floor(sprintTimer)}`}
-                className="absolute h-full bg-white rounded-full"
-                style={{ 
-                  width: `${Math.max(0, Math.min(100, (sprintTimer / GameConfig.sprint.duration) * 100))}%`
-                }}
-              />
-            </div>
+
+            {/* Combo Counter - Bigger for Safari mobile - Only show when combo >= 2 */}
+            {combo >= 2 && (
+              <div id="combo-display" className="bg-[#645290] rounded-xl p-3 h-18 min-w-[200px] w-full flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <img 
+                    src="/Assets/Combo.svg" 
+                    alt="Combo" 
+                    className="w-5 h-5"
+                  />
+                  <span className="text-white text-sm font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                    COMBO
+                  </span>
+                </div>
+                <span className="text-white text-5xl font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  {combo}x
+                </span>
+              </div>
+            )}
+
+            {/* Combo Rush - Bigger for Safari mobile */}
+            {sprintMode && sprintTimer !== undefined && sprintTimer > 0 && (
+              <div className="bg-[#F6A288] rounded-xl p-3 h-18 min-w-[200px] w-full flex flex-col justify-between">
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-white text-sm font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                    COMBO RUSH
+                  </span>
+                  <span className="text-white text-sm font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                    {Math.ceil(sprintTimer / 1000)}s
+                  </span>
+                </div>
+                <div className="relative h-4 w-full rounded-full border-2 border-white bg-white/20 overflow-hidden">
+                  <div 
+                    key={`progress-${Math.floor(sprintTimer)}`}
+                    className="absolute h-full bg-white rounded-full"
+                    style={{ 
+                      width: `${Math.max(0, Math.min(100, (sprintTimer / GameConfig.sprint.duration) * 100))}%`
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Deadline Indicator - Top left on mobile, middle left on desktop */}
       {deadlineIndicator}

@@ -421,6 +421,9 @@ export default function App() {
       (window as any).__finalElfScore = elfScore;
     }
     
+    // Set flag to indicate a game was just completed (so popup should show)
+    sessionStorage.setItem('escapeTheDeadline_showEndingPopup', 'true');
+    
     const currentPath = window.location.pathname;
     const newPath = '/game/Christmas25/ending';
     console.log('🏁 Navigating to /ending');
