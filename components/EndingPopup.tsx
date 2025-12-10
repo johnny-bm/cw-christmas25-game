@@ -31,12 +31,12 @@ export function EndingPopup({
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [emailError, setEmailError] = useState('');
 
-  // Countdown timer to January 5th, 2025
+  // Countdown timer to January 5th, 2026
   useEffect(() => {
     const updateTimer = () => {
-      // Create deadline date explicitly: January 5, 2025 at 23:59:59 in local timezone
+      // Create deadline date explicitly: January 5, 2026 at 23:59:59 in local timezone
       // Month is 0-indexed (0 = January)
-      const deadline = new Date(2025, 0, 5, 23, 59, 59, 999);
+      const deadline = new Date(2026, 0, 5, 23, 59, 59, 999);
       const now = new Date();
       const diff = deadline.getTime() - now.getTime();
 
@@ -135,7 +135,7 @@ export function EndingPopup({
             Your score: <strong>{formatNumber(distance)}m</strong>
           </p>
           <p className="mb-2 sm:mb-3 text-sm sm:text-base">
-            The leaderboard closes on <strong>January 5th, 2025</strong>. If you're still in the 
+            The leaderboard closes on <strong>January 5th, 2026</strong>. If you're still in the 
             top 3 by then, you can claim your prize! Keep an eye on the leaderboard—
             someone might challenge your position.
           </p>
@@ -259,7 +259,7 @@ export function EndingPopup({
           {!isTop3 && (
             <div className="mb-4 sm:mb-6">
               <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-3 text-center">
-                <p className="text-xs sm:text-sm text-gray-600 mb-1">Leaderboard closes on January 5th, 2025</p>
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">Leaderboard closes on January 5th, 2026</p>
                 <p className="text-base sm:text-lg md:text-xl font-bold text-gray-700">{timeRemaining}</p>
               </div>
             </div>
@@ -354,7 +354,7 @@ export function EndingPopup({
             {/* Disclaimer (Top 3 only) */}
             {isTop3 && (
               <p className="text-xs text-gray-500 italic text-center">
-                Prize awarded if position maintained until 01/05/2025
+                Prize awarded if position maintained until 01/05/2026
               </p>
             )}
 
