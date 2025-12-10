@@ -1176,8 +1176,9 @@ export class GameScene extends Phaser.Scene {
     const isMobileJump = width <= 768 || height <= 768;
     // Use config value for mobile jump multiplier (reduced for better balance)
     const mobileJumpMultiplier = isMobileJump ? GameConfig.physics.mobileJumpMultiplier : 1.0;
-    // Use base velocity for consistent jump feel - reduced for better balance
-    const baseJumpVelocity = -1100; // Reduced from -1200 for better balance
+    // Desktop: higher jump velocity for lighter, more responsive feel
+    // Mobile: lower velocity for better balance
+    const baseJumpVelocity = isMobileJump ? -1100 : -1300; // Desktop: -1300 for snappier feel, Mobile: -1100 for balance
     jumpVelocity = baseJumpVelocity * (height / GameConfig.physics.baseGravityHeight) * mobileJumpMultiplier;
     
     // Safari mobile: use proper scaling for 700px height screen
