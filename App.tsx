@@ -182,24 +182,16 @@ export default function App() {
       const currentPath = location.pathname;
       const currentFullPath = window.location.pathname;
       const newPath = '/game/Christmas25/landing';
-      console.log('📍 Initial load');
-      console.log('  React Router pathname:', currentPath);
-      console.log('  Browser pathname:', currentFullPath);
-      console.log('  Full URL:', window.location.href);
-      console.log('  Target path:', newPath);
       
       if ((currentPath === '/' || (currentPath !== '/landing' && currentPath !== '/game' && currentPath !== '/ending')) && !isDebugMode) {
-        console.log('🔄 Redirecting to /landing');
-        
         // Always manually update URL first
         if (currentFullPath !== newPath) {
           try {
             window.history.replaceState({}, '', newPath);
-            console.log('✅ Successfully updated URL to:', window.location.href);
             // Force React Router to recognize the change
             window.dispatchEvent(new PopStateEvent('popstate'));
           } catch (e) {
-            console.error('❌ Failed to update URL:', e);
+            // Failed to update URL
           }
         }
         
@@ -232,16 +224,6 @@ export default function App() {
         navigate(`/ending?debug=popup&top3=true&position=${position}&score=${score}`, { replace: false });
       }
     };
-    
-    console.log('🎮 Debug commands available:');
-    console.log('  debugGame.showRegularPopup() - Test regular score popup');
-    console.log('  debugGame.showTop3Popup(1) - Test 1st place popup');
-    console.log('  debugGame.showTop3Popup(2) - Test 2nd place popup');
-    console.log('  debugGame.showTop3Popup(3) - Test 3rd place popup');
-    console.log('');
-    console.log('🌐 Or use URL parameters:');
-    console.log('  /ending?debug=popup&score=1200');
-    console.log('  /ending?debug=popup&top3=true&position=1&score=5000');
   }, [navigate]);
 
   // Sync route with game state on initial load or direct navigation
@@ -251,9 +233,6 @@ export default function App() {
     const path = location.pathname;
     const urlParams = new URLSearchParams(location.search);
     const isDebugMode = urlParams.get('debug') === 'popup';
-    
-    // Debug: Log route changes
-    console.log('🛣️ Route changed - pathname:', path, 'full URL:', window.location.href, 'gameState:', gameState);
     
     // In debug mode, set gameover state immediately
     if (isDebugMode && path === '/ending') {
@@ -359,13 +338,11 @@ export default function App() {
   const handleStartGame = () => {
     // Block game start if game is not ready
     if (!gameReady) {
-      console.log('🚫 Game start blocked: Assets not fully loaded');
       return;
     }
     
     // Block game start if on mobile and in portrait mode (except Safari mobile which runs in portrait)
     if (isMobile && isPortrait && !isSafariMobile()) {
-      console.log('🚫 Game start blocked: Mobile device in portrait mode');
       return;
     }
     
@@ -381,20 +358,15 @@ export default function App() {
     
     const currentPath = window.location.pathname;
     const newPath = '/game/Christmas25/game';
-    console.log('🎮 Navigating to /game');
-    console.log('  Current pathname:', currentPath);
-    console.log('  Current full URL:', window.location.href);
-    console.log('  Target path:', newPath);
     
     // Always manually update URL first
     if (currentPath !== newPath) {
       try {
         window.history.pushState({}, '', newPath);
-        console.log('✅ Successfully updated URL to:', window.location.href);
         // Force React Router to recognize the change
         window.dispatchEvent(new PopStateEvent('popstate'));
       } catch (e) {
-        console.error('❌ Failed to update URL:', e);
+        // Failed to update URL
       }
     }
     
@@ -426,20 +398,15 @@ export default function App() {
     
     const currentPath = window.location.pathname;
     const newPath = '/game/Christmas25/ending';
-    console.log('🏁 Navigating to /ending');
-    console.log('  Current pathname:', currentPath);
-    console.log('  Current full URL:', window.location.href);
-    console.log('  Target path:', newPath);
     
     // Always manually update URL first
     if (currentPath !== newPath) {
       try {
         window.history.pushState({}, '', newPath);
-        console.log('✅ Successfully updated URL to:', window.location.href);
         // Force React Router to recognize the change
         window.dispatchEvent(new PopStateEvent('popstate'));
       } catch (e) {
-        console.error('❌ Failed to update URL:', e);
+        // Failed to update URL
       }
     }
     
@@ -477,7 +444,6 @@ export default function App() {
       const newPath = '/game/Christmas25/game';
       if (window.location.pathname !== newPath) {
         window.history.pushState({}, '', newPath);
-        console.log('🔧 Manually updated URL to:', newPath);
         // Force React Router to recognize the change
         window.dispatchEvent(new PopStateEvent('popstate'));
       }

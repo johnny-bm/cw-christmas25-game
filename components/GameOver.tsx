@@ -139,24 +139,17 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
     if (typeof (window as any).__toggleGameMute === 'function') {
       const newMutedState = (window as any).__toggleGameMute();
       setIsMuted(newMutedState);
-      console.log('🔊 Mute button clicked, new state:', newMutedState);
-    } else {
-      console.warn('⚠️ __toggleGameMute function not available');
     }
   };
 
   const checkTopScore = async () => {
-    console.log('🏆 Checking if score is top 10:', distance);
     const isTop = await scoreService.isTopScore(distance);
-    console.log('🏆 Is top score?', isTop, 'Distance > 0?', distance > 0);
     setIsTopScore(isTop && distance > 0);
   };
 
   const checkTop3 = async () => {
     if (distance <= 0) return;
-    console.log('🏆 Checking if score is top 3:', distance);
     const { isTop3: top3, position } = await scoreService.getTop3Position(distance);
-    console.log('🏆 Is top 3?', top3, 'Position:', position);
     setIsTop3(top3);
     setTop3Position(position);
     
@@ -185,7 +178,6 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
       setSavedScoreId(savedScore.id);
       setScoreSaved(true);
     } catch (error) {
-      console.error('Failed to save score:', error);
       // Show error but don't block UI
       setScoreSaved(true); // Still mark as "saved" to prevent retry loops
       alert('Failed to save score. It has been saved locally instead.');
@@ -210,7 +202,6 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
       setScoreSaved(true);
       setShowPopup(false);
     } catch (error) {
-      console.error('Failed to save score:', error);
       alert('Failed to save score. Please try again.');
       throw error;
     } finally {

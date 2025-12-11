@@ -64,9 +64,6 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
     if (typeof (window as any).__toggleGameMute === 'function') {
       const newMutedState = (window as any).__toggleGameMute();
       setIsMuted(newMutedState);
-      console.log('🔊 Mute button clicked, new state:', newMutedState);
-    } else {
-      console.warn('⚠️ __toggleGameMute function not available');
     }
   };
   

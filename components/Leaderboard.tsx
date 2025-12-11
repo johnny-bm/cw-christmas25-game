@@ -28,8 +28,7 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
     // Reset display limit when refresh changes
     setDisplayLimit(10);
     // Load initial scores on refresh
-    loadScores(10).catch(err => {
-      console.error('Leaderboard load error:', err);
+    loadScores(10).catch(() => {
       setScores([]);
       setLoading(false);
     });
@@ -48,7 +47,6 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
       setScores(topScores || []); // Ensure we always have an array
       setTotalCount(count);
     } catch (error) {
-      console.error('Failed to load scores:', error);
       setError('Failed to load leaderboard');
       setScores([]); // Set empty array on error
     } finally {
@@ -75,7 +73,6 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
       setScores(moreScores || []);
       setDisplayLimit(newLimit);
     } catch (error) {
-      console.error('Failed to load more scores:', error);
       shouldRestoreScrollRef.current = false;
     } finally {
       setLoadingMore(false);

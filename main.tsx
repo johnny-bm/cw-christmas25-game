@@ -30,11 +30,6 @@ const getBasename = (): string | undefined => {
 
 const basename = getBasename();
 
-// Debug: Log basename in production to help troubleshoot
-if (import.meta.env.PROD) {
-  console.log('🔗 Router basename:', basename, 'Current pathname:', window.location.pathname, 'Full URL:', window.location.href);
-}
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <BrowserRouter basename={basename}>
     <App />

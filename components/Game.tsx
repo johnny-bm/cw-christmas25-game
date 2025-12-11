@@ -36,7 +36,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     // CRITICAL: Multiple layers of protection against double initialization (React Strict Mode)
     // Layer 1: Check module-level flag
     if (isInitializing) {
-      console.log('⚠️ Module-level guard: Initialization already in progress');
       return;
     }
     
@@ -45,25 +44,21 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
       // Game already exists and is valid, just update our ref
       if (!gameRef.current) {
         gameRef.current = globalGameInstance;
-        console.log('✅ Reusing existing game instance (React Strict Mode protection)');
       }
       return;
     }
     
     // Layer 3: Check if container already has a Phaser canvas
     if (containerRef.current.querySelector('canvas')) {
-      console.log('⚠️ Canvas already exists in container, skipping initialization');
       return;
     }
     
     // Layer 4: Check component-level refs
     if (gameRef.current || isInitializingRef.current) {
-      console.log('⚠️ Component-level guard: Game initialization already in progress');
       return;
     }
     
     // All checks passed - set flags to prevent double initialization
-    console.log('🎮 Initializing new game instance...');
     isInitializing = true; // Module-level flag
     isInitializingRef.current = true; // Component-level flag
     
@@ -192,7 +187,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
 
     // CRITICAL: Final check before creating game (React Strict Mode double-invoke protection)
     if (globalGameInstance && globalGameInstance.scene && !globalGameInstance.scene.isDestroyed) {
-      console.log('⚠️ Game instance already exists, reusing instead of creating new one');
       gameRef.current = globalGameInstance;
       isInitializingRef.current = false;
       isInitializing = false; // Reset module-level flag
@@ -201,13 +195,11 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     
     // Final check: if canvas exists, don't create
     if (container.querySelector('canvas')) {
-      console.log('⚠️ Canvas already exists, aborting game creation');
       isInitializingRef.current = false;
       isInitializing = false;
       return;
     }
     
-    console.log('🎮 Creating new Phaser game instance...');
     gameRef.current = new Phaser.Game(config);
     globalGameInstance = gameRef.current;
     const game = gameRef.current;
@@ -294,7 +286,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     // Fallback: if assets don't load within 10 seconds, assume ready
     setTimeout(() => {
       if (!assetsLoaded) {
-        console.warn('⚠️ Assets loading timeout - proceeding anyway');
         assetsLoaded = true;
         game.events.emit('ready');
         if (callbacksRef.current.onGameReady) {
@@ -327,7 +318,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
           containerHeight = window.innerHeight;
         } else {
           // Shouldn't happen, but handle gracefully
-          console.warn('⚠️ No valid dimensions available during resize');
           return;
         }
         
@@ -337,9 +327,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
           // Everything will scale proportionally based on the new dimensions
           // The scene's resize handler (via scale.on('resize')) will be called automatically
           gameRef.current.scale.resize(containerWidth, containerHeight);
-          console.log('🔄 Game resized to:', containerWidth, 'x', containerHeight);
-        } else {
-          console.warn('⚠️ Invalid container dimensions during resize:', containerWidth, containerHeight);
         }
       }
     };
@@ -379,9 +366,8 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
           
           // Ensure we have valid dimensions before resizing
           if (containerWidth > 100 && containerHeight > 100) {
-            // Resize game - scene's resize handler will be called automatically via scale.on('resize')
-            gameRef.current.scale.resize(containerWidth, containerHeight);
-            console.log('🔄 Game resized after orientation change:', containerWidth, 'x', containerHeight);
+          // Resize game - scene's resize handler will be called automatically via scale.on('resize')
+          gameRef.current.scale.resize(containerWidth, containerHeight);
           } else if (attempt < 3) {
             // Retry if dimensions are invalid (browser might not have updated yet)
             setTimeout(() => attemptResize(attempt + 1), 100 * (attempt + 1));
@@ -420,7 +406,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         // Ensure we have valid dimensions (at least 100px to prevent layout issues)
         if (containerWidth > 100 && containerHeight > 100) {
           gameRef.current.scale.resize(containerWidth, containerHeight);
-          console.log('🔄 Game resized via visual viewport:', containerWidth, 'x', containerHeight);
         }
       }
     };
@@ -474,7 +459,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
             isInitializing = false; // Reset module-level flag
           }
         } catch (e) {
-          console.warn('Error destroying game:', e);
+          // Error destroying game
         }
         gameRef.current = null;
         isInitializingRef.current = false;
@@ -508,7 +493,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
           // Access the private assetsLoaded flag via type assertion
           const assetsLoaded = (scene as any).assetsLoaded;
           if (isActive && !assetsLoaded) {
-            console.log('⏳ Waiting for assets to load before starting game...');
             return false; // Will try again after assets load
           }
           
@@ -516,16 +500,13 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
             // CRITICAL: Prevent double call to startGame()
             // Only call startGame() once per session to prevent resetting counters/obstacles
             if (!hasStartedGameRef.current) {
-              console.log('🎮 Calling startGame() for the first time');
               hasStartedGameRef.current = true;
               scene.startGame();
             } else {
-              console.log('⚠️ startGame() already called, skipping to prevent reset');
               // Don't call startGame() again - game is already started
               // Just ensure the game is running
               const isGameStarted = (scene as any).isGameStarted;
               if (!isGameStarted) {
-                console.log('⚠️ Game not started yet, calling startGame()');
                 scene.startGame();
               }
             }
@@ -537,7 +518,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
             return true;
           }
         } catch (e) {
-          console.error('Error in tryStartGame:', e);
           return false;
         }
       }
@@ -575,7 +555,6 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         if (scene && typeof (scene as any).toggleMute === 'function') {
           return (scene as any).toggleMute();
         }
-        console.warn('⚠️ Scene or toggleMute not available');
         return false;
       };
       (window as any).__getGameMuteState = () => {

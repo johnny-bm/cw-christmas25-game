@@ -120,12 +120,11 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
         (elem as any).msRequestFullscreen();
       }
       else {
-        console.warn('Fullscreen not supported on this device/browser.');
         setShowFullscreenPrompt(false);
         localStorage.setItem('fullscreenPromptDismissed', 'true');
       }
     } catch (error) {
-      console.warn('Fullscreen request failed:', error);
+      // Fullscreen request failed
     }
   };
 
@@ -135,8 +134,6 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
     if (typeof (window as any).__toggleGameMute === 'function') {
       const newMutedState = (window as any).__toggleGameMute();
       setIsMuted(newMutedState);
-    } else {
-      console.warn('⚠️ __toggleGameMute function not available');
     }
   };
 
@@ -342,7 +339,6 @@ function LeaderboardWrapper({ refresh, compact }: { refresh: number, compact?: b
   try {
     return <Leaderboard className="text-black" refresh={refresh} compact={compact} />;
   } catch (error) {
-    console.error('Leaderboard error:', error);
     return (
       <div className="text-black">
         <h2 className="text-center mb-3 text-sm sm:text-base">🏆 Leaderboard</h2>

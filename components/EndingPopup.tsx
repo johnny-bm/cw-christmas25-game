@@ -148,10 +148,9 @@ export function EndingPopup({
       await onSave(
         playerName.trim(),
         email.trim(),
-        isTop3 && prizeSelection ? prizeSelection as 'consultation' | 'discount' : undefined
+        isTop3 &&         prizeSelection ? prizeSelection as 'consultation' | 'discount' : undefined
       );
     } catch (error) {
-      console.error('Failed to save:', error);
       alert('Failed to save score. Please try again.');
     } finally {
       setIsSaving(false);

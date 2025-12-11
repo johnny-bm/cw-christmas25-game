@@ -57,7 +57,6 @@ class ScoreService {
 
       return scores;
     } catch (error) {
-      console.error("Error loading scores from Firebase:", error);
       // fall back to local storage
       return this.getLocalScores(limitCount);
     }
@@ -101,7 +100,6 @@ class ScoreService {
 
       return { ...newScore, id: docRef.id };
     } catch (error) {
-      console.error("Error saving score to Firebase:", error);
       // fall back to local storage
       return this.saveLocalScore(playerName, distance, maxCombo, grinchScore, elfScore, email, prizeSelection);
     }
@@ -169,7 +167,6 @@ class ScoreService {
       // If score is lower than all existing scores
       return allScores.length + 1;
     } catch (error) {
-      console.error('Error getting score position:', error);
       return null;
     }
   }
@@ -181,7 +178,6 @@ class ScoreService {
       const snapshot = await getDocs(this.scoresCollection);
       return snapshot.size;
     } catch (error) {
-      console.error("Error getting total count from Firebase:", error);
       // fall back to local storage
       return this.getLocalScoresCount();
     }
@@ -198,7 +194,6 @@ class ScoreService {
         .sort((a, b) => b.distance - a.distance)
         .slice(0, limit);
     } catch (error) {
-      console.error('Error loading local scores:', error);
       return [];
     }
   }
@@ -212,7 +207,6 @@ class ScoreService {
       const scores: ScoreEntry[] = JSON.parse(scoresJson);
       return scores.length;
     } catch (error) {
-      console.error('Error getting local scores count:', error);
       return 0;
     }
   }

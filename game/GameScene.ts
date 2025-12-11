@@ -206,13 +206,6 @@ export class GameScene extends Phaser.Scene {
     
     // Verify body size was set correctly
     if (Math.abs(this.player.body.width - bodyWidth) > 0.1 || Math.abs(this.player.body.height - bodyHeight) > 0.1) {
-      console.warn('⚠️ Body size still incorrect after correction, forcing:', {
-        expectedWidth: bodyWidth.toFixed(1),
-        actualWidth: this.player.body.width.toFixed(1),
-        expectedHeight: bodyHeight.toFixed(1),
-        actualHeight: this.player.body.height.toFixed(1),
-        forcing: true
-      });
       // Force directly - sometimes Phaser's setSize doesn't work
       // Use type casting to access read-only properties
       (this.player.body as any).width = bodyWidth;
@@ -269,11 +262,6 @@ export class GameScene extends Phaser.Scene {
     
     // If body height is wrong, fix it
     if (Math.abs(actualBodyHeight - bodyHeight) > 0.1) {
-      console.warn('⚠️ Body height is incorrect, fixing:', {
-        expected: bodyHeight.toFixed(1),
-        actual: actualBodyHeight.toFixed(1),
-        correcting: true
-      });
       // Force correct body height using type casting (read-only property)
       (this.player.body as any).height = bodyHeight;
       // Recalculate body position with correct height
@@ -284,38 +272,10 @@ export class GameScene extends Phaser.Scene {
     // Final verification
     const finalBodyBottom = this.player.body.y + this.player.body.height;
     if (Math.abs(finalBodyBottom - this.player.y) > 0.5) {
-      console.warn('⚠️ Body bottom still doesn\'t match sprite.y after correction:', {
-        bodyY: this.player.body.y.toFixed(1),
-        bodyHeight: this.player.body.height.toFixed(1),
-        bodyBottom: finalBodyBottom.toFixed(1),
-        spriteY: this.player.y.toFixed(1),
-        difference: (finalBodyBottom - this.player.y).toFixed(1),
-        correcting: true
-      });
       // Last resort: directly set body position to align bottom with sprite.y
       this.player.body.y = this.player.y - this.player.body.height;
     }
     
-    // Debug: Log body setup values to verify alignment
-    // Use calculated bodyHeight for verification since Phaser might report wrong values
-    const verifiedBodyHeight = Math.abs(this.player.body.height - bodyHeight) < 0.1 ? this.player.body.height : bodyHeight;
-    const verifiedBodyBottom = this.player.body.y + verifiedBodyHeight;
-    
-    console.log('=== CHARACTER BODY SETUP ===');
-    console.log('Sprite dimensions:', spriteWidth.toFixed(1), 'x', spriteHeight.toFixed(1));
-    console.log('Body size (set):', bodyWidth.toFixed(1), 'x', bodyHeight.toFixed(1));
-    console.log('Body size (reported):', this.player.body.width.toFixed(1), 'x', this.player.body.height.toFixed(1));
-    console.log('Body offset:', offsetX.toFixed(1), offsetY.toFixed(1));
-    console.log('Sprite.y (feet/ground):', this.player.y.toFixed(1));
-    console.log('Body.y:', this.player.body.y.toFixed(1));
-    console.log('Body.height (verified):', verifiedBodyHeight.toFixed(1));
-    console.log('Body bottom (verified):', verifiedBodyBottom.toFixed(1));
-    console.log('Ground Y:', this.groundY?.toFixed(1) || 'N/A');
-    console.log('Match:', Math.abs(verifiedBodyBottom - this.player.y) < 1 ? '✅' : '❌');
-    if (Math.abs(this.player.body.height - bodyHeight) > 0.1) {
-      console.warn('⚠️ Body height mismatch - using calculated value for verification');
-    }
-    console.log('======================================');
   }
   
   private deadlineX: number = -100;
@@ -396,7 +356,6 @@ export class GameScene extends Phaser.Scene {
     
     // CRITICAL: Don't resize during initialization - wait until create() is complete
     if (this.isInitializing) {
-      console.log('📱 Visual viewport resize ignored during initialization');
       return;
     }
     
@@ -407,13 +366,6 @@ export class GameScene extends Phaser.Scene {
     // Only resize if dimensions are valid and different from current
     if (visibleWidth > 0 && visibleHeight > 0 && 
         (Math.abs(this.scale.width - visibleWidth) > 5 || Math.abs(this.scale.height - visibleHeight) > 5)) {
-      console.log('📱 Visual viewport changed (Safari UI):', {
-        oldWidth: Math.round(this.scale.width),
-        oldHeight: Math.round(this.scale.height),
-        newWidth: Math.round(visibleWidth),
-        newHeight: Math.round(visibleHeight)
-      });
-      
       // Resize game to match visible viewport
       this.scale.resize(visibleWidth, visibleHeight);
       // Trigger handleResize to update all game elements
@@ -533,9 +485,6 @@ export class GameScene extends Phaser.Scene {
     });
     
     this.load.on('loaderror', (file: Phaser.Loader.File) => {
-      if (file.key === 'bgMusic') {
-        console.error('❌ Failed to load bgMusic:', file.src);
-      }
       // Still emit progress even on error to continue
       this.game.events.emit('loadingProgress', this.load.progress);
     });
@@ -554,14 +503,6 @@ export class GameScene extends Phaser.Scene {
       return visualHeight;
     }
 
-    if (visualHeight > 0) {
-      console.warn('⚠️ Visual viewport height unreliable, using scale height instead:', {
-        visualHeight: Math.round(visualHeight),
-        scaleHeight: Math.round(scaleHeight),
-        minHeight,
-        minScaleRatio
-      });
-    }
     return scaleHeight;
   }
 
@@ -639,13 +580,6 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.setDeadzone(0, 0); // No deadzone - show full world
     }
     
-    // Debug: Log camera and world info
-    console.log('🎥 Camera setup:', {
-      bounds: { x: 0, y: 0, width, height },
-      scroll: { x: this.cameras.main.scrollX, y: this.cameras.main.scrollY },
-      viewport: { x: 0, y: 0, width, height },
-      worldView: { x: this.cameras.main.worldView.x, y: this.cameras.main.worldView.y, width: this.cameras.main.worldView.width, height: this.cameras.main.worldView.height }
-    });
     
     // Set physics world bounds to match canvas size
     this.physics.world.setBounds(0, 0, width, height);
@@ -799,24 +733,11 @@ export class GameScene extends Phaser.Scene {
         this.player.y += adjustment;
       }
       
-      // CRITICAL: Verify gravity is working
-      console.log('🔧 Safari Mobile Physics Setup:', {
-        gravityY: this.physics.world.gravity.y,
-        playerBodyGravityY: this.player.body.gravity.y,
-        playerY: PLAYER_Y,
-        groundY: this.groundY,
-        playerBottom: PLAYER_Y,
-        playerX: PLAYER_START_X,
-        playerSize: PLAYER_SIZE
-      });
     } else {
       // Desktop/other mobile: keep existing logic
       if (!this.textures.exists('character-pushing-01')) {
-        console.error('❌ CRITICAL: Character texture "character-pushing-01" does not exist!');
-        console.log('Available textures:', Object.keys(this.textures.list));
         const placeholder = this.add.rectangle(width * 0.25, height * 0.5, 40, 60, 0xff0000, 1.0);
         placeholder.setDepth(20);
-        console.warn('⚠️ Created red placeholder rectangle at center - character texture missing!');
       }
       
       const originalSpriteHeight = 160;
@@ -910,14 +831,8 @@ export class GameScene extends Phaser.Scene {
     if (this.textures.exists('character-pushing-01') && this.textures.exists('character-ollie-01')) {
       this.setupCharacterAnimation();
     } else {
-      console.error('❌ CRITICAL: Character textures not loaded!', {
-        pushingExists: this.textures.exists('character-pushing-01'),
-        ollieExists: this.textures.exists('character-ollie-01'),
-        allTextures: Object.keys(this.textures.list)
-      });
       // Try to set a fallback texture or create a placeholder
       if (!this.textures.exists('character-pushing-01')) {
-        console.warn('⚠️ Creating placeholder for character texture');
         // Create a simple colored rectangle as placeholder
         const placeholderX = isSafariMobile ? 100 : (width * 0.25);
         this.add.graphics()
@@ -984,9 +899,6 @@ export class GameScene extends Phaser.Scene {
       this.vignette.setAlpha(0); // Start invisible
       // Use NORMAL blend mode (MULTIPLY was making it too dark/invisible)
       this.vignette.setBlendMode(Phaser.BlendModes.NORMAL);
-    } else {
-      console.warn('⚠️ Vignette texture not found - image may not have loaded');
-      console.warn('⚠️ Available textures:', Object.keys(this.textures.list));
     }
 
     // Initialize groups
@@ -1010,8 +922,8 @@ export class GameScene extends Phaser.Scene {
       const audioContext = this.getAudioContext();
       if (audioContext && audioContext.state === 'suspended') {
         // Try to resume audio context immediately
-        audioContext.resume().catch((err) => {
-          console.warn('⚠️ Could not resume audio context:', err);
+        audioContext.resume().catch(() => {
+          // Could not resume audio context
         });
       }
       
@@ -1055,10 +967,10 @@ export class GameScene extends Phaser.Scene {
         this.stumbleSound = this.sound.add('stumbleSound', { volume: soundVolume, ...soundConfig });
         this.skateboardSound = this.sound.add('skateboardSound', { volume: soundVolume, loop: true, rate: 1.2, ...soundConfig });
       } catch (error) {
-        console.warn('⚠️ Some sound effects may not be loaded yet:', error);
+        // Some sound effects may not be loaded yet
       }
     } catch (error) {
-      console.error('❌ Failed to initialize sounds:', error);
+      // Failed to initialize sounds
     }
     
     // Load mute state from localStorage
@@ -1078,8 +990,8 @@ export class GameScene extends Phaser.Scene {
       // Ensure audio context is resumed (required for mobile)
       const audioContext = this.getAudioContext();
       if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume().catch((err) => {
-          console.warn('⚠️ Failed to resume audio context:', err);
+        audioContext.resume().catch(() => {
+          // Failed to resume audio context
         });
       }
       
@@ -1088,7 +1000,7 @@ export class GameScene extends Phaser.Scene {
         try {
           this.backgroundMusic.play();
         } catch (error) {
-          console.warn('⚠️ Failed to play music:', error);
+          // Failed to play music
         }
       }
     };
@@ -1202,16 +1114,6 @@ export class GameScene extends Phaser.Scene {
       
       // Allow jump from ground - always allow first jump when on ground
       if (this.jumpsRemaining > 0 && canJump) {
-        console.log('🚀 JUMP (on ground):', {
-          onGround,
-          touchingGround,
-          nearGround,
-          velocityDownward,
-          jumpsRemaining: this.jumpsRemaining,
-          velocityY: jumpVelocity.toFixed(1),
-          gravityEnabled: this.player.body.allowGravity
-        });
-        
         // CRITICAL: Re-enable gravity when jumping
         this.player.body.setAllowGravity(true);
         this.player.body.setVelocityY(jumpVelocity);
@@ -1222,29 +1124,9 @@ export class GameScene extends Phaser.Scene {
         // This prevents conflicts between jump handler and update loop
         const ollieAnim = this.getAnimationName(false);
         if (this.anims.exists(ollieAnim)) {
-          const beforeJump = this.player.anims.currentAnim?.key || 'none';
-          
-          console.log('▶️ JUMP HANDLER: Starting ollie animation:', {
-            anim: ollieAnim,
-            beforeAnim: beforeJump,
-            touchingGround: this.player.body.touching.down || this.player.body.blocked.down,
-            velocityY: this.player.body.velocity.y.toFixed(1)
-          });
-          
           this.player.play(ollieAnim, false); // Always restart from beginning
           // Don't update animationState here - update loop will handle it
           this.lastAnimationKey = ollieAnim;
-          
-          // Verify animation started
-          const verifyAnim = this.player.anims.currentAnim;
-          console.log('✅ JUMP HANDLER: Ollie animation result:', {
-            requested: ollieAnim,
-            playing: verifyAnim?.key || 'none',
-            isPlaying: verifyAnim !== null,
-            success: verifyAnim?.key === ollieAnim
-          });
-        } else {
-          console.error('❌ JUMP: Ollie animation does not exist:', ollieAnim);
         }
         // Deduct energy for jumping (free during sprint mode)
         const jumpCost = this.sprintMode ? GameConfig.energy.jumpCostSprint : GameConfig.energy.jumpCost;
@@ -1259,7 +1141,7 @@ export class GameScene extends Phaser.Scene {
             }
             this.jumpSound.play();
           } catch (error) {
-            console.warn('⚠️ Failed to play jump sound:', error);
+            // Failed to play jump sound
           }
         }
         return; // Exit early after ground jump
@@ -1268,13 +1150,6 @@ export class GameScene extends Phaser.Scene {
     
     // Double jump - only allow if in air and have jumps remaining
     if (this.jumpsRemaining > 0 && !onGround) {
-      console.log('🚀 DOUBLE JUMP:', {
-        onGround,
-        jumpsRemaining: this.jumpsRemaining,
-        velocityY: jumpVelocity.toFixed(1),
-        gravityEnabled: this.player.body.allowGravity
-      });
-      
       // CRITICAL: Double jump - only allow if not on ground and have jumps remaining
       // Ensure gravity is enabled for double jump
       this.player.body.setAllowGravity(true);
@@ -1285,29 +1160,9 @@ export class GameScene extends Phaser.Scene {
       // NOTE: Don't update animationState here - let the update loop handle it
       const ollieAnim = this.getAnimationName(false);
       if (this.anims.exists(ollieAnim)) {
-        const beforeDoubleJump = this.player.anims.currentAnim?.key || 'none';
-        
-        console.log('▶️ DOUBLE JUMP HANDLER: Starting ollie animation:', {
-          anim: ollieAnim,
-          beforeAnim: beforeDoubleJump,
-          touchingGround: this.player.body.touching.down || this.player.body.blocked.down,
-          velocityY: this.player.body.velocity.y.toFixed(1)
-        });
-        
         this.player.play(ollieAnim, false); // Always restart from beginning
         // Don't update animationState here - update loop will handle it
         this.lastAnimationKey = ollieAnim;
-        
-        // Verify animation started
-        const verifyAnim = this.player.anims.currentAnim;
-        console.log('✅ DOUBLE JUMP HANDLER: Ollie animation result:', {
-          requested: ollieAnim,
-          playing: verifyAnim?.key || 'none',
-          isPlaying: verifyAnim !== null,
-          success: verifyAnim?.key === ollieAnim
-        });
-      } else {
-        console.error('❌ DOUBLE JUMP: Ollie animation does not exist:', ollieAnim);
       }
       // Deduct energy for jumping (free during sprint mode)
       const jumpCost = this.sprintMode ? GameConfig.energy.jumpCostSprint : GameConfig.energy.jumpCost;
@@ -1322,7 +1177,7 @@ export class GameScene extends Phaser.Scene {
           }
           this.jumpSound.play();
         } catch (error) {
-          console.warn('⚠️ Failed to play jump sound:', error);
+            // Failed to play jump sound
         }
       }
     }
@@ -1454,7 +1309,6 @@ export class GameScene extends Phaser.Scene {
     // Use Obstacle-03 image for floating obstacles
     const imageKey = this.obstacleImageKeys.find(key => key.includes('obstacle-03'));
     if (!imageKey) {
-      console.warn('Obstacle-03 not found, falling back to rectangle');
       // Fallback to rectangle if image not found
       const obstacleWidth = width * 0.02;
       const obstacleHeight = height * 0.023;
@@ -1603,7 +1457,6 @@ export class GameScene extends Phaser.Scene {
     // Use Obstacle-04 image for projectile obstacles
     const imageKey = this.obstacleImageKeys.find(key => key.includes('obstacle-04'));
     if (!imageKey) {
-      console.warn('Obstacle-04 not found, falling back to rectangle');
       // Fallback to rectangle if image not found
       const projectileSize = width * 0.02;
       const projectile = this.add.rectangle(
@@ -1903,7 +1756,7 @@ export class GameScene extends Phaser.Scene {
       this.textureImageDataCache.set(cacheKey, imageData);
       return imageData;
     } catch (error) {
-      console.warn('Failed to get texture image data:', error);
+      // Failed to get texture image data
       return null;
     }
   }
@@ -1992,19 +1845,6 @@ export class GameScene extends Phaser.Scene {
         const maxCenterDistance = Math.max(baseRadius, Math.min(bounds2.width, bounds2.height) * 0.5);
         const centersAreClose = centerDistance < maxCenterDistance;
         
-        console.log('🔍 Obstacle-02 Collision Check:', {
-          distance: distance.toFixed(1),
-          playerCenter: { x: playerCenterX.toFixed(1), y: playerCenterY.toFixed(1) },
-          obstacleCenter: { x: obj2CenterX.toFixed(1), y: obj2CenterY.toFixed(1) },
-          centerDistance: centerDistance.toFixed(1),
-          maxCenterDistance: maxCenterDistance.toFixed(1),
-          centersAreClose,
-          playerBounds: {
-            x: bounds1.x.toFixed(1),
-            y: bounds1.y.toFixed(1),
-            width: bounds1.width.toFixed(1),
-            height: bounds1.height.toFixed(1)
-          },
           collisionArea: {
             x: (playerCenterX - baseRadius).toFixed(1),
             y: (playerCenterY - baseRadius).toFixed(1),
@@ -2072,7 +1912,7 @@ export class GameScene extends Phaser.Scene {
               }
               this.stumbleSound.play();
             } catch (error) {
-              console.warn('⚠️ Failed to play stumble sound:', error);
+              // Failed to play stumble sound
             }
           }
           obstacle.destroy();
@@ -2139,7 +1979,7 @@ export class GameScene extends Phaser.Scene {
               }
               this.stumbleSound.play();
             } catch (error) {
-              console.warn('⚠️ Failed to play stumble sound:', error);
+              // Failed to play stumble sound
             }
           }
           obstacle.destroy();
@@ -2175,7 +2015,7 @@ export class GameScene extends Phaser.Scene {
                 }
                 this.comboSound.play();
               } catch (error) {
-                console.warn('⚠️ Failed to play combo sound:', error);
+                // Failed to play combo sound
               }
             }
           }
@@ -2226,7 +2066,7 @@ export class GameScene extends Phaser.Scene {
               }
               this.stumbleSound.play();
             } catch (error) {
-              console.warn('⚠️ Failed to play stumble sound:', error);
+              // Failed to play stumble sound
             }
           }
           projectile.destroy();
@@ -2289,7 +2129,7 @@ export class GameScene extends Phaser.Scene {
             }
             this.collectSound.play();
           } catch (error) {
-            console.warn('⚠️ Failed to play collect sound:', error);
+            // Failed to play collect sound
           }
         }
         collectible.destroy();
@@ -2317,7 +2157,7 @@ export class GameScene extends Phaser.Scene {
             }
             this.collectSound.play();
           } catch (error) {
-            console.warn('⚠️ Failed to play collect sound:', error);
+            // Failed to play collect sound
           }
         }
         collectible.destroy();
@@ -2497,7 +2337,7 @@ export class GameScene extends Phaser.Scene {
       try {
         this.skateboardSound.stop();
       } catch (error) {
-        console.warn('⚠️ Failed to stop skateboard sound on game over:', error);
+        // Failed to stop skateboard sound on game over
       }
     }
     
@@ -2513,7 +2353,7 @@ export class GameScene extends Phaser.Scene {
           (this.backgroundMusic as any).rate = GameConfig.audio.musicRateNormal;
         }
       } catch (error) {
-        console.warn('⚠️ Failed to reset music speed on game over:', error);
+        // Failed to reset music speed on game over
       }
     }
     
@@ -2593,22 +2433,6 @@ export class GameScene extends Phaser.Scene {
     // Stable ground detection: consistently touching AND not moving upward
     const isOnGround = consistentlyTouching && !isMovingUpward;
     
-    // Log ground state every 10 frames (throttled for performance)
-    if (Math.floor(time / 16) % 10 === 0) {
-      console.log('📍 GROUND STATE:', {
-        isOnGround,
-        consistentlyTouching,
-        touchingCount: `${touchingCount}/5`,
-        touchingGround,
-        touchingDown: this.player.body.touching.down,
-        blockedDown: this.player.body.blocked.down,
-        isMovingUpward,
-        velocityY: velocityY.toFixed(1),
-        distanceFromGround: distanceFromGround.toFixed(1),
-        playerY: spriteY.toFixed(1),
-        groundY: this.groundY.toFixed(1)
-      });
-    }
     
     // SIMPLIFIED ANIMATION LOGIC
     // Determine target animation state based on simple ground check
@@ -2621,56 +2445,17 @@ export class GameScene extends Phaser.Scene {
     const currentAnim = this.player.anims.currentAnim;
     const targetAnim = this.getAnimationName(isOnGround);
     
-    // Log animation state every 10 frames
-    if (Math.floor(time / 16) % 10 === 0) {
-      console.log('🎬 ANIMATION STATE:', {
-        currentState: this.animationState,
-        targetState: targetAnimationState,
-        currentAnim: currentAnim?.key || 'none',
-        targetAnim,
-        timeSinceLastChange: timeSinceLastChange.toFixed(0) + 'ms',
-        canSwitch: timeSinceLastChange >= minTimeBetweenSwitches,
-        shouldSwitch: targetAnimationState !== this.animationState && timeSinceLastChange >= minTimeBetweenSwitches && (!currentAnim || currentAnim.key !== targetAnim)
-      });
-    }
     
     if (targetAnimationState !== this.animationState && timeSinceLastChange >= minTimeBetweenSwitches) {
       // Only switch if we're not already playing the correct animation
       if (!currentAnim || currentAnim.key !== targetAnim) {
-        console.log('🔄 ANIMATION SWITCH TRIGGERED:', {
-          from: this.animationState,
-          to: targetAnimationState,
-          fromAnim: currentAnim?.key || 'none',
-          toAnim: targetAnim,
-          touchingGround,
-          isMovingUpward,
-          velocityY: velocityY.toFixed(1),
-          timeSinceLastChange: timeSinceLastChange.toFixed(0) + 'ms'
-        });
-        
-        const beforePlay = this.player.anims.currentAnim?.key || 'none';
         this.player.play(targetAnim, false);
-        const afterPlay = this.player.anims.currentAnim?.key || 'none';
-        
-        console.log('✅ ANIMATION PLAY CALLED:', {
-          requested: targetAnim,
-          before: beforePlay,
-          after: afterPlay,
-          success: afterPlay === targetAnim
-        });
         
         this.animationState = targetAnimationState;
         this.animationStateChangeTime = time;
         this.lastAnimationKey = targetAnim;
       } else {
         // Animation is already correct, but state is out of sync - update state without switching
-        console.log('⏭️ ANIMATION SWITCH SKIPPED (already playing):', {
-          currentState: this.animationState,
-          targetState: targetAnimationState,
-          currentAnim: currentAnim?.key || 'none',
-          targetAnim,
-          syncingState: true
-        });
         // Sync the state to match the actual animation
         this.animationState = targetAnimationState;
         // Don't update animationStateChangeTime since we didn't actually switch
@@ -2682,13 +2467,6 @@ export class GameScene extends Phaser.Scene {
     } else if (targetAnimationState !== this.animationState) {
       // Log when we want to switch but can't due to cooldown
       if (Math.floor(time / 16) % 20 === 0) { // Every 20 frames
-        console.log('⏳ ANIMATION SWITCH BLOCKED (cooldown):', {
-          currentState: this.animationState,
-          targetState: targetAnimationState,
-          timeSinceLastChange: timeSinceLastChange.toFixed(0) + 'ms',
-          minTime: minTimeBetweenSwitches + 'ms',
-          remaining: (minTimeBetweenSwitches - timeSinceLastChange).toFixed(0) + 'ms'
-        });
       }
     }
     
@@ -2701,9 +2479,7 @@ export class GameScene extends Phaser.Scene {
     // This prevents the infinite correction loop
     // Note: spriteY and distanceFromGround are already declared above
     if (distanceFromGround > 5 && !touchingGround) {
-      console.warn('⚠️ CHARACTER BELOW GROUND - CORRECTING:', {
-        distance: distanceFromGround.toFixed(1),
-        velocityY: this.player.body.velocity.y.toFixed(1),
+      // CHARACTER BELOW GROUND - CORRECTING
         touchingGround
       });
       
@@ -2801,7 +2577,7 @@ export class GameScene extends Phaser.Scene {
             (this.skateboardSound as any).rate = skateboardRate;
           }
         } catch (error) {
-          console.warn('⚠️ Failed to play skateboard sound:', error);
+          // Failed to play skateboard sound
         }
       } else if (this.skateboardSound && this.skateboardSound.isPlaying && this.sprintMode) {
         // Update rate if sprint mode is active and sound is already playing
@@ -2812,7 +2588,7 @@ export class GameScene extends Phaser.Scene {
             (this.skateboardSound as any).rate = 1.5;
           }
         } catch (error) {
-          console.warn('⚠️ Failed to update skateboard sound rate:', error);
+          // Failed to update skateboard sound rate
         }
       }
     } else {
@@ -2821,7 +2597,7 @@ export class GameScene extends Phaser.Scene {
         try {
           this.skateboardSound.stop();
         } catch (error) {
-          console.warn('⚠️ Failed to stop skateboard sound:', error);
+          // Failed to stop skateboard sound
         }
       }
     }
@@ -3029,7 +2805,7 @@ export class GameScene extends Phaser.Scene {
             (this.backgroundMusic as any).rate = this.currentMusicRate;
           }
         } catch (error) {
-          console.warn('⚠️ Failed to update music speed:', error);
+          // Failed to update music speed
         }
       }
     }
@@ -3111,17 +2887,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   public startGame(): void {
-    console.log('🎮 startGame() called');
     
     // CRITICAL: Prevent double call to startGame() - if game is already started, don't reset
     if (this.isGameStarted && !this.isGameOver) {
-      console.log('⚠️ startGame() called but game is already started, skipping to prevent reset');
       return;
     }
     
     // CRITICAL: Don't start game until assets are fully loaded
     if (!this.assetsLoaded) {
-      console.warn('⚠️ startGame() called before assets are loaded, waiting...');
       // Wait for assets to load, then retry
       const checkAssets = setInterval(() => {
         if (this.assetsLoaded) {
@@ -3133,7 +2906,7 @@ export class GameScene extends Phaser.Scene {
       setTimeout(() => {
         clearInterval(checkAssets);
         if (!this.assetsLoaded) {
-          console.error('❌ Assets failed to load within 5 seconds, starting anyway');
+          // Assets failed to load within 5 seconds, starting anyway
           this.assetsLoaded = true; // Force allow start
           this.startGame();
         }
@@ -3151,17 +2924,10 @@ export class GameScene extends Phaser.Scene {
     
     // CRITICAL: Verify player exists before starting
     if (!this.player) {
-      console.error('❌ CRITICAL: Player does not exist when startGame() is called!');
+      // CRITICAL: Player does not exist when startGame() is called!
       return;
     }
     
-    console.log('✅ Player exists:', {
-      x: this.player.x.toFixed(1),
-      y: this.player.y.toFixed(1),
-      visible: this.player.visible,
-      alpha: this.player.alpha,
-      scale: this.player.scaleX
-    });
     
     // Ensure ground is positioned correctly before starting game
     // This is critical after orientation changes
@@ -3195,15 +2961,6 @@ export class GameScene extends Phaser.Scene {
     const groundHeight = height * groundHeightRatio;
     this.groundY = height - groundHeight;
     
-    console.log('🌍 startGame() ground recalculation:', {
-      width,
-      height,
-      aspectRatio: aspectRatio.toFixed(2),
-      isShortViewport,
-      groundHeightRatio: (groundHeightRatio * 100).toFixed(1) + '%',
-      groundHeight: Math.round(groundHeight),
-      groundY: Math.round(this.groundY)
-    });
     
     // Update ground position if it exists
     if (this.ground) {
@@ -3253,16 +3010,6 @@ export class GameScene extends Phaser.Scene {
       this.player.play('pushing', false); // Start from beginning
     }
     
-    console.log('✅ Game started:', {
-      isGameStarted: this.isGameStarted,
-      isGameOver: this.isGameOver,
-      energy: this.energy,
-      playerExists: !!this.player,
-      playerVisible: this.player?.visible,
-      playerX: this.player?.x?.toFixed(1),
-      playerY: this.player?.y?.toFixed(1),
-      animationKey: this.lastAnimationKey
-    });
     this.distance = 0;
     this.gameSpeed = GameConfig.speed.initial;
     this.grinchScore = 0;
@@ -3285,7 +3032,6 @@ export class GameScene extends Phaser.Scene {
         this.player.body.setAllowGravity(false);
       }
       
-      console.log('✅ startGame() player ready:', {
         playerX: this.player.x.toFixed(1),
         playerY: this.player.y.toFixed(1),
         groundY: this.groundY.toFixed(1),
@@ -3335,7 +3081,7 @@ export class GameScene extends Phaser.Scene {
           (this.backgroundMusic as any).rate = GameConfig.audio.musicRateNormal;
         }
       } catch (error) {
-        console.warn('⚠️ Failed to reset music speed on game start:', error);
+        // Failed to reset music speed on game start
       }
     }
     
@@ -3361,20 +3107,19 @@ export class GameScene extends Phaser.Scene {
       // Ensure audio context is resumed (required for mobile)
       const audioContext = this.getAudioContext();
       if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume().catch((err) => {
-          console.warn('⚠️ Failed to resume audio context:', err);
+        audioContext.resume().catch(() => {
+          // Failed to resume audio context
         });
       }
       if (!this.backgroundMusic.isPlaying && !this.isMuted) {
         try {
           this.backgroundMusic.play();
         } catch (error) {
-          console.warn('⚠️ Failed to start music on game start:', error);
+          // Failed to start music on game start
         }
       } else {
       }
     } else {
-      console.warn('⚠️ Background music not loaded');
     }
     
     this.updateGameData();
@@ -3396,7 +3141,7 @@ export class GameScene extends Phaser.Scene {
           (this.backgroundMusic as any).rate = GameConfig.audio.musicRateNormal;
         }
       } catch (error) {
-        console.warn('⚠️ Failed to reset music speed on game reset:', error);
+        // Failed to reset music speed on game reset
       }
     }
     
@@ -3588,7 +3333,7 @@ export class GameScene extends Phaser.Scene {
           (this.backgroundMusic as any).rate = GameConfig.audio.musicRateSprint;
         }
       } catch (error) {
-        console.warn('⚠️ Failed to speed up music:', error);
+        // Failed to speed up music
       }
     }
     
@@ -3601,7 +3346,7 @@ export class GameScene extends Phaser.Scene {
           (this.skateboardSound as any).rate = 1.5;
         }
       } catch (error) {
-        console.warn('⚠️ Failed to speed up skateboard sound:', error);
+        // Failed to speed up skateboard sound
       }
     }
   }
@@ -3633,7 +3378,7 @@ export class GameScene extends Phaser.Scene {
               (this.backgroundMusic as any).rate = GameConfig.audio.musicRateNormal;
             }
           } catch (error) {
-            console.warn('⚠️ Failed to reset music speed:', error);
+            // Failed to reset music speed
           }
         }
         
@@ -3646,7 +3391,7 @@ export class GameScene extends Phaser.Scene {
               (this.skateboardSound as any).rate = 1.2;
             }
           } catch (error) {
-            console.warn('⚠️ Failed to reset skateboard sound rate:', error);
+            // Failed to reset skateboard sound rate
           }
         }
       }
@@ -3683,11 +3428,6 @@ export class GameScene extends Phaser.Scene {
     // Slower frame rate on mobile to prevent animation from being too fast
     const pushingFrameRate = isMobile ? 8 : 12;
     
-    console.log('🎬 CREATING pushing animation:', {
-      frameCount: pushingFrames.length,
-      frameRate: pushingFrameRate,
-      frames: pushingFrames.map(f => f.key)
-    });
     
     this.anims.create({
       key: 'pushing',
@@ -3696,7 +3436,6 @@ export class GameScene extends Phaser.Scene {
       repeat: -1 // Loop infinitely
     });
     
-    console.log('✅ Pushing animation created:', this.anims.exists('pushing'));
     
     // Create ollie animation (10 frames)
     const ollieFrames = [];
@@ -3708,11 +3447,6 @@ export class GameScene extends Phaser.Scene {
     // Slower frame rate on mobile for ollie too
     const ollieFrameRate = isMobile ? 12 : 15;
     
-    console.log('🎬 CREATING ollie animation:', {
-      frameCount: ollieFrames.length,
-      frameRate: ollieFrameRate,
-      frames: ollieFrames.map(f => f.key)
-    });
     
     this.anims.create({
       key: 'ollie',
@@ -3722,7 +3456,6 @@ export class GameScene extends Phaser.Scene {
       // Note: Transition back to pushing is handled in update() loop when on ground
     });
     
-    console.log('✅ Ollie animation created:', this.anims.exists('ollie'));
     
     // Create sprint pushing animation (10 frames)
     const sprintPushingFrames = [];
@@ -3734,11 +3467,6 @@ export class GameScene extends Phaser.Scene {
     // Slower frame rate on mobile for sprint pushing too
     const sprintPushingFrameRate = isMobile ? 8 : 12;
     
-    console.log('🎬 CREATING sprint-pushing animation:', {
-      frameCount: sprintPushingFrames.length,
-      frameRate: sprintPushingFrameRate,
-      frames: sprintPushingFrames.map(f => f.key)
-    });
     
     this.anims.create({
       key: 'sprint-pushing',
@@ -3747,7 +3475,6 @@ export class GameScene extends Phaser.Scene {
       repeat: -1 // Loop infinitely
     });
     
-    console.log('✅ Sprint-pushing animation created:', this.anims.exists('sprint-pushing'));
     
     // Create sprint ollie animation (10 frames)
     const sprintOllieFrames = [];
@@ -3759,11 +3486,6 @@ export class GameScene extends Phaser.Scene {
     // Slower frame rate on mobile for sprint ollie too
     const sprintOllieFrameRate = isMobile ? 12 : 15;
     
-    console.log('🎬 CREATING sprint-ollie animation:', {
-      frameCount: sprintOllieFrames.length,
-      frameRate: sprintOllieFrameRate,
-      frames: sprintOllieFrames.map(f => f.key)
-    });
     
     this.anims.create({
       key: 'sprint-ollie',
@@ -3773,14 +3495,11 @@ export class GameScene extends Phaser.Scene {
       // Note: Transition back to sprint-pushing is handled in update() loop when on ground
     });
     
-    console.log('✅ Sprint-ollie animation created:', this.anims.exists('sprint-ollie'));
     
     // Set initial texture and start pushing animation
     // Note: Scale is already set in create() method based on screen size
     this.player.setTexture('character-pushing-01');
     
-    console.log('🎬 SETUP: Starting initial pushing animation');
-    console.log('🎬 SETUP: Animation exists?', this.anims.exists('pushing'));
     
     if (this.anims.exists('pushing')) {
       this.player.play('pushing');
@@ -3788,14 +3507,6 @@ export class GameScene extends Phaser.Scene {
       this.animationStateChangeTime = 0; // Will be set when game starts
       this.lastAnimationKey = 'pushing'; // Initialize tracking
       
-      // Verify animation started
-      const verifyAnim = this.player.anims.currentAnim;
-      console.log('✅ SETUP: Initial animation started:', {
-        playing: verifyAnim?.key || 'none',
-        isPlaying: verifyAnim !== null
-      });
-    } else {
-      console.error('❌ SETUP: Pushing animation does not exist!');
     }
   }
 
@@ -3970,17 +3681,13 @@ export class GameScene extends Phaser.Scene {
     // Use a reliable viewport height that won't shrink the world excessively on Safari
     const reliableHeight = this.getReliableViewportHeight();
     if (reliableHeight !== height) {
-      console.log('📱 Resize: Using reliable viewport height:', {
-        scaleHeight: Math.round(height),
-        reliableHeight: Math.round(reliableHeight)
-      });
       height = reliableHeight;
       this.scale.resize(width, height);
     }
     
     // Validate dimensions - ensure they're valid (prevents issues on iPhone Pro Max)
     if (width <= 0 || height <= 0 || !isFinite(width) || !isFinite(height)) {
-      console.warn('⚠️ Invalid dimensions in handleResize, using fallback:', width, height);
+      // Invalid dimensions in handleResize, using fallback
       // Use visualViewport as fallback if available, otherwise window dimensions
       if (window.visualViewport && window.visualViewport.width > 0 && window.visualViewport.height > 0) {
         width = window.visualViewport.width;
@@ -4051,11 +3758,11 @@ export class GameScene extends Phaser.Scene {
     // CRITICAL: Ensure groundY is within valid bounds (0 to height)
     // This prevents ground from being positioned off-screen on iPhone Pro Max
     if (this.groundY < 0) {
-      console.warn('⚠️ Ground Y position is negative in resize, adjusting:', this.groundY);
+      // Ground Y position is negative in resize, adjusting
       this.groundY = Math.max(0, height * 0.85); // Ensure ground is at least 15% from bottom
     }
     if (this.groundY >= height) {
-      console.warn('⚠️ Ground Y position exceeds height in resize, adjusting:', this.groundY, height);
+      // Ground Y position exceeds height in resize, adjusting
       this.groundY = height * 0.85; // Ensure ground is at least 15% from bottom
     }
     
@@ -4120,12 +3827,7 @@ export class GameScene extends Phaser.Scene {
       
       if (playerTopY < 0) {
         // Character would be cut off at top - adjust position or scale
-        console.warn('⚠️ Character would be cut off after resize, adjusting:', {
-          groundY: this.groundY,
-          playerHeight: playerHeight,
-          playerTopY: playerTopY,
-          screenHeight: height
-        });
+        // Character would be cut off after resize, adjusting
         
         // Adjust ground position if possible
         const minGroundY = playerHeight + 10; // Leave 10px margin
