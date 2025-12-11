@@ -128,11 +128,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           </div>
         </div>
       ) : (
-        /* Safari mobile: Meter counter below dynamic island - Proper viewport constraints */
+        /* Safari mobile: Meter counter below dynamic island - More space from top */
         <div 
           className="absolute"
           style={{
-            top: 'max(5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 4rem))',
+            top: 'max(6rem, calc(env(safe-area-inset-top, 0px) + 1rem + 5rem))',
             left: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
             right: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
             width: 'calc(100% - max(3rem, calc(env(safe-area-inset-left, 0px) + 1.5rem) * 2))',
@@ -204,10 +204,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         <div 
           className="absolute flex flex-col items-center gap-3"
           style={{
-            top: 'max(7.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 6.5rem))',
-            left: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
-            right: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
-            width: 'calc(100% - max(3rem, calc(env(safe-area-inset-left, 0px) + 1.5rem) * 2))',
+            top: 'max(8.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 7.5rem))',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'calc(100% - max(4rem, calc(env(safe-area-inset-left, 0px) + 2rem) * 2))',
+            maxWidth: '320px',
             boxSizing: 'border-box',
             paddingLeft: '0.5rem',
             paddingRight: '0.5rem'
@@ -410,12 +411,12 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       ) : (
         /* Safari Mobile: Mute button and Combo Rush at bottom */
         <>
-          {/* Mute Button - Top Right for Safari mobile - Well below Dynamic Island */}
+          {/* Mute Button - Top Right for Safari mobile - More space from edges */}
           <div 
             className="absolute z-30"
             style={{
               top: 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))',
-              right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+              right: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
               boxSizing: 'border-box'
             }}
           >
