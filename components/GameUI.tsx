@@ -100,7 +100,17 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
 
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-10 flex flex-col">
+    <div 
+      className="absolute inset-0 pointer-events-none z-10 flex flex-col"
+      style={{
+        width: '100%',
+        height: '100%',
+        maxWidth: '100%',
+        maxHeight: '100%',
+        overflow: 'hidden',
+        boxSizing: 'border-box'
+      }}
+    >
       {/* Hidden meter counter for Google Analytics tracking */}
       <span id="meter-counter" style={{ display: 'none' }}>{distance}</span>
       
@@ -118,17 +128,19 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           </div>
         </div>
       ) : (
-        /* Safari mobile: Meter counter below dynamic island - Matching Figma design */
+        /* Safari mobile: Meter counter below dynamic island - Proper viewport constraints */
         <div 
-          className="absolute left-1/2 -translate-x-1/2"
+          className="absolute"
           style={{
             top: 'max(5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 4rem))',
             left: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
             right: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
-            width: 'calc(100% - max(3rem, calc(env(safe-area-inset-left, 0px) + 1.5rem) * 2))'
+            width: 'calc(100% - max(3rem, calc(env(safe-area-inset-left, 0px) + 1.5rem) * 2))',
+            textAlign: 'center',
+            boxSizing: 'border-box'
           }}
         >
-          <div className="text-5xl sm:text-6xl text-black opacity-70 font-bold text-center" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+          <div className="text-5xl sm:text-6xl text-black opacity-70 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
             {formatNumber(distance)}m
           </div>
         </div>
@@ -187,16 +199,18 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         </div>
       )}
 
-      {/* Safari mobile: Energy and Combo counters below dynamic island - Matching Figma design */}
+      {/* Safari mobile: Energy and Combo counters below dynamic island - Proper viewport constraints */}
       {isSafariMobileDevice && (
         <div 
-          className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
+          className="absolute flex flex-col items-center gap-3"
           style={{
             top: 'max(7.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 6.5rem))',
             left: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
             right: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
             width: 'calc(100% - max(3rem, calc(env(safe-area-inset-left, 0px) + 1.5rem) * 2))',
-            maxWidth: '380px'
+            boxSizing: 'border-box',
+            paddingLeft: '0.5rem',
+            paddingRight: '0.5rem'
           }}
         >
           {/* Elf vs Grinch Scores - Side by side with divider - Matching Figma */}
@@ -244,7 +258,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           </div>
           
           {/* Energy Counter - First, matching Figma design */}
-          <div className="bg-white rounded-lg p-3 w-full flex flex-col justify-between border border-gray-200">
+          <div className="bg-white rounded-lg p-3 w-full flex flex-col justify-between border border-gray-200" style={{ boxSizing: 'border-box', maxWidth: '100%' }}>
             <div className="flex items-center justify-between w-full mb-2">
               <div className="flex items-center gap-1.5">
                 <img 
@@ -270,7 +284,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
 
           {/* Combo Counter - Below Energy Counter - Matching Figma design */}
           {combo >= 2 && (
-            <div id="combo-display" className="bg-[#7B4B9A] rounded-lg p-3 w-full flex items-center justify-between">
+            <div id="combo-display" className="bg-[#7B4B9A] rounded-lg p-3 w-full flex items-center justify-between" style={{ boxSizing: 'border-box', maxWidth: '100%' }}>
               <div className="flex items-center gap-2">
                 <img 
                   src="/Assets/Combo.svg" 
@@ -398,10 +412,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         <>
           {/* Mute Button - Top Right for Safari mobile - Well below Dynamic Island */}
           <div 
-            className="absolute top-0 right-0 z-30"
+            className="absolute z-30"
             style={{
               top: 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))',
               right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+              boxSizing: 'border-box'
             }}
           >
             <button
@@ -428,13 +443,15 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           {/* Combo Rush - Bottom Center for Safari mobile (only Combo Rush, not Combo Counter) */}
           {sprintMode && sprintTimer !== undefined && sprintTimer > 0 && (
             <div 
-              className="absolute left-1/2 -translate-x-1/2"
+              className="absolute"
               style={{
                 bottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
-                paddingLeft: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
-                paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+                left: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
+                right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
                 width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
-                maxWidth: '380px'
+                boxSizing: 'border-box',
+                paddingLeft: '0.5rem',
+                paddingRight: '0.5rem'
               }}
             >
               <div className="bg-[#F6A288] rounded-xl p-3 h-18 min-w-[200px] w-full flex flex-col justify-between">
@@ -463,12 +480,14 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
 
       {/* Deadline Indicator - Top left on mobile, middle left on desktop - Well below Dynamic Island on Safari */}
       <div 
-        className="deadline-indicator absolute left-2 sm:left-4 md:left-6 flex items-center gap-1.5 sm:gap-2"
+        className="deadline-indicator absolute flex items-center gap-1.5 sm:gap-2"
         style={{
           left: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
           top: isSafariMobileDevice 
             ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
-            : 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))'
+            : 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+          maxWidth: 'calc(100vw - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
+          boxSizing: 'border-box'
         }}
       >
         <div 
@@ -487,10 +506,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
 
       {/* Mobile Jump Hint - Bottom right - Better mobile sizing - Safe area support */}
       <div 
-        className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 md:hidden"
+        className="absolute md:hidden"
         style={{
           bottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
-          right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))'
+          right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+          boxSizing: 'border-box'
         }}
       >
         <div className="bg-white/20 backdrop-blur-sm text-white px-3 py-1.5 max-md:landscape:px-2 max-md:landscape:py-1 sm:px-3 sm:py-2 text-xs max-md:landscape:text-[10px] sm:text-sm border border-white/40 rounded font-semibold">
