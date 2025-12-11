@@ -118,17 +118,17 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           </div>
         </div>
       ) : (
-        /* Safari mobile: Meter counter below dynamic island - Minimum 80px from top */
+        /* Safari mobile: Meter counter below dynamic island - Matching Figma design */
         <div 
           className="absolute left-1/2 -translate-x-1/2"
           style={{
             top: 'max(5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 4rem))',
-            left: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
-            right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
-            width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))'
+            left: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
+            right: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
+            width: 'calc(100% - max(3rem, calc(env(safe-area-inset-left, 0px) + 1.5rem) * 2))'
           }}
         >
-          <div className="text-6xl text-black opacity-40 font-bold text-center" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+          <div className="text-5xl sm:text-6xl text-black opacity-70 font-bold text-center" style={{ fontFamily: '"Urbanist", sans-serif' }}>
             {formatNumber(distance)}m
           </div>
         </div>
@@ -187,22 +187,22 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         </div>
       )}
 
-      {/* Safari mobile: Energy and Combo counters below dynamic island - Well below meter counter */}
+      {/* Safari mobile: Energy and Combo counters below dynamic island - Matching Figma design */}
       {isSafariMobileDevice && (
         <div 
-          className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+          className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
           style={{
             top: 'max(7.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 6.5rem))',
-            left: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
-            right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
-            width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
+            left: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
+            right: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
+            width: 'calc(100% - max(3rem, calc(env(safe-area-inset-left, 0px) + 1.5rem) * 2))',
             maxWidth: '380px'
           }}
         >
-          {/* Elf vs Grinch Scores - Side by side */}
-          <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
+          {/* Elf vs Grinch Scores - Side by side with divider - Matching Figma */}
+          <div className="flex items-center gap-3">
             {/* Grinch Score */}
-            <div id="grinch-score-display" className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+            <div id="grinch-score-display" className="flex items-center gap-1.5">
               <img 
                 src={
                   grinchScore > elfScore 
@@ -212,16 +212,19 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
                     : "/Assets/Characters/Grinch.svg"
                 }
                 alt="Grinch" 
-                className="w-8 h-8 max-md:landscape:w-7 max-md:landscape:h-7 sm:w-10 sm:h-10 md:w-10 md:h-10"
+                className="w-6 h-6"
                 style={{ objectFit: 'contain' }}
               />
-              <span className="text-xl max-md:landscape:text-lg sm:text-2xl md:text-3xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+              <span className="text-lg text-black opacity-60 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
                 {grinchScore}
               </span>
             </div>
 
+            {/* Divider - Matching Figma design */}
+            <div className="h-4 w-px bg-black opacity-20"></div>
+
             {/* Elf Score */}
-            <div id="elf-score-display" className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+            <div id="elf-score-display" className="flex items-center gap-1.5">
               <img 
                 src={
                   elfScore > grinchScore 
@@ -231,44 +234,44 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
                     : "/Assets/Characters/Elf.svg"
                 }
                 alt="Elf" 
-                className="w-8 h-8 max-md:landscape:w-7 max-md:landscape:h-7 sm:w-10 sm:h-10 md:w-10 md:h-10"
+                className="w-6 h-6"
                 style={{ objectFit: 'contain' }}
               />
-              <span className="text-xl max-md:landscape:text-lg sm:text-2xl md:text-3xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+              <span className="text-lg text-black opacity-60 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
                 {elfScore}
               </span>
             </div>
           </div>
           
-          {/* Energy Counter - First */}
-          <div className="bg-white rounded-lg p-2 min-w-[120px] flex flex-col justify-between">
-            <div className="flex items-center justify-between w-full mb-1">
-              <div className="flex items-center gap-0.5">
+          {/* Energy Counter - First, matching Figma design */}
+          <div className="bg-white rounded-lg p-3 w-full flex flex-col justify-between border border-gray-200">
+            <div className="flex items-center justify-between w-full mb-2">
+              <div className="flex items-center gap-1.5">
                 <img 
                   src="/Assets/Energy.svg" 
                   alt="Energy" 
-                  className="w-3 h-3"
+                  className="w-4 h-4"
                 />
-                <span className="text-[#312f31] text-[10px] font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                <span className="text-[#312f31] text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
                   ENERGY
                 </span>
               </div>
-              <span className="text-[#312f31] text-[10px] font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+              <span className="text-[#312f31] text-xs font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
                 {Math.round(energy)}%
               </span>
             </div>
-            <div className="relative h-2 w-full rounded-full border border-[#00a994]">
+            <div className="relative h-2.5 w-full rounded-full border border-[#39A77D] bg-gray-100">
               <div 
-                className="absolute h-full bg-[#00a994] rounded-full transition-all duration-200"
+                className="absolute h-full bg-[#39A77D] rounded-full transition-all duration-200"
                 style={{ width: `${energy}%` }}
               />
             </div>
           </div>
 
-          {/* Combo Counter - Below Energy Counter - Only show when combo >= 2 */}
+          {/* Combo Counter - Below Energy Counter - Matching Figma design */}
           {combo >= 2 && (
-            <div id="combo-display" className="bg-[#645290] rounded-xl p-3 h-18 min-w-[200px] w-full flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
+            <div id="combo-display" className="bg-[#7B4B9A] rounded-lg p-3 w-full flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <img 
                   src="/Assets/Combo.svg" 
                   alt="Combo" 
@@ -278,7 +281,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
                   COMBO
                 </span>
               </div>
-              <span className="text-white text-5xl font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+              <span className="text-white text-4xl font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
                 {combo}x
               </span>
             </div>
