@@ -292,13 +292,13 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
           paddingTop: isMobileSafari 
             ? 'max(7rem, calc(env(safe-area-inset-top, 0px) + 1rem + 6rem))'
             : 'max(6rem, calc(env(safe-area-inset-top, 0px) + 1rem + 4rem + 1rem))',
-          paddingLeft: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
-          paddingRight: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
-          paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))'
+          paddingLeft: 'max(2rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
+          paddingRight: 'max(2rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
+          paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))'
         }}
       >
         {/* Main Title Section - Single line on mobile landscape */}
-        <div className={`text-center transition-all duration-1000 w-full max-w-full px-2 ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        <div className={`text-center transition-all duration-1000 w-full max-w-full ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} style={{ paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
           <div className="relative inline-block">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-black tracking-normal break-words inline">
               The Deadline{' '}
@@ -316,7 +316,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
         </div>
 
         {/* Stats Cards - Stacked on mobile, side by side on larger screens */}
-        <div className={`w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4 transition-all duration-1000 delay-300 ${showStats ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className={`w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4 transition-all duration-1000 delay-300 ${showStats ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ paddingLeft: '0.5rem', paddingRight: '0.5rem', boxSizing: 'border-box' }}>
           
           {/* You Escaped Card */}
           <div className="bg-gray-50 border-2 border-gray-300 p-2 sm:p-3 md:p-4 relative overflow-hidden group hover:border-yellow-500 transition-all rounded-lg">

@@ -301,6 +301,29 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
               </span>
             </div>
           )}
+
+          {/* Combo Rush - Below Combo Counter for Safari mobile */}
+          {sprintMode && sprintTimer !== undefined && sprintTimer > 0 && (
+            <div className="bg-[#F6A288] rounded-lg p-3 w-full flex flex-col justify-between" style={{ boxSizing: 'border-box', maxWidth: '100%' }}>
+              <div className="flex items-center justify-between w-full">
+                <span className="text-white text-sm font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  COMBO RUSH
+                </span>
+                <span className="text-white text-sm font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  {Math.ceil(sprintTimer / 1000)}s
+                </span>
+              </div>
+              <div className="relative h-4 w-full rounded-full border-2 border-white bg-white/20 overflow-hidden mt-2">
+                <div 
+                  key={`progress-${Math.floor(sprintTimer)}`}
+                  className="absolute h-full bg-white rounded-full"
+                  style={{ 
+                    width: `${Math.max(0, Math.min(100, (sprintTimer / GameConfig.sprint.duration) * 100))}%`
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -411,12 +434,12 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       ) : (
         /* Safari Mobile: Mute button and Combo Rush at bottom */
         <>
-          {/* Mute Button - Top Right for Safari mobile - More space from edges */}
+          {/* Mute Button - Top Right Corner for Safari mobile */}
           <div 
             className="absolute z-30"
             style={{
-              top: 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))',
-              right: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
+              top: 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
+              right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
               boxSizing: 'border-box'
             }}
           >
@@ -441,53 +464,18 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
             </button>
           </div>
 
-          {/* Combo Rush - Bottom Center for Safari mobile (only Combo Rush, not Combo Counter) */}
-          {sprintMode && sprintTimer !== undefined && sprintTimer > 0 && (
-            <div 
-              className="absolute"
-              style={{
-                bottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
-                left: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
-                right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
-                width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
-                boxSizing: 'border-box',
-                paddingLeft: '0.5rem',
-                paddingRight: '0.5rem'
-              }}
-            >
-              <div className="bg-[#F6A288] rounded-xl p-3 h-18 min-w-[200px] w-full flex flex-col justify-between">
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-white text-sm font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                    COMBO RUSH
-                  </span>
-                  <span className="text-white text-sm font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                    {Math.ceil(sprintTimer / 1000)}s
-                  </span>
-                </div>
-                <div className="relative h-4 w-full rounded-full border-2 border-white bg-white/20 overflow-hidden">
-                  <div 
-                    key={`progress-${Math.floor(sprintTimer)}`}
-                    className="absolute h-full bg-white rounded-full"
-                    style={{ 
-                      width: `${Math.max(0, Math.min(100, (sprintTimer / GameConfig.sprint.duration) * 100))}%`
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
         </>
       )}
 
-      {/* Deadline Indicator - Top left on mobile, middle left on desktop - Well below Dynamic Island on Safari */}
+      {/* Deadline Indicator - Top Left Corner */}
       <div 
         className="deadline-indicator absolute flex items-center gap-1.5 sm:gap-2"
         style={{
           left: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
           top: isSafariMobileDevice 
-            ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
+            ? 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))'
             : 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
-          maxWidth: 'calc(100vw - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
+          maxWidth: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
           boxSizing: 'border-box'
         }}
       >

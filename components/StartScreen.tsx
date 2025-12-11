@@ -239,9 +239,10 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
         paddingTop: isMobileSafari 
           ? 'max(6rem, calc(env(safe-area-inset-top, 0px) + 1rem + 5rem))'
           : 'max(4rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3rem))',
-        paddingLeft: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
-        paddingRight: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
-        paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))'
+        paddingLeft: 'max(2rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
+        paddingRight: 'max(2rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
+        paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))',
+        boxSizing: 'border-box'
       }}>
         <div className="space-y-1 sm:space-y-2 md:space-y-3">
           <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl text-black tracking-tight leading-tight">
@@ -285,9 +286,10 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
         paddingTop: isMobileSafari 
           ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
           : 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
-        paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
-        paddingLeft: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
-        paddingRight: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1rem))'
+        paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))',
+        paddingLeft: 'max(2rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
+        paddingRight: 'max(2rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
+        boxSizing: 'border-box'
       }}>
         {/* Left Column: Title + Button */}
         <div className="flex flex-col items-center justify-center space-y-3">
