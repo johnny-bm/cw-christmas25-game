@@ -194,8 +194,11 @@
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    /* Crisp rendering on high DPI displays - let browser handle scaling smoothly */
+    /* Crisp rendering on high DPI displays - let Phaser handle internal resolution */
+    /* Use auto to allow smooth scaling of the high-res canvas Phaser creates */
     image-rendering: auto !important;
+    /* Safari-specific optimization for canvas rendering */
+    -webkit-optimize-contrast: auto;
     /* Better font rendering */
     -webkit-font-smoothing: antialiased !important;
     -moz-osx-font-smoothing: grayscale !important;
@@ -206,6 +209,9 @@
     /* Prevent subpixel rendering issues */
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
+    /* Force GPU acceleration for smoother rendering on Safari mobile */
+    -webkit-perspective: 1000;
+    perspective: 1000;
   }
   
   /* Safe area insets for notched devices */

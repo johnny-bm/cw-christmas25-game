@@ -280,9 +280,11 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
       </button>
 
       <div 
-        className="relative min-h-full flex flex-col items-center justify-start px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6 gap-4 sm:gap-5 md:gap-6" 
+        className="relative min-h-full flex flex-col items-center justify-start py-3 sm:py-4 md:py-6 gap-4 sm:gap-5 md:gap-6" 
         style={{ 
           paddingTop: 'max(6rem, calc(env(safe-area-inset-top, 0.5rem) + 0.5rem + 4rem + 1rem))',
+          paddingLeft: 'max(1rem, env(safe-area-inset-left, 1rem))',
+          paddingRight: 'max(1rem, env(safe-area-inset-right, 1rem))'
         }}
       >
         {/* Main Title Section - Single line on mobile landscape */}

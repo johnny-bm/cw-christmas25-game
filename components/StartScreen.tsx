@@ -231,7 +231,11 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
 
       {/* Desktop/Tablet Portrait: Vertical Layout */}
       {/* RESPONSIVE: Use viewport-relative padding-top instead of fixed rem values for better mobile support */}
-      <div className="max-md:landscape:hidden text-center space-y-2 sm:space-y-4 md:space-y-6 px-3 py-3 sm:px-4 sm:py-4 w-full max-w-4xl overflow-y-auto max-h-full" style={{ paddingTop: 'max(4rem, calc(env(safe-area-inset-top, 0.5rem) + 0.5rem + 3rem))' }}>
+      <div className="max-md:landscape:hidden text-center space-y-2 sm:space-y-4 md:space-y-6 py-3 sm:py-4 w-full max-w-4xl overflow-y-auto max-h-full" style={{ 
+        paddingTop: 'max(4rem, calc(env(safe-area-inset-top, 0.5rem) + 0.5rem + 3rem))',
+        paddingLeft: 'max(1rem, env(safe-area-inset-left, 1rem))',
+        paddingRight: 'max(1rem, env(safe-area-inset-right, 1rem))'
+      }}>
         <div className="space-y-1 sm:space-y-2 md:space-y-3">
           <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl text-black tracking-tight leading-tight">
             ESCAPE THE DEADLINE
@@ -270,7 +274,10 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
       </div>
 
       {/* Mobile/Tablet Landscape: 2-Column Grid Layout */}
-      <div className="hidden max-md:landscape:grid grid-cols-2 w-full h-full gap-4 px-4 py-3">
+      <div className="hidden max-md:landscape:grid grid-cols-2 w-full h-full gap-4 py-3" style={{
+        paddingLeft: 'max(1rem, env(safe-area-inset-left, 1rem))',
+        paddingRight: 'max(1rem, env(safe-area-inset-right, 1rem))'
+      }}>
         {/* Left Column: Title + Button */}
         <div className="flex flex-col items-center justify-center space-y-3">
           <div className="text-center space-y-2">

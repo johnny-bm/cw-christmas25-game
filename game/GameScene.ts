@@ -1184,9 +1184,8 @@ export class GameScene extends Phaser.Scene {
     // Safari mobile: use proper scaling for 700px height screen
     if (this.isSafariMobile()) {
       // Safari mobile has fixed 700px height, so calculate jump properly
-      // For 700px height: -1100 * (700/1080) * 0.95 = -677
-      // But we want a good jump height, so use a fixed value that works well
-      jumpVelocity = -600; // Good jump height for Safari mobile (can clear obstacles)
+      // Reduced jump height for better balance on Safari mobile
+      jumpVelocity = -450; // Lower jump height for Safari mobile (reduced from -600)
     }
     
     // CRITICAL: Allow jumping immediately when on ground, regardless of jumpsRemaining
@@ -2431,9 +2430,13 @@ export class GameScene extends Phaser.Scene {
     const borderRadius = bgHeight / 2; // Make it a pill shape (half the height)
     
     const messageBg = this.add.graphics();
+    // Ensure graphics render at proper resolution for retina displays
+    // Graphics objects automatically use the scene's resolution, but we ensure crisp rendering
     messageBg.fillStyle(bgColor, 1);
     messageBg.fillRoundedRect(-bgWidth / 2, -bgHeight / 2, bgWidth, bgHeight, borderRadius);
     messageBg.setDepth(1000);
+    // Ensure graphics are rendered crisply on high DPI displays
+    messageBg.setScale(1); // Explicit scale to ensure proper rendering
     
     // Create container first
     const messageContainer = this.add.container(0, 0, [messageBg, messageText]);

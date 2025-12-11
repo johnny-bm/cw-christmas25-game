@@ -182,7 +182,9 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         antialias: true,
         antialiasGL: true,
         roundPixels: false,
-        resolution: devicePixelRatio,
+        // Cap resolution at 3 for performance, but ensure retina displays are supported
+        // Safari mobile can have high DPR values that cause performance issues
+        resolution: Math.min(devicePixelRatio || 1, 3),
         // Ensure crisp rendering on high DPI displays
         powerPreference: 'high-performance'
       }
