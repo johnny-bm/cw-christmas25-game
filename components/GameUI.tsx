@@ -98,29 +98,6 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
     }
   };
 
-  // Deadline Indicator Component - Named variable for easy reference
-  // Position: Top left on mobile, middle left on desktop
-  const deadlineIndicator = (
-    <div 
-      className="deadline-indicator absolute left-2 sm:left-4 md:left-6 flex items-center gap-1.5 sm:gap-2"
-      style={{
-        left: 'max(0.5rem, env(safe-area-inset-left, 0.5rem))',
-      }}
-    >
-      <div 
-        className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-2 rounded-full transition-colors deadline-indicator-content"
-        style={{ 
-          backgroundColor: getDeadlineBgColor(),
-          fontFamily: '"Urbanist", sans-serif'
-        }}
-      >
-        <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-        <span className="text-white text-xs sm:text-lg font-bold whitespace-nowrap">
-          DEADLINE {getDeadlineDistance()}m
-        </span>
-      </div>
-    </div>
-  );
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10 flex flex-col">
@@ -145,7 +122,9 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         <div 
           className="absolute left-1/2 -translate-x-1/2"
           style={{
-            top: 'max(3.5rem, env(safe-area-inset-top, 0.75rem) + 2.5rem)'
+            top: 'max(4rem, calc(env(safe-area-inset-top, 0px) + 1rem + 2.5rem))',
+            paddingLeft: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
+            paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))'
           }}
         >
           <div className="text-6xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
@@ -212,7 +191,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         <div 
           className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
           style={{
-            top: 'max(6rem, env(safe-area-inset-top, 0.75rem) + 5rem)'
+            top: 'max(6rem, calc(env(safe-area-inset-top, 0px) + 1rem + 5rem))',
+            paddingLeft: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
+            paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+            width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
+            maxWidth: '380px'
           }}
         >
           {/* Elf vs Grinch Scores - Side by side */}
@@ -413,8 +396,8 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           <div 
             className="absolute top-0 right-0 z-30"
             style={{
-              top: 'max(0.25rem, env(safe-area-inset-top, 0.25rem))',
-              right: 'max(0.25rem, env(safe-area-inset-right, 0.25rem))',
+              top: 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
+              right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
             }}
           >
             <button
@@ -443,8 +426,10 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
             <div 
               className="absolute left-1/2 -translate-x-1/2"
               style={{
-                bottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem) + 0.5rem)',
-                width: '90%',
+                bottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
+                paddingLeft: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
+                paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+                width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
                 maxWidth: '380px'
               }}
             >
@@ -473,14 +458,35 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       )}
 
       {/* Deadline Indicator - Top left on mobile, middle left on desktop */}
-      {deadlineIndicator}
+      <div 
+        className="deadline-indicator absolute left-2 sm:left-4 md:left-6 flex items-center gap-1.5 sm:gap-2"
+        style={{
+          left: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
+          top: isSafariMobileDevice 
+            ? 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))'
+            : 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))'
+        }}
+      >
+        <div 
+          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-2 rounded-full transition-colors deadline-indicator-content"
+          style={{ 
+            backgroundColor: getDeadlineBgColor(),
+            fontFamily: '"Urbanist", sans-serif'
+          }}
+        >
+          <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+          <span className="text-white text-xs sm:text-lg font-bold whitespace-nowrap">
+            DEADLINE {getDeadlineDistance()}m
+          </span>
+        </div>
+      </div>
 
       {/* Mobile Jump Hint - Bottom right - Better mobile sizing - Safe area support */}
       <div 
         className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 md:hidden"
         style={{
-          bottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))',
-          right: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))'
+          bottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
+          right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))'
         }}
       >
         <div className="bg-white/20 backdrop-blur-sm text-white px-3 py-1.5 max-md:landscape:px-2 max-md:landscape:py-1 sm:px-3 sm:py-2 text-xs max-md:landscape:text-[10px] sm:text-sm border border-white/40 rounded font-semibold">

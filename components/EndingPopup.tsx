@@ -203,10 +203,10 @@ export function EndingPopup({
     <div 
       className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto"
       style={{
-        paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0.75rem))',
-        paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0.75rem))',
-        paddingLeft: 'max(1rem, env(safe-area-inset-left, 1rem))',
-        paddingRight: 'max(1rem, env(safe-area-inset-right, 1rem))'
+        paddingTop: 'max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
+        paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
+        paddingLeft: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
+        paddingRight: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1rem))'
       }}
       onClick={onClose}
     >
@@ -229,7 +229,10 @@ export function EndingPopup({
           ×
         </button>
 
-        <div className="p-4 sm:p-6 md:p-8">
+        <div className="p-4 sm:p-6 md:p-8" style={{
+          paddingLeft: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 0.5rem))',
+          paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 0.5rem))'
+        }}>
           {/* Character Image */}
           <div className="flex justify-center mb-4 sm:mb-6">
             <img 

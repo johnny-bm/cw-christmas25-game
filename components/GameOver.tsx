@@ -244,7 +244,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
       <div
         className="absolute z-20 left-1/2 transform -translate-x-1/2"
         style={{
-          top: 'max(0.75rem, calc(env(safe-area-inset-top, 0.5rem) + 0.5rem))',
+          top: 'max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
         }}
       >
         <img 
@@ -259,8 +259,8 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
         onClick={handleToggleMute}
         className="absolute z-20 pointer-events-auto bg-white rounded-lg sm:rounded-xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
         style={{
-          top: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
-          right: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
+          top: 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
+          right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
         }}
         aria-label={isMuted ? 'Unmute' : 'Mute'}
       >
@@ -282,9 +282,10 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
       <div 
         className="relative min-h-full flex flex-col items-center justify-start py-3 sm:py-4 md:py-6 gap-4 sm:gap-5 md:gap-6" 
         style={{ 
-          paddingTop: 'max(6rem, calc(env(safe-area-inset-top, 0.5rem) + 0.5rem + 4rem + 1rem))',
-          paddingLeft: 'max(1rem, env(safe-area-inset-left, 1rem))',
-          paddingRight: 'max(1rem, env(safe-area-inset-right, 1rem))'
+          paddingTop: 'max(6rem, calc(env(safe-area-inset-top, 0px) + 1rem + 4rem + 1rem))',
+          paddingLeft: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
+          paddingRight: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+          paddingBottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))'
         }}
       >
         {/* Main Title Section - Single line on mobile landscape */}
