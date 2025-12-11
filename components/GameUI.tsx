@@ -118,16 +118,17 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           </div>
         </div>
       ) : (
-        /* Safari mobile: Meter counter below dynamic island */
+        /* Safari mobile: Meter counter below dynamic island - Minimum 80px from top */
         <div 
           className="absolute left-1/2 -translate-x-1/2"
           style={{
-            top: 'max(4rem, calc(env(safe-area-inset-top, 0px) + 1rem + 2.5rem))',
-            paddingLeft: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
-            paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))'
+            top: 'max(5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 4rem))',
+            left: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
+            right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+            width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))'
           }}
         >
-          <div className="text-6xl text-black opacity-40 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+          <div className="text-6xl text-black opacity-40 font-bold text-center" style={{ fontFamily: '"Urbanist", sans-serif' }}>
             {formatNumber(distance)}m
           </div>
         </div>
@@ -186,14 +187,14 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         </div>
       )}
 
-      {/* Safari mobile: Energy and Combo counters below dynamic island */}
+      {/* Safari mobile: Energy and Combo counters below dynamic island - Well below meter counter */}
       {isSafariMobileDevice && (
         <div 
           className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
           style={{
-            top: 'max(6rem, calc(env(safe-area-inset-top, 0px) + 1rem + 5rem))',
-            paddingLeft: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
-            paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+            top: 'max(7.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 6.5rem))',
+            left: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
+            right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
             width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
             maxWidth: '380px'
           }}
@@ -291,8 +292,8 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         <div 
           className="absolute top-0 right-0 flex flex-col gap-2 sm:gap-3"
           style={{
-            paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
-            paddingRight: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
+            paddingTop: 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+            paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
           }}
         >
           {/* Energy Bar and Mute Button - Top Right Row */}
@@ -392,11 +393,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       ) : (
         /* Safari Mobile: Mute button and Combo Rush at bottom */
         <>
-          {/* Mute Button - Top Right for Safari mobile - Ensure it's on screen */}
+          {/* Mute Button - Top Right for Safari mobile - Well below Dynamic Island */}
           <div 
             className="absolute top-0 right-0 z-30"
             style={{
-              top: 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
+              top: 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))',
               right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
             }}
           >
@@ -457,14 +458,14 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         </>
       )}
 
-      {/* Deadline Indicator - Top left on mobile, middle left on desktop */}
+      {/* Deadline Indicator - Top left on mobile, middle left on desktop - Well below Dynamic Island on Safari */}
       <div 
         className="deadline-indicator absolute left-2 sm:left-4 md:left-6 flex items-center gap-1.5 sm:gap-2"
         style={{
           left: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
           top: isSafariMobileDevice 
-            ? 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))'
-            : 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))'
+            ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
+            : 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))'
         }}
       >
         <div 

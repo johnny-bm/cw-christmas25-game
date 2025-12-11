@@ -44,6 +44,9 @@ export function EndingPopup({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Detect Safari mobile for proper spacing
+  const isMobileSafari = /iPhone|iPad|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+
   // Countdown timer to January 5th, 2026
   useEffect(() => {
     const updateTimer = () => {
@@ -203,7 +206,9 @@ export function EndingPopup({
     <div 
       className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto"
       style={{
-        paddingTop: 'max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
+        paddingTop: isMobileSafari 
+          ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
+          : 'max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
         paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
         paddingLeft: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
         paddingRight: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1rem))'
@@ -231,7 +236,9 @@ export function EndingPopup({
 
         <div className="p-4 sm:p-6 md:p-8" style={{
           paddingLeft: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 0.5rem))',
-          paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 0.5rem))'
+          paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 0.5rem))',
+          paddingTop: 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.25rem))',
+          paddingBottom: 'max(0.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.25rem))'
         }}>
           {/* Character Image */}
           <div className="flex justify-center mb-4 sm:mb-6">

@@ -144,11 +144,13 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
   
   return (
     <div className="w-full h-full flex items-center justify-center overflow-hidden relative" style={{ backgroundColor: gameBackgroundColor }}>
-      {/* CW Logo - Top Center */}
+      {/* CW Logo - Top Center - Well below Dynamic Island on Safari mobile */}
       <div
         className="absolute z-20 left-1/2 transform -translate-x-1/2"
         style={{
-          top: 'max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
+          top: isMobileSafari 
+            ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
+            : 'max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
         }}
       >
         <img 
@@ -158,12 +160,14 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
         />
       </div>
       
-      {/* Mute/Unmute Button - Top Right */}
+      {/* Mute/Unmute Button - Top Right - Well below Dynamic Island on Safari mobile */}
       <button
         onClick={handleToggleMute}
         className="absolute z-20 pointer-events-auto bg-white rounded-lg sm:rounded-xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
         style={{
-          top: 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
+          top: isMobileSafari 
+            ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
+            : 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
           right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
         }}
         aria-label={isMuted ? 'Unmute' : 'Mute'}
@@ -218,8 +222,8 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
           onClick={handleRequestFullscreen}
           className="absolute z-20 pointer-events-auto bg-white rounded-lg sm:rounded-xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
           style={{
-            bottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))',
-            right: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
+            bottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
+            right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
           }}
           aria-label="Enter Fullscreen"
         >
@@ -232,10 +236,12 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
       {/* Desktop/Tablet Portrait: Vertical Layout */}
       {/* RESPONSIVE: Use viewport-relative padding-top instead of fixed rem values for better mobile support */}
       <div className="max-md:landscape:hidden text-center space-y-2 sm:space-y-4 md:space-y-6 py-3 sm:py-4 w-full max-w-4xl overflow-y-auto max-h-full" style={{ 
-        paddingTop: 'max(4rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3rem))',
+        paddingTop: isMobileSafari 
+          ? 'max(6rem, calc(env(safe-area-inset-top, 0px) + 1rem + 5rem))'
+          : 'max(4rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3rem))',
         paddingLeft: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
         paddingRight: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
-        paddingBottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))'
+        paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))'
       }}>
         <div className="space-y-1 sm:space-y-2 md:space-y-3">
           <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl text-black tracking-tight leading-tight">
@@ -276,8 +282,10 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
 
       {/* Mobile/Tablet Landscape: 2-Column Grid Layout */}
       <div className="hidden max-md:landscape:grid grid-cols-2 w-full h-full gap-4 py-3" style={{
-        paddingTop: 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
-        paddingBottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
+        paddingTop: isMobileSafari 
+          ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
+          : 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
+        paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
         paddingLeft: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
         paddingRight: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1rem))'
       }}>
