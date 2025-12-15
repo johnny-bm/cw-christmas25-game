@@ -1852,6 +1852,7 @@ export class GameScene extends Phaser.Scene {
         const maxCenterDistance = Math.max(baseRadius, Math.min(bounds2.width, bounds2.height) * 0.5);
         const centersAreClose = centerDistance < maxCenterDistance;
         
+        console.log('Obstacle-02 close collision debug', {
           collisionArea: {
             x: (playerCenterX - baseRadius).toFixed(1),
             y: (playerCenterY - baseRadius).toFixed(1),
@@ -2487,8 +2488,7 @@ export class GameScene extends Phaser.Scene {
     // Note: spriteY and distanceFromGround are already declared above
     if (distanceFromGround > 5 && !touchingGround) {
       // CHARACTER BELOW GROUND - CORRECTING
-        touchingGround
-      });
+      // (debug logging removed, just apply correction)
       
       // Character is below ground - correct it immediately
       if (this.isSafariMobile()) {
@@ -3048,14 +3048,6 @@ export class GameScene extends Phaser.Scene {
       if (touchingGround) {
         this.player.body.setAllowGravity(false);
       }
-      
-        playerX: this.player.x.toFixed(1),
-        playerY: this.player.y.toFixed(1),
-        groundY: this.groundY.toFixed(1),
-        bodyY: this.player.body.y.toFixed(1),
-        bodyBottom: (this.player.body.y + this.player.body.height).toFixed(1),
-        touchingGround: touchingGround
-      });
     }
     
     this.jumpsRemaining = 2;
