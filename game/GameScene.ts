@@ -160,6 +160,7 @@ export class GameScene extends Phaser.Scene {
   private elfScore: number = 0;
   
   private gameSpeed: number = GameConfig.speed.initial;
+  private initialSpeedBoostTimer: number = 0;
   
   private sprintMode: boolean = false;
   private sprintTimer: number = 0;
@@ -694,7 +695,7 @@ export class GameScene extends Phaser.Scene {
     if (isSafariMobile) {
       // Safari mobile: portrait orientation - smaller and left-aligned
       const PLAYER_SIZE = 60; // Smaller for better visibility (reduced from 80)
-      const PLAYER_START_X = FIXED_GAME_WIDTH * 0.2; // Left side = 80px (was center at 200)
+      const PLAYER_START_X = FIXED_GAME_WIDTH * 0.28; // Nudge right for clearer deadline runway
       const PLAYER_Y = this.groundY; // Position feet on ground (with bottom-center origin)
       
       this.player = this.physics.add.sprite(PLAYER_START_X, PLAYER_Y, 'character-pushing-01');
@@ -883,7 +884,7 @@ export class GameScene extends Phaser.Scene {
       const deadlineWidth = deadlineHeight * aspectRatio;
       this.deadline.setDisplaySize(deadlineWidth, deadlineHeight);
       // Position deadline far left (off-screen) after scaling
-      this.deadline.setPosition(-this.deadline.displayWidth - 200, 0);
+      this.deadline.setPosition(-this.deadline.displayWidth - GameConfig.deadline.offsetFromPlayer, 0);
       this.deadlineX = this.deadline.x;
     }
     
@@ -1599,7 +1600,9 @@ export class GameScene extends Phaser.Scene {
       this.groundY - height * 0.028,  // ~2.8% from ground
       this.groundY - height * 0.074,  // ~7.4% from ground
       this.groundY - height * 0.12,   // ~12% from ground
-      this.groundY - height * 0.167   // ~16.7% from ground
+      this.groundY - height * 0.167,  // ~16.7% from ground
+      this.groundY - height * 0.22,   // ~22% from ground (double jump target)
+      this.groundY - height * 0.30    // ~30% from ground (requires double jump)
     ];
     const y = Phaser.Math.RND.pick(heights);
     
@@ -1622,8 +1625,12 @@ export class GameScene extends Phaser.Scene {
     // CRITICAL FIX: Position collectible above ground for Safari mobile
     let collectibleY = y;
     if (this.isSafariMobile()) {
-      // Safari mobile: position collectible 100px above ground
-      collectibleY = this.groundY - 100;
+      // Safari mobile: keep within reach but allow higher placements for double jump
+      const minLift = height * 0.12;
+      const maxLift = height * 0.35;
+      const desiredLift = this.groundY - y;
+      const clampedLift = Phaser.Math.Clamp(desiredLift, minLift, maxLift);
+      collectibleY = this.groundY - clampedLift;
     }
     
     const collectible = this.add.image(width + 50, collectibleY, imageKey);
@@ -2604,7 +2611,15 @@ export class GameScene extends Phaser.Scene {
 
     // Increase speed over time
     const maxSpeed = GameConfig.speed.max * baseSpeed;
-    this.gameSpeed = Math.min(maxSpeed, this.gameSpeed + delta * GameConfig.speed.acceleration * baseSpeed);
+    // Early-game acceleration boost so the first speed ramp is felt sooner
+    this.initialSpeedBoostTimer += delta;
+    const accelerationMultiplier = this.initialSpeedBoostTimer <= GameConfig.speed.initialBoostDuration
+      ? GameConfig.speed.initialAccelerationMultiplier
+      : 1;
+    this.gameSpeed = Math.min(
+      maxSpeed,
+      this.gameSpeed + delta * GameConfig.speed.acceleration * accelerationMultiplier * baseSpeed
+    );
     // Distance-based minimum speed: ensures speed increases as you progress
     const distanceMinSpeed = (GameConfig.speed.initial + Math.min(GameConfig.speed.distanceSpeedCap, Math.floor(this.distance / GameConfig.speed.distanceSpeedInterval) * GameConfig.speed.distanceSpeedBonus)) * baseSpeed;
     // Use the higher of time-accumulated speed or distance-based minimum
@@ -2852,7 +2867,7 @@ export class GameScene extends Phaser.Scene {
     
     // Calculate start position based on deadline width to ensure it's fully off-screen
     const deadlineWidth = this.deadline.displayWidth || 100; // Fallback if not set
-    const startX = -deadlineWidth - 200; // Start well off-screen (deadline width + buffer)
+    const startX = -deadlineWidth - GameConfig.deadline.offsetFromPlayer; // Start well off-screen (deadline width + buffer)
     // End position: deadline's right edge should reach player's center
     // deadline.x + deadlineWidth = player.x, so deadline.x = player.x - deadlineWidth
     const endX = this.player.x - deadlineWidth; // Deadline's right edge reaches player center
@@ -2872,7 +2887,8 @@ export class GameScene extends Phaser.Scene {
       this.deadline.x = this.deadlineX;
     } else {
       // Normal interpolation when energy > 0
-      this.deadlineX = this.deadlineX + (deadlineTargetX - this.deadlineX) * deltaSeconds * GameConfig.deadline.movementSpeed;
+      const deadlineLerpSpeed = this.isSafariMobile() ? GameConfig.deadline.movementSpeed * 0.65 : GameConfig.deadline.movementSpeed;
+      this.deadlineX = this.deadlineX + (deadlineTargetX - this.deadlineX) * deltaSeconds * deadlineLerpSpeed;
       this.deadline.x = this.deadlineX;
     }
 
@@ -3012,6 +3028,7 @@ export class GameScene extends Phaser.Scene {
     
     this.distance = 0;
     this.gameSpeed = GameConfig.speed.initial;
+    this.initialSpeedBoostTimer = 0;
     this.grinchScore = 0;
     this.elfScore = 0;
     
@@ -3152,6 +3169,7 @@ export class GameScene extends Phaser.Scene {
     this.maxCombo = 0;
     this.grinchScore = 0;
     this.elfScore = 0;
+    this.initialSpeedBoostTimer = 0;
     
     // Faster initial spawns on mobile for more engaging gameplay
     const { width: resetWidth, height: resetHeight } = this.scale;
@@ -3189,10 +3207,12 @@ export class GameScene extends Phaser.Scene {
     }
     // Safari mobile already positioned correctly in create() - don't override
     
-    // Initialize deadline at top left
+    // Initialize deadline well off-screen so it eases in smoothly
     const { width, height } = this.scale;
-    this.deadlineX = width * 0.1;
-    this.deadline.x = width * 0.1;
+    const resetDeadlineWidth = this.deadline.displayWidth || width * 0.25;
+    const resetStartX = -resetDeadlineWidth - GameConfig.deadline.offsetFromPlayer;
+    this.deadlineX = resetStartX;
+    this.deadline.x = resetStartX;
     this.deadline.y = height * 0.1;
     
     this.updateGameData();

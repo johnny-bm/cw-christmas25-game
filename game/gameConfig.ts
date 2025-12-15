@@ -104,6 +104,9 @@ export const GameConfig = {
     initial: 300,               // Starting game speed
     max: 1000,                   // Maximum game speed
     acceleration: 2.5,         // Speed increase per millisecond (when scaled) - significantly increased for much faster ramp
+    // Give players a faster early-game ramp so the first speed jump is felt sooner
+    initialBoostDuration: 1800, // Milliseconds to apply the early acceleration bonus
+    initialAccelerationMultiplier: 1.6, // Multiply acceleration during the initial boost window
     distanceSpeedBonus: 18,      // Speed bonus per 10 meters traveled - increased for faster progression
     distanceSpeedInterval: 8,  // Meters needed for speed bonus - reduced for more frequent boosts
     distanceSpeedCap: 250,      // Maximum speed bonus from distance - increased cap

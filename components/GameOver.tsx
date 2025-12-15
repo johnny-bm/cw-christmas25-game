@@ -18,7 +18,6 @@ interface GameOverProps {
 
 export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, elfScore = 0, onRestart }: GameOverProps) {
   const location = useLocation();
-  const isNewBest = distance === bestDistance && distance > 0;
   
   // Detect Safari mobile for proper spacing
   const isMobileSafari = /iPhone|iPad|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -217,6 +216,9 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
   };
 
   const gameBackgroundColor = getElementColor('background');
+  const accentColor = getElementColor('uiOrange');
+  // Light transparent accent for soft backgrounds
+  const accentSoftColor = `${accentColor}22`;
   
   return (
     <div className="w-full h-full overflow-y-auto animate-in fade-in duration-500 relative" style={{ backgroundColor: gameBackgroundColor }}>
@@ -281,8 +283,8 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
         className="relative min-h-full flex flex-col items-center justify-start py-3 sm:py-4 md:py-6 gap-4 sm:gap-5 md:gap-6" 
         style={{ 
           paddingTop: isMobileSafari 
-            ? 'max(7rem, calc(env(safe-area-inset-top, 0px) + 1rem + 6rem))'
-            : 'max(6rem, calc(env(safe-area-inset-top, 0px) + 1rem + 4rem + 1rem))',
+            ? 'max(8rem, calc(env(safe-area-inset-top, 0px) + 1rem + 7rem))'
+            : 'max(7rem, calc(env(safe-area-inset-top, 0px) + 1rem + 5rem + 1rem))',
           paddingLeft: 'max(2rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
           paddingRight: 'max(2rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
           paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))'
@@ -295,13 +297,8 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
               The Deadline{' '}
               <span className="text-red-600">Won</span>
             </h1>
-            {isNewBest && (
-              <div className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 md:-top-4 md:-right-4 animate-bounce">
-                <Trophy className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-yellow-500 drop-shadow-[0_0_12px_rgba(250,204,21,0.8)]" />
-              </div>
-            )}
           </div>
-          <p className="text-gray-600 italic mt-2 sm:mt-2.5 md:mt-3 text-xs sm:text-sm md:text-base">
+          <p className="text-gray-700 italic mt-1 sm:mt-1.5 md:mt-2 text-sm sm:text-base md:text-lg">
             But hey, the holidays still showed up for you!
           </p>
         </div>
@@ -334,15 +331,18 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
 
           {/* Save Score Form Card */}
           {!scoreSaved && (
-            <div className={`border-2 p-2 sm:p-3 md:p-4 animate-in slide-in-from-bottom duration-500 rounded-lg flex flex-col ${
-              isTopScore 
-                ? 'bg-yellow-50 border-yellow-500' 
-                : 'bg-gray-50 border-gray-300'
-            }`}>
+            <div
+              className={`border-2 p-2 sm:p-3 md:p-4 animate-in slide-in-from-bottom duration-500 rounded-lg flex flex-col ${
+                isTopScore 
+                  ? ''
+                  : 'bg-gray-50 border-gray-300'
+              }`}
+              style={isTopScore ? { borderColor: accentColor, backgroundColor: accentSoftColor } : undefined}
+            >
               {isTopScore && (
                 <div className="flex items-center gap-1 sm:gap-1.5 mb-2 sm:mb-2.5">
-                  <Trophy className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 text-yellow-600 flex-shrink-0" />
-                  <span className="text-yellow-600 text-[8px] sm:text-[9px] md:text-[10px] font-medium leading-tight">Leaderboard</span>
+                  <Trophy className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 flex-shrink-0" style={{ color: accentColor }} />
+                  <span className="text-[8px] sm:text-[9px] md:text-[10px] font-medium leading-tight" style={{ color: accentColor }}>Leaderboard</span>
                 </div>
               )}
               {!isTopScore && (
@@ -363,7 +363,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                   }}
                   placeholder="Initials"
                   maxLength={3}
-                  className="w-full px-2 py-1.5 sm:px-2.5 sm:py-2 text-[10px] sm:text-xs md:text-sm bg-white border-2 border-gray-300 text-black placeholder-gray-400 focus:border-yellow-500 focus:outline-none rounded-lg min-h-[2.25rem] sm:min-h-[2.5rem]"
+                  className="w-full px-2 py-1.5 sm:px-2.5 sm:py-2 text-[10px] sm:text-xs md:text-sm bg-white border-2 border-gray-300 text-black placeholder-gray-400 focus:border-black focus:outline-none rounded-lg min-h-[2.25rem] sm:min-h-[2.5rem]"
                   disabled={isSaving}
                   autoFocus
                 />
@@ -376,7 +376,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                     setEmail(e.target.value);
                   }}
                   placeholder="Email (optional)"
-                  className="w-full px-2 py-1.5 sm:px-2.5 sm:py-2 text-[10px] sm:text-xs md:text-sm bg-white border-2 border-gray-300 text-black placeholder-gray-400 focus:border-yellow-500 focus:outline-none rounded-lg min-h-[2.25rem] sm:min-h-[2.5rem]"
+                  className="w-full px-2 py-1.5 sm:px-2.5 sm:py-2 text-[10px] sm:text-xs md:text-sm bg-white border-2 border-gray-300 text-black placeholder-gray-400 focus:border-black focus:outline-none rounded-lg min-h-[2.25rem] sm:min-h-[2.5rem]"
                   disabled={isSaving}
                 />
                 {/* RESPONSIVE: Use rem-based min-height for better scaling across devices */}
@@ -390,7 +390,8 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                     (email.trim() && !isValidEmail(email)) ||
                     (email.trim() && playerName.trim().length < 3)
                   }
-                  className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-[10px] sm:text-xs md:text-sm bg-yellow-500 text-black hover:bg-yellow-400 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-all rounded-lg font-medium min-h-[2.25rem] sm:min-h-[2.5rem] whitespace-nowrap"
+                  className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-[10px] sm:text-xs md:text-sm text-black hover:opacity-90 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-all rounded-lg font-medium min-h-[2.25rem] sm:min-h-[2.5rem] whitespace-nowrap"
+                  style={{ backgroundColor: accentColor }}
                 >
                   {isSaving ? '...' : 'SAVE'}
                 </button>
@@ -426,8 +427,8 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
 
         {/* Footer - Made with text */}
         <div className="w-full max-w-6xl text-center">
-          <p className="text-[9px] sm:text-[10px] md:text-xs text-gray-500 pt-1 sm:pt-2">
-            Made with ☕ and ⏰ by the Crackwits crew
+          <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 pt-1 sm:pt-2">
+            Made with <span className="align-middle">☕</span> and <span className="text-[10px] sm:text-[11px] md:text-xs align-middle">⏰</span> by the Crackwits Squad
           </p>
         </div>
       </div>
