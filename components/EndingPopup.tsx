@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { scoreService } from '../lib/scoreService';
 import { formatNumber } from '../lib/formatNumber';
 import { Confetti } from './Confetti';
+import { getElementColor } from '../game/colorConfig';
+import { Button } from './ui/button';
 
 interface EndingPopupProps {
   distance: number;
@@ -33,6 +35,8 @@ export function EndingPopup({
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [emailError, setEmailError] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  const uiRed = getElementColor('uiRed');
+  const uiRedSoft = `${uiRed}1A`; // subtle translucent background based on UI red
 
   // Detect mobile device
   useEffect(() => {
@@ -179,9 +183,6 @@ export function EndingPopup({
           <p className="mb-2 sm:mb-3 text-sm sm:text-base">
             Leaderboard closes on <strong>January 5th, 2026</strong> stay <strong>TOP 3</strong> to claim your win! Refresh often... competitors roll in fast.
           </p>
-          <p className="text-sm sm:text-base">
-            Choose your treat below! We'll contact you if you win!
-          </p>
         </>
       );
     }
@@ -227,7 +228,7 @@ export function EndingPopup({
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors text-gray-700 text-xl font-bold"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-black text-white hover:bg-black/80 transition-colors text-xl font-bold"
           aria-label="Close"
         >
           ×
@@ -297,18 +298,37 @@ export function EndingPopup({
             <div className="mb-4 sm:mb-6 space-y-3">
               {/* Position Badge */}
               <div className="text-center">
-                <div className="inline-block bg-yellow-100 border-2 border-yellow-500 rounded-full px-4 py-2">
-                  <span className="text-lg sm:text-xl md:text-2xl font-bold text-yellow-700">
+                <div
+                  className="inline-block border-2 rounded-full px-4 py-2"
+                  style={{ backgroundColor: uiRedSoft, borderColor: uiRed }}
+                >
+                  <span
+                    className="text-lg sm:text-xl md:text-2xl font-bold"
+                    style={{ color: uiRed }}
+                  >
                     {position === 1 ? '🥇' : position === 2 ? '🥈' : '🥉'} Rank #{position}
                   </span>
                 </div>
               </div>
 
               {/* Countdown Timer */}
-              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3 text-center">
+              <div
+                className="border-2 rounded-lg p-3 text-center"
+                style={{ backgroundColor: uiRedSoft, borderColor: uiRed }}
+              >
                 <p className="text-xs sm:text-sm text-gray-600 mb-1">Time remaining until deadline:</p>
-                <p className="text-lg sm:text-xl md:text-2xl font-bold text-blue-700">{timeRemaining}</p>
+                <p
+                  className="text-lg sm:text-xl md:text-2xl font-bold"
+                  style={{ color: uiRed }}
+                >
+                  {timeRemaining}
+                </p>
               </div>
+
+              {/* Main prize message under countdown */}
+              <p className="text-base sm:text-lg md:text-xl font-semibold text-gray-800 text-center">
+                Choose your treat below! We'll contact you if you win!
+              </p>
             </div>
           )}
 
@@ -352,7 +372,7 @@ export function EndingPopup({
                 placeholder="ABC"
                 maxLength={3}
                 required
-                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base bg-white border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none text-black"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base bg-white border-2 border-gray-300 rounded-lg focus:outline-none text-black"
                 disabled={isSaving}
                 autoFocus={!isMobile}
               />
@@ -371,7 +391,7 @@ export function EndingPopup({
                 onChange={(e) => handleEmailChange(e.target.value)}
                 placeholder="your@email.com"
                 required={isTop3}
-                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base bg-white border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none text-black"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base bg-white border-2 border-gray-300 rounded-lg focus:outline-none text-black"
                 disabled={isSaving}
               />
               {emailError && (
@@ -413,7 +433,7 @@ export function EndingPopup({
                       required
                     />
                     <span className="text-sm sm:text-base text-gray-700">
-                      Discount on New Crackwits Service
+                      Offer on a New Crackwits Service
                     </span>
                   </label>
                 </div>
@@ -428,7 +448,7 @@ export function EndingPopup({
             )}
 
             {/* Submit Button */}
-            <button
+            <Button
               id="submit-score-btn"
               type="submit"
               disabled={
@@ -437,10 +457,10 @@ export function EndingPopup({
                 isSaving ||
                 (isTop3 && (!email.trim() || !isValidEmail(email) || !prizeSelection))
               }
-              className="w-full py-2.5 sm:py-3 md:py-3.5 bg-yellow-500 hover:bg-yellow-400 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-black font-bold text-sm sm:text-base md:text-lg rounded-lg transition-all hover:scale-105 active:scale-95"
+              className="w-full py-2.5 sm:py-3 md:py-3.5 text-sm sm:text-base md:text-lg rounded-lg font-bold hover:scale-105 active:scale-95 transition-all"
             >
               {isSaving ? 'Saving...' : isTop3 ? 'Claim My Spot!' : 'Save My Score'}
-            </button>
+            </Button>
           </form>
         </div>
       </div>

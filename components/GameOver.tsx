@@ -307,7 +307,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
         <div className={`w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4 transition-all duration-1000 delay-300 ${showStats ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ paddingLeft: '0.5rem', paddingRight: '0.5rem', boxSizing: 'border-box' }}>
           
           {/* You Escaped Card */}
-          <div className="bg-gray-50 border-2 border-gray-300 p-2 sm:p-3 md:p-4 relative overflow-hidden group hover:border-yellow-500 transition-all rounded-lg">
+          <div className="bg-gray-50 border-2 border-gray-300 p-2 sm:p-3 md:p-4 relative overflow-hidden group hover:border-black transition-all rounded-lg">
             <div className="absolute top-0 right-0 w-32 h-32 bg-black/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500" />
             <div className="relative flex flex-col h-full">
               <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 sm:mb-2">
@@ -318,14 +318,13 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                 {formatNumber(distance)}<span className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl text-gray-500">m</span>
               </div>
               {/* RESPONSIVE: Use rem-based min-height for better scaling across devices */}
-              <button
-                id="replay-btn"
-                onClick={onRestart}
-                className="group/btn relative px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2.5 bg-black text-white text-[9px] sm:text-[10px] md:text-xs overflow-hidden transition-all hover:scale-105 active:scale-95 whitespace-nowrap rounded-lg font-medium min-h-[2.25rem] sm:min-h-[2.5rem] flex items-center justify-center mt-auto"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-red-500 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
-                <span className="relative z-10 tracking-wide">Roll One More Time</span>
-              </button>
+                <button
+                  id="replay-btn"
+                  onClick={onRestart}
+                  className="px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2.5 bg-black text-white text-[9px] sm:text-[10px] md:text-xs overflow-hidden transition-all hover:bg-black/80 hover:scale-105 active:scale-95 whitespace-nowrap rounded-lg font-medium min-h-[2.25rem] sm:min-h-[2.5rem] flex items-center justify-center mt-auto"
+                >
+                  <span className="tracking-wide">Roll One More Time</span>
+                </button>
             </div>
           </div>
 
@@ -390,8 +389,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                     (email.trim() && !isValidEmail(email)) ||
                     (email.trim() && playerName.trim().length < 3)
                   }
-                  className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-[10px] sm:text-xs md:text-sm text-black hover:opacity-90 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-all rounded-lg font-medium min-h-[2.25rem] sm:min-h-[2.5rem] whitespace-nowrap"
-                  style={{ backgroundColor: accentColor }}
+                  className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-[10px] sm:text-xs md:text-sm bg-black text-white hover:bg-black/80 disabled:bg-gray-500 disabled:text-white disabled:cursor-not-allowed transition-all rounded-lg font-medium min-h-[2.25rem] sm:min-h-[2.5rem] whitespace-nowrap"
                 >
                   {isSaving ? '...' : 'SAVE'}
                 </button>

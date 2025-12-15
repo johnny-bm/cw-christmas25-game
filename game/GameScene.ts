@@ -181,6 +181,7 @@ export class GameScene extends Phaser.Scene {
   private visualViewportResizeTimer: NodeJS.Timeout | null = null; // Timer for visual viewport resize debouncing
   private visualViewportResizeHandler: (() => void) | null = null; // Handler for visual viewport resize events
   private isInitializing: boolean = true; // Flag to prevent visual viewport resize during initialization
+  private zeroEnergyStartTime: number | null = null; // Fallback timer to end game if energy stays at 0
   
   // Helper function to setup character physics body correctly - responsive
   // CRITICAL FIX for Safari Mobile: Ensure body bottom aligns with sprite.y (feet position)
@@ -505,6 +506,18 @@ export class GameScene extends Phaser.Scene {
     }
 
     return scaleHeight;
+  }
+
+  // Late-game difficulty multiplier based on distance.
+  // After 1500m, obstacle spawn intervals gradually shrink (more frequent obstacles),
+  // reaching 50% of their normal value by 2500m+.
+  private getLateGameIntervalMultiplier(): number {
+    const lateGameStart = 1500;
+    const lateGameEnd = 2500;
+    if (this.distance <= lateGameStart) return 1;
+    const progress = Math.min(1, (this.distance - lateGameStart) / (lateGameEnd - lateGameStart));
+    const minMultiplier = 0.5; // At full late-game, intervals are 50% (twice as many obstacles)
+    return 1 - progress * (1 - minMultiplier);
   }
 
   create() {
@@ -1290,7 +1303,11 @@ export class GameScene extends Phaser.Scene {
     // Late game: 0.6x to 1.8x (still varied but tighter, harder)
     const randomVariationMin = 0.4 + (difficultyProgress * 0.2); // 0.4 to 0.6
     const randomVariationMax = 2.5 - (difficultyProgress * 0.7); // 2.5 to 1.8
-    this.obstacleTimer = Phaser.Math.Between(speedAdjustedMin * randomVariationMin, speedAdjustedMax * randomVariationMax);
+    const lateGameMultiplier = this.getLateGameIntervalMultiplier();
+    this.obstacleTimer = Phaser.Math.Between(
+      speedAdjustedMin * randomVariationMin * lateGameMultiplier,
+      speedAdjustedMax * randomVariationMax * lateGameMultiplier
+    );
   }
 
   spawnFloatingObstacle() {
@@ -1346,7 +1363,11 @@ export class GameScene extends Phaser.Scene {
       // Random spacing: wider variation at start (easy), tighter at end (hard)
       const randomVariationMin = 0.4 + (difficultyProgress * 0.2); // 0.4 to 0.6
       const randomVariationMax = 2.5 - (difficultyProgress * 0.7); // 2.5 to 1.8
-      this.floatingObstacleTimer = Phaser.Math.Between(currentMinInterval * randomVariationMin, currentMaxInterval * randomVariationMax);
+      const lateGameMultiplier = this.getLateGameIntervalMultiplier();
+      this.floatingObstacleTimer = Phaser.Math.Between(
+        currentMinInterval * randomVariationMin * lateGameMultiplier,
+        currentMaxInterval * randomVariationMax * lateGameMultiplier
+      );
       return;
     }
     
@@ -1409,7 +1430,11 @@ export class GameScene extends Phaser.Scene {
     // Random spacing: wider variation at start (easy), tighter at end (hard)
     const randomVariationMin = 0.4 + (difficultyProgress * 0.2); // 0.4 to 0.6
     const randomVariationMax = 2.5 - (difficultyProgress * 0.7); // 2.5 to 1.8
-    this.floatingObstacleTimer = Phaser.Math.Between(currentMinInterval * randomVariationMin, currentMaxInterval * randomVariationMax);
+    const lateGameMultiplier = this.getLateGameIntervalMultiplier();
+    this.floatingObstacleTimer = Phaser.Math.Between(
+      currentMinInterval * randomVariationMin * lateGameMultiplier,
+      currentMaxInterval * randomVariationMax * lateGameMultiplier
+    );
   }
 
   spawnProjectileObstacle() {
@@ -1497,7 +1522,11 @@ export class GameScene extends Phaser.Scene {
       // Random spacing: wider variation at start (easy), tighter at end (hard)
       const randomVariationMin = 0.4 + (difficultyProgress * 0.2); // 0.4 to 0.6
       const randomVariationMax = 2.5 - (difficultyProgress * 0.7); // 2.5 to 1.8
-      this.projectileObstacleTimer = Phaser.Math.Between(currentMinInterval * randomVariationMin, currentMaxInterval * randomVariationMax);
+      const lateGameMultiplier = this.getLateGameIntervalMultiplier();
+      this.projectileObstacleTimer = Phaser.Math.Between(
+        currentMinInterval * randomVariationMin * lateGameMultiplier,
+        currentMaxInterval * randomVariationMax * lateGameMultiplier
+      );
       return;
     }
     
@@ -1567,7 +1596,11 @@ export class GameScene extends Phaser.Scene {
     // Random spacing: wider variation at start (easy), tighter at end (hard)
     const randomVariationMin = 0.4 + (difficultyProgress * 0.2); // 0.4 to 0.6
     const randomVariationMax = 2.5 - (difficultyProgress * 0.7); // 2.5 to 1.8
-    this.projectileObstacleTimer = Phaser.Math.Between(currentMinInterval * randomVariationMin, currentMaxInterval * randomVariationMax);
+    const lateGameMultiplier = this.getLateGameIntervalMultiplier();
+    this.projectileObstacleTimer = Phaser.Math.Between(
+      currentMinInterval * randomVariationMin * lateGameMultiplier,
+      currentMaxInterval * randomVariationMax * lateGameMultiplier
+    );
   }
 
   spawnCollectible() {
@@ -2228,7 +2261,10 @@ export class GameScene extends Phaser.Scene {
     // Responsive font size - same size for all messages
     const { width } = this.scale;
     const isMobile = width <= 768;
-    const baseFontSize = isMobile ? '12px' : '18px'; // Same size for all messages
+    // Scale factor to make the entire text bubble ~10% bigger on all screen sizes
+    const bubbleScaleFactor = 1.1;
+    const baseFontSizePx = isMobile ? 12 : 18;
+    const baseFontSize = `${baseFontSizePx * bubbleScaleFactor}px`; // 10% larger font size for all messages
     
     // Set background color based on message type (only difference)
     let bgColor: number;
@@ -2253,8 +2289,8 @@ export class GameScene extends Phaser.Scene {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const textResolution = Math.min(devicePixelRatio, 3); // Cap at 3x for performance, but use actual DPR for sharpness
     
-    // Max width for text wrapping - responsive (increased)
-    const maxTextWidth = isMobile ? 280 : 400;
+    // Max width for text wrapping - responsive (increased and scaled by bubble factor)
+    const maxTextWidth = (isMobile ? 280 : 400) * bubbleScaleFactor;
     
     const messageText = this.add.text(0, 0, message, {
       fontFamily: '"Urbanist", sans-serif',
@@ -2268,9 +2304,11 @@ export class GameScene extends Phaser.Scene {
     messageText.setOrigin(0.5, 0.5); // Center the text
     messageText.setDepth(1001);
 
-    // Responsive padding - same padding for all messages
-    const horizontalPadding = isMobile ? 12 : 16; // Same padding for all messages
-    const verticalPadding = isMobile ? 4 : 8; // Same padding for all messages
+    // Responsive padding - scaled by bubble factor to keep the bubble visually consistent
+    const horizontalPaddingBase = isMobile ? 12 : 16;
+    const verticalPaddingBase = isMobile ? 4 : 8;
+    const horizontalPadding = horizontalPaddingBase * bubbleScaleFactor;
+    const verticalPadding = verticalPaddingBase * bubbleScaleFactor;
     
     // Create rounded rectangle (pill shape) using graphics
     const bgWidth = messageText.width + (horizontalPadding * 2);
@@ -2610,7 +2648,15 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Increase speed over time
-    const maxSpeed = GameConfig.speed.max * baseSpeed;
+    let maxSpeed = GameConfig.speed.max * baseSpeed;
+    // Late-game: allow a higher max speed after 1500m so the game keeps ramping up
+    if (this.distance > 1500) {
+      const lateGameStart = 1500;
+      const lateGameEnd = 3000;
+      const progress = Math.min(1, (this.distance - lateGameStart) / (lateGameEnd - lateGameStart));
+      const lateGameMaxMultiplier = 1.3; // Up to 30% faster at very long distances
+      maxSpeed *= 1 + progress * (lateGameMaxMultiplier - 1);
+    }
     // Early-game acceleration boost so the first speed ramp is felt sooner
     this.initialSpeedBoostTimer += delta;
     const accelerationMultiplier = this.initialSpeedBoostTimer <= GameConfig.speed.initialBoostDuration
@@ -2890,6 +2936,20 @@ export class GameScene extends Phaser.Scene {
       const deadlineLerpSpeed = this.isSafariMobile() ? GameConfig.deadline.movementSpeed * 0.65 : GameConfig.deadline.movementSpeed;
       this.deadlineX = this.deadlineX + (deadlineTargetX - this.deadlineX) * deltaSeconds * deadlineLerpSpeed;
       this.deadline.x = this.deadlineX;
+    }
+
+    // SAFETY NET: If energy has been at 0 for a short time but the deadline collision
+    // still hasn't triggered (observed on some mobile Safari cases), force game over.
+    if (this.energy <= 0) {
+      if (this.zeroEnergyStartTime === null) {
+        this.zeroEnergyStartTime = time;
+      } else if (!this.isGameOver && time - this.zeroEnergyStartTime > 750) {
+        // Force-align energy and trigger game end as a backup
+        this.energy = 0;
+        this.endGame();
+      }
+    } else {
+      this.zeroEnergyStartTime = null;
     }
 
     // Check collisions
