@@ -299,15 +299,15 @@ export const textConfig = {
   // SEO METADATA
   // ============================================
   seo: {
-    title: "Escape The Deadline - Christmas Game",
+    title: "Escape The Deadline - Crackwits Christmas Game",
     description: "Skate fast, dodge sabotage, and collect whatever the Grinch didn't manage to destroy. Outrun the final deadline of the year!",
     keywords: "Christmas game, escape game, deadline game, skateboard game, holiday game, Crackwits",
-    ogTitle: "Escape The Deadline - Christmas Game",
+    ogTitle: "Escape The Deadline - Crackwits Christmas Game",
     ogDescription: "Skate fast, dodge sabotage, and collect whatever the Grinch didn't manage to destroy. Outrun the final deadline of the year!",
     ogImage: "/Assets/CW-Logo.svg",
     ogType: "website",
     twitterCard: "summary_large_image",
-    twitterTitle: "Escape The Deadline - Christmas Game",
+    twitterTitle: "Escape The Deadline - Crackwits Christmas Game",
     twitterDescription: "Skate fast, dodge sabotage, and collect whatever the Grinch didn't manage to destroy. Outrun the final deadline of the year!",
     twitterImage: "/Assets/CW-Logo.svg",
   },
