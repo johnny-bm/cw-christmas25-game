@@ -440,12 +440,17 @@ export function EndingPopup({
               </div>
             )}
 
-            {/* Disclaimer (Top 3 only) */}
-            {isTop3 && (
-              <p className="text-xs text-gray-500 italic text-center">
-                {textConfig.endingPopup.form.prizeSelection.disclaimer}
+            {/* Disclaimer */}
+            <div className="space-y-2">
+              {isTop3 && (
+                <p className="text-xs text-gray-500 italic text-center">
+                  {textConfig.endingPopup.form.prizeSelection.disclaimer}
+                </p>
+              )}
+              <p className="text-[10px] sm:text-xs text-gray-400 italic text-center">
+                {textConfig.common.disclaimer}
               </p>
-            )}
+            </div>
 
             {/* Submit Button */}
             <button

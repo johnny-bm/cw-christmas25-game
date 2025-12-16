@@ -278,6 +278,13 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
           <LeaderboardWrapper refresh={leaderboardRefresh} />
         </div>
 
+        {/* Disclaimer */}
+        <div className="w-full max-w-6xl text-center mt-auto pt-2 sm:pt-3">
+          <p className="text-[9px] sm:text-[10px] md:text-xs text-gray-400 italic px-4">
+            {textConfig.common.disclaimer}
+          </p>
+        </div>
+
         {/* Footer - Made with text */}
         <div className="w-full max-w-6xl text-center mt-auto pt-4 sm:pt-6">
           <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 pt-1 sm:pt-2">
@@ -345,6 +352,13 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
           <div className="w-full max-w-md h-full flex items-center min-h-0">
             <LeaderboardWrapper refresh={leaderboardRefresh} compact={true} />
           </div>
+        </div>
+
+        {/* Disclaimer */}
+        <div className="col-span-2 w-full text-center pt-2">
+          <p className="text-[9px] sm:text-[10px] md:text-xs text-gray-400 italic px-4">
+            {textConfig.common.disclaimer}
+          </p>
         </div>
 
         {/* Footer - Made with text */}

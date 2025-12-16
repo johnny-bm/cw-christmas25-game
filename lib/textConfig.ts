@@ -334,6 +334,7 @@ export const textConfig = {
       happyGrinch: "Happy Grinch",
       errorLoadingImage: "Error loading image",
     },
+    disclaimer: "By participating, you agree to the terms and conditions. Prizes are subject to eligibility and availability. Benefit granted if position is maintained until 01/05/2026.",
   },
 } as const;
 
