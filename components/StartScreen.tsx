@@ -142,9 +142,9 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
   
   return (
     <div className="w-full h-full flex items-center justify-center overflow-hidden relative" style={{ backgroundColor: gameBackgroundColor }}>
-      {/* CW Logo - Top Center - Hidden on mobile landscape to prevent overlap */}
+      {/* CW Logo - Top Center on portrait, Top Left on mobile landscape */}
       <div
-        className="absolute z-20 left-1/2 transform -translate-x-1/2 max-md:landscape:hidden"
+        className="absolute z-20 left-1/2 transform -translate-x-1/2 max-md:landscape:left-0 max-md:landscape:transform-none"
         style={{
           top: isMobileSafari 
             ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
@@ -154,7 +154,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
         <img 
           src="/Assets/CW-Logo.svg" 
           alt={textConfig.common.altText.crackwitsLogo} 
-          className="h-6 sm:h-8 md:h-10"
+          className="h-6 max-md:landscape:h-5 sm:h-8 md:h-10 max-md:landscape:ml-4"
         />
       </div>
       
@@ -302,7 +302,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
 
       {/* Mobile/Tablet Landscape: 2-Column Grid Layout */}
       <div className="hidden max-md:landscape:grid grid-cols-2 grid-rows-[1fr_auto] w-full h-full gap-4 py-3" style={{
-        paddingTop: 'max(3.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem + 2.75rem))',
+        paddingTop: 'max(3rem, calc(env(safe-area-inset-top, 0px) + 0.75rem + 2.25rem))',
         paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))',
         paddingLeft: 'max(2rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
         paddingRight: 'max(2rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',

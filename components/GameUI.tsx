@@ -22,6 +22,12 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
     }
     return false;
   });
+  const [isMobileLandscape, setIsMobileLandscape] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768 && window.innerHeight < window.innerWidth;
+    }
+    return false;
+  });
 
   // Detect Safari mobile
   const isSafariMobile = () => {
@@ -49,14 +55,19 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
   }, []);
 
   useEffect(() => {
-    // Detect mobile screen size
+    // Detect mobile screen size and landscape orientation
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 640);
+      setIsMobileLandscape(window.innerWidth < 768 && window.innerHeight < window.innerWidth);
     };
     
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener('orientationchange', checkMobile);
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('orientationchange', checkMobile);
+    };
   }, []);
 
   const handleToggleMute = (e: React.MouseEvent) => {
@@ -152,7 +163,9 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
           style={{
             top: isMobile 
-              ? 'max(3.5rem, env(safe-area-inset-top, 0.75rem) + 3rem)'
+              ? isMobileLandscape
+                ? 'max(2.5rem, env(safe-area-inset-top, 0.75rem) + 2rem)' // Closer on mobile landscape
+                : 'max(3.5rem, env(safe-area-inset-top, 0.75rem) + 3rem)' // Regular mobile portrait
               : 'max(5.5rem, env(safe-area-inset-top, 0.75rem) + 5rem)'
           }}
         >

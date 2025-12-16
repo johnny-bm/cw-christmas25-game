@@ -3549,9 +3549,12 @@ export class GameScene extends Phaser.Scene {
       if (recentlyUsedBuildings.length > maxRecentHistory) {
         recentlyUsedBuildings.shift(); // Remove oldest entry
       }
+      // Position buildings slightly below ground to move them down visually
+      // Add a small offset (about 2-3% of screen height) to push buildings down
+      const buildingYOffset = height * 0.025; // 2.5% of screen height
       const building = this.add.image(
         Phaser.Math.Between(0, width * 2),
-        this.groundY,
+        this.groundY + buildingYOffset,
         imageKey
       );
       
