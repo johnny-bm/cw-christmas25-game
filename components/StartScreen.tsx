@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Leaderboard } from './Leaderboard';
 import { formatNumber } from '../lib/formatNumber';
 import { getElementColor } from '../game/colorConfig';
+import { textConfig } from '../lib/textConfig';
 
 interface StartScreenProps {
   onStart: () => void;
@@ -152,7 +153,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
       >
         <img 
           src="/Assets/CW-Logo.svg" 
-          alt="Crackwits Logo" 
+          alt={textConfig.common.altText.crackwitsLogo} 
           className="h-6 sm:h-8 md:h-10"
         />
       </div>
@@ -167,18 +168,18 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
             : 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
           right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
         }}
-        aria-label={isMuted ? 'Unmute' : 'Mute'}
+        aria-label={isMuted ? textConfig.common.ariaLabels.unmute : textConfig.common.ariaLabels.mute}
       >
         {isMuted ? (
           <img 
             src="/Assets/Mute.svg" 
-            alt="Muted" 
+            alt={textConfig.common.altText.muted} 
             className="w-6 h-6 sm:w-7 sm:h-7"
           />
         ) : (
           <img 
             src="/Assets/Unmute.svg" 
-            alt="Unmuted" 
+            alt={textConfig.common.altText.unmuted} 
             className="w-6 h-6 sm:w-7 sm:h-7"
           />
         )}
@@ -188,16 +189,16 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
       {showFullscreenPrompt && isMobileSafari && fullscreenSupported && !isFullscreen && (
         <div className="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 max-w-sm text-center space-y-4">
-            <h3 className="text-lg font-bold">Fullscreen Recommended</h3>
+            <h3 className="text-lg font-bold">{textConfig.startScreen.fullscreen.title}</h3>
             <p className="text-sm text-gray-600">
-              For the best experience on Safari, tap the fullscreen button below to hide browser tabs and get more screen space.
+              {textConfig.startScreen.fullscreen.description}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={handleRequestFullscreen}
                 className="flex-1 bg-black text-white px-4 py-2 rounded font-medium"
               >
-                Go Fullscreen
+                {textConfig.startScreen.fullscreen.button.goFullscreen}
               </button>
               <button
                 onClick={() => {
@@ -206,7 +207,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
                 }}
                 className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded font-medium"
               >
-                Skip
+                {textConfig.startScreen.fullscreen.button.skip}
               </button>
             </div>
           </div>
@@ -222,7 +223,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
             bottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
             right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
           }}
-          aria-label="Enter Fullscreen"
+          aria-label={textConfig.common.ariaLabels.enterFullscreen}
         >
           <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
@@ -243,10 +244,10 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
       }}>
         <div className="space-y-1 sm:space-y-2 md:space-y-3">
           <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl text-black tracking-tight leading-tight">
-            ESCAPE THE DEADLINE
+            {textConfig.startScreen.title}
           </h1>
           <p className="text-[10px] sm:text-xs md:text-sm text-gray-600">
-            Skate fast, dodge sabotage, and collect whatever the Grinch didn’t manage to destroy. Outrun the final deadline of the year!
+            {textConfig.startScreen.subtitle}
           </p>
         </div>
 
@@ -264,11 +265,11 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
                 : 'bg-gray-400 text-gray-200 cursor-not-allowed'
             }`}
           >
-            {gameReady ? 'LET\'S ROLL' : 'LOADING...'}
+            {gameReady ? textConfig.startScreen.button.ready : textConfig.startScreen.button.loading}
           </button>
           
           <p className="text-[8px] sm:text-[10px] md:text-xs text-gray-500">
-            Press SPACEBAR or tap to start
+            {textConfig.startScreen.hint}
           </p>
         </div>
 
@@ -292,10 +293,10 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
         <div className="flex flex-col items-center justify-center space-y-3">
           <div className="text-center space-y-2">
             <h1 className="text-2xl text-black tracking-tight leading-tight">
-              ESCAPE THE DEADLINE
+              {textConfig.startScreen.title}
             </h1>
             <p className="text-xs text-gray-600">
-              Skate fast, dodge sabotage, and collect whatever the Grinch didn’t manage to destroy. Outrun the final deadline of the year!
+              {textConfig.startScreen.subtitle}
             </p>
           </div>
 
@@ -313,11 +314,11 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
                   : 'bg-gray-400 text-gray-200 cursor-not-allowed'
               }`}
             >
-              {gameReady ? 'LET\'S ROLL' : 'LOADING...'}
+              {gameReady ? textConfig.startScreen.button.ready : textConfig.startScreen.button.loading}
             </button>
             
             <p className="text-[10px] text-gray-500">
-              Press SPACEBAR or tap to start
+              {textConfig.startScreen.hint}
             </p>
           </div>
         </div>
@@ -341,8 +342,8 @@ function LeaderboardWrapper({ refresh, compact }: { refresh: number, compact?: b
   } catch (error) {
     return (
       <div className="text-black">
-        <h2 className="text-center mb-3 text-sm sm:text-base">🏆 Leaderboard</h2>
-        <p className="text-center opacity-60 text-xs sm:text-sm">Loading...</p>
+        <h2 className="text-center mb-3 text-sm sm:text-base">{textConfig.leaderboard.title}</h2>
+        <p className="text-center opacity-60 text-xs sm:text-sm">{textConfig.leaderboard.loading}</p>
       </div>
     );
   }

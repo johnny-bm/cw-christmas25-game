@@ -5,6 +5,8 @@ import { Game } from './components/Game';
 import { GameUI } from './components/GameUI';
 import { GameOver } from './components/GameOver';
 import { getElementColor } from './game/colorConfig';
+import { textConfig } from './lib/textConfig';
+import { trackPageView } from './lib/analytics';
 
 export type GameState = 'start' | 'playing' | 'gameover';
 
@@ -48,7 +50,7 @@ function PortraitBlocker({ gameBackgroundColor }: { gameBackgroundColor: string 
         <div className="h-10 w-[209px] max-w-full flex items-center justify-center">
           <img 
             src="/Assets/CW-Logo.svg" 
-            alt="Crackwits Logo" 
+            alt={textConfig.common.altText.crackwitsLogo} 
             className="h-full w-auto max-w-full"
           />
         </div>
@@ -85,15 +87,15 @@ function PortraitBlocker({ gameBackgroundColor }: { gameBackgroundColor: string 
             className="text-3xl sm:text-4xl font-bold leading-[1.1] w-full" 
             style={{ fontFamily: '"Urbanist", sans-serif' }}
           >
-            Please Rotate Your Device
+            {textConfig.app.portraitBlocker.title}
           </h2>
           <div 
             className="text-base sm:text-lg leading-[1.1] w-full" 
             style={{ fontFamily: '"Urbanist", sans-serif' }}
           >
-            <p className="mb-0">This game is for landscape mode.</p>
+            <p className="mb-0">{textConfig.app.portraitBlocker.description.line1}</p>
             <p className="mb-0">&nbsp;</p>
-            <p className="mb-0">The game will load automatically once you rotate to landscape.</p>
+            <p className="mb-0">{textConfig.app.portraitBlocker.description.line3}</p>
           </div>
         </div>
       </div>
@@ -117,9 +119,7 @@ function PortraitBlocker({ gameBackgroundColor }: { gameBackgroundColor: string 
             fontSize: '12px'
           }}
         >
-          <span>CRACKWITS</span>
-          <span style={{ fontSize: '7.74px' }}>™</span>
-          <span>{` 2025 - 2020. All Rights Reserved.`}</span>
+          {textConfig.app.portraitBlocker.copyright}
         </p>
       </div>
     </div>
@@ -468,6 +468,11 @@ export default function App() {
   // Map gameState to scene name for analytics
   const sceneName = gameState === 'start' ? 'main-menu' : gameState === 'playing' ? 'gameplay' : 'ending';
   
+  // Track page view when scene changes
+  useEffect(() => {
+    trackPageView(sceneName);
+  }, [sceneName]);
+  
   return (
     <div 
       id="game-container"
@@ -534,11 +539,11 @@ export default function App() {
               top: 'max(1rem, calc(env(safe-area-inset-top, 0.5rem) + 0.5rem))',
             }}
           >
-            <img 
-              src="/Assets/CW-Logo.svg" 
-              alt="Crackwits Logo" 
-              className="h-6 sm:h-8 md:h-10"
-            />
+          <img 
+            src="/Assets/CW-Logo.svg" 
+            alt={textConfig.common.altText.crackwitsLogo} 
+            className="h-6 sm:h-8 md:h-10"
+          />
           </div>
           
           {/* RESPONSIVE: Use viewport-relative margin-top instead of fixed rem values */}
@@ -561,7 +566,7 @@ export default function App() {
               className="text-base sm:text-lg md:text-xl mb-4 sm:mb-6 font-medium" 
               style={{ fontFamily: '"Urbanist", sans-serif' }}
             >
-              Loading game...
+              {textConfig.app.loading.title}
             </p>
             {/* Progress bar */}
             <div 

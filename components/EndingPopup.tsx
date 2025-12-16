@@ -3,6 +3,7 @@ import { scoreService } from '../lib/scoreService';
 import { formatNumber } from '../lib/formatNumber';
 import { Confetti } from './Confetti';
 import { getElementColor } from '../game/colorConfig';
+import { textConfig } from '../lib/textConfig';
 
 interface EndingPopupProps {
   distance: number;
@@ -60,7 +61,7 @@ export function EndingPopup({
       const diff = deadline.getTime() - now.getTime();
 
       if (diff <= 0) {
-        setTimeRemaining('Deadline passed');
+        setTimeRemaining(textConfig.endingPopup.top3.deadlinePassed);
         return;
       }
 
@@ -121,7 +122,7 @@ export function EndingPopup({
   const handleEmailChange = (value: string) => {
     setEmail(value);
     if (value.trim() && !isValidEmail(value)) {
-      setEmailError('Invalid email address');
+      setEmailError(textConfig.endingPopup.form.errors.invalidEmail);
     } else {
       setEmailError('');
     }
@@ -134,15 +135,15 @@ export function EndingPopup({
     if (!playerName.trim()) return;
     if (playerName.trim().length < 3) return;
     if (isTop3 && !email.trim()) {
-      setEmailError('Email is required for top 3 scores');
+      setEmailError(textConfig.endingPopup.form.errors.emailRequired);
       return;
     }
     if (isTop3 && !isValidEmail(email)) {
-      setEmailError('Please enter a valid email address');
+      setEmailError(textConfig.endingPopup.form.errors.invalidEmail);
       return;
     }
     if (isTop3 && !prizeSelection) {
-      alert('Please select a prize option');
+      alert(textConfig.endingPopup.form.errors.selectPrize);
       return;
     }
 
@@ -154,7 +155,7 @@ export function EndingPopup({
         isTop3 &&         prizeSelection ? prizeSelection as 'consultation' | 'discount' : undefined
       );
     } catch (error) {
-      alert('Failed to save score. Please try again.');
+      alert(textConfig.endingPopup.form.errors.saveFailed);
     } finally {
       setIsSaving(false);
     }
@@ -162,11 +163,11 @@ export function EndingPopup({
 
   const getTitle = () => {
     if (isTop3 && position) {
-      if (position === 1) return "🥇 Champion! You're #1!";
-      if (position === 2) return "🥈 Amazing! You're #2!";
-      if (position === 3) return "🥉 Excellent! You're #3!";
+      if (position === 1) return textConfig.endingPopup.titles.champion;
+      if (position === 2) return textConfig.endingPopup.titles.second;
+      if (position === 3) return textConfig.endingPopup.titles.third;
     }
-    return "Great ride!";
+    return textConfig.endingPopup.titles.regular;
   };
 
   const getBodyMessage = () => {
@@ -174,13 +175,13 @@ export function EndingPopup({
       return (
         <>
           <p className="mb-2 sm:mb-3">
-            You're Santa's New Favorite!
+            {textConfig.endingPopup.messages.top3.santaFavorite}
           </p>
           <p className="mb-2 sm:mb-3">
-            Your score: <strong>{formatNumber(distance)}m</strong>
+            {textConfig.endingPopup.messages.top3.yourScore} <strong>{formatNumber(distance)}m</strong>
           </p>
           <p className="mb-2 sm:mb-3 text-sm sm:text-base">
-            Leaderboard closes on <strong>January 5th, 2026</strong> stay <strong>TOP 3</strong> to claim your win! Refresh often... competitors roll in fast.
+            {textConfig.endingPopup.messages.top3.leaderboardCloses} <strong>January 5th, 2026</strong> {textConfig.endingPopup.messages.top3.stayTop3} <strong>TOP 3</strong> {textConfig.endingPopup.messages.top3.claimWin}
           </p>
         </>
       );
@@ -188,10 +189,10 @@ export function EndingPopup({
     return (
       <>
         <p className="mb-2 sm:mb-3">
-          Your elf almost out-skated the Deadline, but the Grinch caught up.
+          {textConfig.endingPopup.messages.regular.elfOutskated}
         </p>
         <p className="text-sm sm:text-base">
-          Try again and push that score higher. Practice makes perfect!
+          {textConfig.endingPopup.messages.regular.tryAgain}
         </p>
       </>
     );
@@ -228,7 +229,7 @@ export function EndingPopup({
         <button
           onClick={onClose}
           className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors text-gray-700 text-xl font-bold"
-          aria-label="Close"
+          aria-label={textConfig.common.ariaLabels.close}
         >
           ×
         </button>
@@ -243,7 +244,7 @@ export function EndingPopup({
           <div className="flex justify-center mb-4 sm:mb-6">
             <img 
               src={characterImage} 
-              alt={isTop3 ? "Happy Elf" : "Happy Grinch"}
+              alt={isTop3 ? textConfig.common.altText.happyElf : textConfig.common.altText.happyGrinch}
               className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32"
             />
           </div>
@@ -260,31 +261,31 @@ export function EndingPopup({
 
           {/* Score Breakdown */}
           <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 border-2 border-gray-200">
-            <h3 className="text-sm sm:text-base font-semibold mb-2 sm:mb-3 text-gray-800">Score Breakdown</h3>
+            <h3 className="text-sm sm:text-base font-semibold mb-2 sm:mb-3 text-gray-800">{textConfig.endingPopup.scoreBreakdown.title}</h3>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-xs sm:text-sm text-gray-600">Final Score:</span>
+                <span className="text-xs sm:text-sm text-gray-600">{textConfig.endingPopup.scoreBreakdown.finalScore}</span>
                 <span id="final-score-display" className="text-base sm:text-lg md:text-xl font-bold text-black">{formatNumber(distance)}m</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs sm:text-sm text-gray-600">Elf vs Grinch:</span>
+                <span className="text-xs sm:text-sm text-gray-600">{textConfig.endingPopup.scoreBreakdown.elfVsGrinch}</span>
                 <div className="flex items-center gap-2">
                   <span id="elf-score-display" className="text-xs sm:text-sm font-medium text-gray-700">
-                    <img src="/Assets/Characters/Elf.svg" alt="Elf" className="inline w-4 h-4 sm:w-5 sm:h-5 mr-1" />
+                    <img src="/Assets/Characters/Elf.svg" alt={textConfig.common.altText.elf} className="inline w-4 h-4 sm:w-5 sm:h-5 mr-1" />
                     {elfScore}
                   </span>
                   <span className="text-gray-400">vs</span>
                   <span id="grinch-score-display" className="text-xs sm:text-sm font-medium text-gray-700">
-                    <img src="/Assets/Characters/Grinch.svg" alt="Grinch" className="inline w-4 h-4 sm:w-5 sm:h-5 mr-1" />
+                    <img src="/Assets/Characters/Grinch.svg" alt={textConfig.common.altText.grinch} className="inline w-4 h-4 sm:w-5 sm:h-5 mr-1" />
                     {grinchScore}
                   </span>
                 </div>
               </div>
               {maxCombo > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-gray-600">Max Combo:</span>
+                  <span className="text-xs sm:text-sm text-gray-600">{textConfig.endingPopup.scoreBreakdown.maxCombo}</span>
                   <div id="combo-display" className="flex items-center gap-1">
-                    <img src="/Assets/Combo.svg" alt="Combo" className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <img src="/Assets/Combo.svg" alt={textConfig.common.altText.combo} className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span className="text-xs sm:text-sm font-bold text-yellow-600">{maxCombo}x</span>
                   </div>
                 </div>
@@ -305,7 +306,7 @@ export function EndingPopup({
                     className="text-lg sm:text-xl md:text-2xl font-bold"
                     style={{ color: uiRed }}
                   >
-                    {position === 1 ? '🥇' : position === 2 ? '🥈' : '🥉'} Rank #{position}
+                    {position === 1 ? '🥇' : position === 2 ? '🥈' : '🥉'} {textConfig.endingPopup.top3.rank}{position}
                   </span>
                 </div>
               </div>
@@ -315,7 +316,7 @@ export function EndingPopup({
                 className="border-2 rounded-lg p-3 text-center"
                 style={{ backgroundColor: uiRedSoft, borderColor: uiRed }}
               >
-                <p className="text-xs sm:text-sm text-gray-600 mb-1">Time remaining until deadline:</p>
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">{textConfig.endingPopup.top3.timeRemaining}</p>
                 <p
                   className="text-lg sm:text-xl md:text-2xl font-bold"
                   style={{ color: uiRed }}
@@ -326,7 +327,7 @@ export function EndingPopup({
 
               {/* Main prize message under countdown */}
               <p className="text-base sm:text-lg md:text-xl font-semibold text-gray-800 text-center">
-                Choose your treat below! We'll contact you if you win!
+                {textConfig.endingPopup.top3.chooseTreat}
               </p>
             </div>
           )}
@@ -339,7 +340,7 @@ export function EndingPopup({
                 <div className="text-center">
                   <div className="inline-block bg-gray-100 border-2 border-gray-400 rounded-full px-4 py-2">
                     <span className="text-base sm:text-lg md:text-xl font-bold text-gray-700">
-                      Rank #{overallPosition}
+                      {textConfig.endingPopup.top3.rank}{overallPosition}
                     </span>
                   </div>
                 </div>
@@ -347,7 +348,7 @@ export function EndingPopup({
               
               {/* Countdown Timer */}
               <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-3 text-center">
-                <p className="text-xs sm:text-sm text-gray-600 mb-1">Leaderboard closes on January 5th, 2026</p>
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">{textConfig.endingPopup.regular.leaderboardCloses}</p>
                 <p className="text-base sm:text-lg md:text-xl font-bold text-gray-700">{timeRemaining}</p>
               </div>
             </div>
@@ -358,7 +359,7 @@ export function EndingPopup({
             {/* Initials */}
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                Initials {isTop3 && <span className="text-red-500">*</span>}
+                {textConfig.endingPopup.form.initials.label} {isTop3 && <span className="text-red-500">{textConfig.endingPopup.form.initials.required}</span>}
               </label>
               <input
                 id="player-initials"
@@ -368,7 +369,7 @@ export function EndingPopup({
                   const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
                   setPlayerName(value);
                 }}
-                placeholder="ABC"
+                placeholder={textConfig.endingPopup.form.initials.placeholder}
                 maxLength={3}
                 required
                 className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base bg-white border-2 border-gray-300 rounded-lg focus:outline-none text-black"
@@ -380,15 +381,15 @@ export function EndingPopup({
             {/* Email */}
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                Email {isTop3 && <span className="text-red-500">*</span>}
-                {!isTop3 && <span className="text-gray-500 text-xs">(optional)</span>}
+                {textConfig.endingPopup.form.email.label} {isTop3 && <span className="text-red-500">{textConfig.endingPopup.form.email.required}</span>}
+                {!isTop3 && <span className="text-gray-500 text-xs">{textConfig.endingPopup.form.email.optional}</span>}
               </label>
               <input
                 id="player-email"
                 type="email"
                 value={email}
                 onChange={(e) => handleEmailChange(e.target.value)}
-                placeholder="your@email.com"
+                placeholder={textConfig.endingPopup.form.email.placeholder}
                 required={isTop3}
                 className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base bg-white border-2 border-gray-300 rounded-lg focus:outline-none text-black"
                 disabled={isSaving}
@@ -402,7 +403,7 @@ export function EndingPopup({
             {isTop3 && (
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">
-                  Prize Selection <span className="text-red-500">*</span>
+                  {textConfig.endingPopup.form.prizeSelection.label} <span className="text-red-500">{textConfig.endingPopup.form.prizeSelection.required}</span>
                 </label>
                 <div className="space-y-2">
                   <label className="flex items-center p-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
@@ -417,7 +418,7 @@ export function EndingPopup({
                       required
                     />
                     <span className="text-sm sm:text-base text-gray-700">
-                      Free Consultation Session with Crackwits
+                      {textConfig.endingPopup.form.prizeSelection.consultation}
                     </span>
                   </label>
                   <label className="flex items-center p-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
@@ -432,7 +433,7 @@ export function EndingPopup({
                       required
                     />
                     <span className="text-sm sm:text-base text-gray-700">
-                      Offer on a New Crackwits Service
+                      {textConfig.endingPopup.form.prizeSelection.discount}
                     </span>
                   </label>
                 </div>
@@ -442,7 +443,7 @@ export function EndingPopup({
             {/* Disclaimer (Top 3 only) */}
             {isTop3 && (
               <p className="text-xs text-gray-500 italic text-center">
-                Prize awarded if position maintained until 01/05/2026
+                {textConfig.endingPopup.form.prizeSelection.disclaimer}
               </p>
             )}
 
@@ -456,10 +457,10 @@ export function EndingPopup({
                 isSaving ||
                 (isTop3 && (!email.trim() || !isValidEmail(email) || !prizeSelection))
               }
-              className="w-full py-2.5 sm:py-3 md:py-3.5 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-black font-bold text-sm sm:text-base md:text-lg rounded-lg transition-all hover:scale-105 active:scale-95"
-              style={{ backgroundColor: uiRed }}
+              className="w-full py-2.5 sm:py-3 md:py-3.5 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-bold text-sm sm:text-base md:text-lg rounded-lg transition-all hover:scale-105 active:scale-95"
+              style={{ backgroundColor: '#000000' }}
             >
-              {isSaving ? 'Saving...' : isTop3 ? 'Claim My Spot!' : 'Save My Score'}
+              {isSaving ? textConfig.endingPopup.form.button.saving : isTop3 ? textConfig.endingPopup.form.button.claimSpot : textConfig.endingPopup.form.button.saveScore}
             </button>
           </form>
         </div>

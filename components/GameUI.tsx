@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { GameData } from '../App';
 import { formatNumber } from '../lib/formatNumber';
 import { GameConfig } from '../game/gameConfig';
+import { textConfig } from '../lib/textConfig';
 
 interface GameUIProps {
   gameData: GameData;
@@ -109,6 +110,8 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       }}
     >
       {/* Hidden meter counter for Google Analytics tracking */}
+      {/* This element is used by Google Tag Manager to track distance metrics */}
+      {/* See lib/analytics.ts for analytics configuration */}
       <span id="meter-counter" style={{ display: 'none' }}>{distance}</span>
       
       {/* Distance Counter - Top Center, no box - Better mobile sizing - Safe area support */}
@@ -165,7 +168,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
                     ? "/Assets/Characters/Grinch-Sad.svg"
                     : "/Assets/Characters/Grinch.svg"
                 }
-                alt="Grinch" 
+                alt={textConfig.common.altText.grinch} 
                 className="w-8 h-8 max-md:landscape:w-7 max-md:landscape:h-7 sm:w-10 sm:h-10 md:w-10 md:h-10"
                 style={{ objectFit: 'contain' }}
               />
@@ -184,7 +187,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
                     ? "/Assets/Characters/Elf-Sad-Grey.svg"
                     : "/Assets/Characters/Elf.svg"
                 }
-                alt="Elf" 
+                alt={textConfig.common.altText.elf} 
                 className="w-8 h-8 max-md:landscape:w-7 max-md:landscape:h-7 sm:w-10 sm:h-10 md:w-10 md:h-10"
                 style={{ objectFit: 'contain' }}
               />
@@ -223,7 +226,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
                     ? "/Assets/Characters/Grinch-Sad.svg"
                     : "/Assets/Characters/Grinch.svg"
                 }
-                alt="Grinch" 
+                alt={textConfig.common.altText.grinch} 
                 className="w-6 h-6"
                 style={{ objectFit: 'contain' }}
               />
@@ -245,7 +248,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
                     ? "/Assets/Characters/Elf-Sad-Grey.svg"
                     : "/Assets/Characters/Elf.svg"
                 }
-                alt="Elf" 
+                alt={textConfig.common.altText.elf} 
                 className="w-6 h-6"
                 style={{ objectFit: 'contain' }}
               />
@@ -261,11 +264,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
               <div className="flex items-center gap-1.5">
                 <img 
                   src="/Assets/Energy.svg" 
-                  alt="Energy" 
+                  alt={textConfig.common.altText.energy} 
                   className="w-4 h-4"
                 />
                 <span className="text-[#312f31] text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                  ENERGY
+                  {textConfig.gameUI.energy}
                 </span>
               </div>
               <span className="text-[#312f31] text-xs font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
@@ -286,11 +289,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
               <div className="flex items-center gap-2">
                 <img 
                   src="/Assets/Combo.svg" 
-                  alt="Combo" 
+                  alt={textConfig.common.altText.combo} 
                   className="w-5 h-5"
                 />
                 <span className="text-white text-sm font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                  COMBO
+                  {textConfig.gameUI.combo}
                 </span>
               </div>
               <span className="text-white text-4xl font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
@@ -304,7 +307,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
             <div className="bg-[#F6A288] rounded-lg p-3 w-full flex flex-col justify-between" style={{ boxSizing: 'border-box', maxWidth: '100%' }}>
               <div className="flex items-center justify-between w-full">
                 <span className="text-white text-sm font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                  COMBO RUSH
+                  {textConfig.gameUI.combo} RUSH
                 </span>
                 <span className="text-white text-sm font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
                   {Math.ceil(sprintTimer / 1000)}s
@@ -343,11 +346,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
                 <div className="flex items-center gap-0.5 sm:gap-1">
                   <img 
                     src="/Assets/Energy.svg" 
-                    alt="Energy" 
+                    alt={textConfig.common.altText.energy} 
                     className="w-3 h-3 sm:w-4 sm:h-4"
                   />
                   <span className="text-[#312f31] text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                    ENERGY
+                    {textConfig.gameUI.energy}
                   </span>
                 </div>
                 <span className="text-[#312f31] text-[10px] sm:text-xs font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
@@ -366,18 +369,18 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
             <button
               onClick={handleToggleMute}
               className="pointer-events-auto bg-white rounded-lg sm:rounded-xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
-              aria-label={isMuted ? 'Unmute' : 'Mute'}
+              aria-label={isMuted ? textConfig.common.ariaLabels.unmute : textConfig.common.ariaLabels.mute}
             >
               {isMuted ? (
                 <img 
                   src="/Assets/Mute.svg" 
-                  alt="Muted" 
+                  alt={textConfig.common.altText.muted} 
                   className="w-6 h-6 sm:w-7 sm:h-7"
                 />
               ) : (
                 <img 
                   src="/Assets/Unmute.svg" 
-                  alt="Unmuted" 
+                  alt={textConfig.common.altText.unmuted} 
                   className="w-6 h-6 sm:w-7 sm:h-7"
                 />
               )}
@@ -391,11 +394,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
               <div className="flex items-center gap-0.5 sm:gap-1">
                 <img 
                   src="/Assets/Combo.svg" 
-                  alt="Combo" 
+                  alt={textConfig.common.altText.combo} 
                   className="w-3 h-3 sm:w-4 sm:h-4"
                 />
                 <span className="text-white text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                  COMBO
+                  {textConfig.gameUI.combo}
                 </span>
               </div>
               <span className="text-white text-3xl sm:text-5xl font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
@@ -410,7 +413,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
             <div className="bg-[#F6A288] rounded-lg sm:rounded-xl p-2 sm:p-3 h-14 sm:h-16 min-w-[184px] sm:min-w-[210px] md:min-w-[236px] w-auto flex flex-col justify-between">
               <div className="flex items-center justify-between w-full">
                 <span className="text-white text-[10px] sm:text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-                  COMBO RUSH
+                  {textConfig.gameUI.combo} RUSH
                 </span>
                 <span className="text-white text-[10px] sm:text-xs font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
                   {Math.ceil(sprintTimer / 1000)}s
@@ -443,18 +446,18 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
             <button
               onClick={handleToggleMute}
               className="pointer-events-auto bg-white rounded-lg w-12 h-12 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150 shadow-md"
-              aria-label={isMuted ? 'Unmute' : 'Mute'}
+              aria-label={isMuted ? textConfig.common.ariaLabels.unmute : textConfig.common.ariaLabels.mute}
             >
               {isMuted ? (
                 <img 
                   src="/Assets/Mute.svg" 
-                  alt="Muted" 
+                  alt={textConfig.common.altText.muted} 
                   className="w-5 h-5"
                 />
               ) : (
                 <img 
                   src="/Assets/Unmute.svg" 
-                  alt="Unmuted" 
+                  alt={textConfig.common.altText.unmuted} 
                   className="w-5 h-5"
                 />
               )}
@@ -485,7 +488,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         >
           <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
           <span className="text-white text-xs sm:text-lg font-bold whitespace-nowrap">
-            DEADLINE {getDeadlineDistance()}m
+            {textConfig.gameUI.deadline} {getDeadlineDistance()}m
           </span>
         </div>
       </div>
@@ -500,7 +503,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         }}
       >
         <div className="bg-white/20 backdrop-blur-sm text-white px-3 py-1.5 max-md:landscape:px-2 max-md:landscape:py-1 sm:px-3 sm:py-2 text-xs max-md:landscape:text-[10px] sm:text-sm border border-white/40 rounded font-semibold">
-          TAP TO JUMP
+          {textConfig.gameUI.tapToJump}
         </div>
       </div>
     </div>

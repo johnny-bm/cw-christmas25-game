@@ -11,130 +11,23 @@ import {
   confettiColors,
   explosionColors
 } from './colorConfig';
+import { textConfig } from '../lib/textConfig';
 
-// Collectible-specific messages
-const COLLECTIBLE_MESSAGES: Record<string, string[]> = {
-  'Collectible-01': [ // Sugar Cane
-    'Sweet speed boost!',
-    'Run like you\'re late for Christmas Eve!',
-    'Sugar rush activated'
-  ],
-  'Collectible-03': [ // Star
-    'Star power!',
-    'Twinkle twinkle, big turbo!',
-    'Shine bright!',
-    'A little stardust goes a long way, speed up!',
-    'North Pole energy acquired.'
-  ],
-  'Collectible-02': [ // Santa's Hat
-    'Ho-ho-go!',
-    'Borrowing Santa\'s delivery pace.',
-    'Festive fast track!',
-    'Santa\'s speed boost!',
-    'Holiday spirit detected.'
-  ],
-  'Collectible-04': [ // Gift
-    'Surprise boost!',
-    'Bonus unlocked!',
-    'Unwrap a speed boost. No receipts needed.',
-    'Suprise! Here\'s a little boost!',
-    'Consider this your early present, run like you mean it.'
-  ]
-};
-
-// Fallback messages for collectibles without specific messages
-const COLLECT_MESSAGES = [
-  'Creative spark\'s back!',
-  'That\'s the good stuff.',
-  'Fuel for ideas.',
-  'Mood: inspired.',
-  'Coffee for the soul.'
-];
-
-const SPECIAL_COLLECT_MESSAGES = [
-  'Holiday mode: on.',
-  'That\'s the spirit!',
-  'Santa-level energy!',
-  'Power trip unlocked.',
-  'Vacation vibes!'
-];
-
-const HIT_MESSAGES = [
-  'Classic deadline move.',
-  'Oof. That brief hurt.',
-  'Whoops—wrong layer.',
-  'Client feedback hit!',
-  'Creative crash!'
-];
-
-// Ground obstacle-specific messages
-const GROUND_OBSTACLE_MESSAGES: Record<string, string[]> = {
-  'Obstacle-01': [
-    'The Grinch blocked my path. Typical.',
-    'Log jam. Deadline endangered.',
-    'Tree trap! Someone\'s trying to ruin Christmas.'
-  ],
-  'Obstacle-02': [
-    'The Grinch blocked my path. Typical.',
-    'Log jam. Deadline endangered.',
-    'Tree trap! Someone\'s trying to ruin Christmas.'
-  ],
-  'Obstacle-05': [
-    'The Grinch blocked my path. Typical.',
-    'Log jam. Deadline endangered.',
-    'Tree trap! Someone\'s trying to ruin Christmas.'
-  ]
-};
-
-const LOW_ENERGY_MESSAGES = [
-  'Running on coffee fumes.',
-  'Need… holiday… soon.',
-  'Focus slipping.',
-  'Almost there.',
-  'One more idea…'
-];
-
-const CRITICAL_ENERGY_MESSAGES = [
-  'Deadline\'s too close!',
-  'Save me, Santa!',
-  'Can\'t lose now!',
-  'So close to freedom.',
-  'Almost on OOO!'
-];
-
-const EASTER_EGG_MESSAGES = [
-  'Next year, I\'m escaping earlier.',
-  'Ctrl+S my soul.',
-  'New Year\'s goal: fewer meetings, more meaning.',
-  'Creative block? More like creative brick wall.',
-  '2026 me better appreciate this.',
-  'If The Deadline wins, it does my timesheet.'
-];
-
-// Combo messages
-const COMBO_MESSAGES = [
-  'Santa just handed me the express lane. GO.',
-  'I\'m sprinting. The Grinch is trembling.',
-  'North Pole turbo unlocked, outrun every deadline.',
-  'Combo cracked! I\'m faster than Santa on the 24th.',
-  'Holiday hyper-speed: engaged. The Grinch can\'t keep up.',
-  'My momentum just got wrapped and delivered.',
-  'Elf-powered boost activated.',
-  'Combo miracle! Even Santa\'s impressed.',
-  'Festive frenzy mode: ON. Deadlines fear you now.',
-  'I\'m officially on Santa\'s speed list!',
-  'I\'m running so fast the Grinch filed a complaint.',
-  'Combo unlocked! Santa said, "Finally, someone useful."',
-  'My speed just made Rudolph insecure.',
-  'The elves can\'t keep up!',
-  'Turbo mode: I\'m basically Santa\'s Wi-Fi now.',
-  'Combo cracked, HR is drafting my "Elf of the Month" post.',
-  'I\'m speeding up. Even Santa\'s beard is blown back.',
-  'This speed is illegal in all North Pole districts.',
-  'Combo achieved! Make the Grinch rage-quit.',
-  'Santa saw my speed and whispered… "Ho-ho-HOLY MOLY!"',
-  'Boost activated. I\'m running like the deadline is watching!'
-];
+// Import game messages from textConfig and create mutable copies for Phaser
+// Phaser.Math.RND.pick requires mutable arrays, so we create copies
+const COLLECTIBLE_MESSAGES: Record<string, string[]> = Object.fromEntries(
+  Object.entries(textConfig.game.collectibleMessages).map(([key, value]) => [key, [...value]])
+) as Record<string, string[]>;
+const COLLECT_MESSAGES = [...textConfig.game.collectMessages];
+const SPECIAL_COLLECT_MESSAGES = [...textConfig.game.specialCollectMessages];
+const HIT_MESSAGES = [...textConfig.game.hitMessages];
+const GROUND_OBSTACLE_MESSAGES: Record<string, string[]> = Object.fromEntries(
+  Object.entries(textConfig.game.groundObstacleMessages).map(([key, value]) => [key, [...value]])
+) as Record<string, string[]>;
+const LOW_ENERGY_MESSAGES = [...textConfig.game.lowEnergyMessages];
+const CRITICAL_ENERGY_MESSAGES = [...textConfig.game.criticalEnergyMessages];
+const EASTER_EGG_MESSAGES = [...textConfig.game.easterEggMessages];
+const COMBO_MESSAGES = [...textConfig.game.comboMessages];
 
 export class GameScene extends Phaser.Scene {
   private readonly SAFARI_FIXED_WIDTH = 400; // Portrait width for Safari mobile
@@ -2223,7 +2116,7 @@ export class GameScene extends Phaser.Scene {
   showMessage(message: string) {
     // During sprint mode, only show combo messages
     if (this.sprintMode) {
-      const isComboMessage = COMBO_MESSAGES.includes(message) || message === 'Five in a row? Santa calls that elite behavior.';
+      const isComboMessage = (COMBO_MESSAGES as string[]).includes(message) || message === 'Five in a row? Santa calls that elite behavior.';
       if (!isComboMessage) {
         return; // Skip non-combo messages during sprint mode
       }
@@ -2247,14 +2140,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Determine message type for color coding
-    const isObstacleMessage = HIT_MESSAGES.includes(message) || 
-      Object.values(GROUND_OBSTACLE_MESSAGES).some(messages => messages.includes(message));
+    const isObstacleMessage = (HIT_MESSAGES as string[]).includes(message) || 
+      Object.values(GROUND_OBSTACLE_MESSAGES).some(messages => (messages as string[]).includes(message));
     
-    const isComboMessage = COMBO_MESSAGES.includes(message) || message === 'Five in a row? Santa calls that elite behavior.';
+    const isComboMessage = (COMBO_MESSAGES as string[]).includes(message) || message === 'Five in a row? Santa calls that elite behavior.';
     
-    const isCollectibleMessage = COLLECT_MESSAGES.includes(message) || 
-      SPECIAL_COLLECT_MESSAGES.includes(message) ||
-      Object.values(COLLECTIBLE_MESSAGES).some(messages => messages.includes(message));
+    const isCollectibleMessage = (COLLECT_MESSAGES as string[]).includes(message) || 
+      (SPECIAL_COLLECT_MESSAGES as string[]).includes(message) ||
+      Object.values(COLLECTIBLE_MESSAGES).some(messages => (messages as string[]).includes(message));
     
     const isSpecial = isSpecialMessage;
     

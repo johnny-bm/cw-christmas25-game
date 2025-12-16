@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './globals.css';
+import { initializeGTM } from './lib/analytics';
 
 // Dynamically determine basename based on current pathname
 // Only use basename if we're actually on the /game/Christmas25 path
@@ -29,6 +30,9 @@ const getBasename = (): string | undefined => {
 };
 
 const basename = getBasename();
+
+// Initialize Google Tag Manager
+initializeGTM();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <BrowserRouter basename={basename}>

@@ -6,6 +6,7 @@ import { Leaderboard } from './Leaderboard';
 import { formatNumber } from '../lib/formatNumber';
 import { getElementColor } from '../game/colorConfig';
 import { EndingPopup } from './EndingPopup';
+import { textConfig } from '../lib/textConfig';
 
 interface GameOverProps {
   distance: number;
@@ -179,7 +180,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
     } catch (error) {
       // Show error but don't block UI
       setScoreSaved(true); // Still mark as "saved" to prevent retry loops
-      alert('Failed to save score. It has been saved locally instead.');
+      alert(textConfig.endingPopup.form.errors.saveFailed);
     } finally {
       setIsSaving(false);
     }
@@ -247,7 +248,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
       >
         <img 
           src="/Assets/CW-Logo.svg" 
-          alt="Crackwits Logo" 
+          alt={textConfig.common.altText.crackwitsLogo} 
           className="h-8 sm:h-10 md:h-12 lg:h-14"
         />
       </div>
@@ -262,18 +263,18 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
             : 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
           right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
         }}
-        aria-label={isMuted ? 'Unmute' : 'Mute'}
+        aria-label={isMuted ? textConfig.common.ariaLabels.unmute : textConfig.common.ariaLabels.mute}
       >
         {isMuted ? (
           <img 
             src="/Assets/Mute.svg" 
-            alt="Muted" 
+            alt={textConfig.common.altText.muted} 
             className="w-6 h-6 sm:w-7 sm:h-7"
           />
         ) : (
           <img 
             src="/Assets/Unmute.svg" 
-            alt="Unmuted" 
+            alt={textConfig.common.altText.unmuted} 
             className="w-6 h-6 sm:w-7 sm:h-7"
           />
         )}
@@ -294,12 +295,12 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
         <div className={`text-center transition-all duration-1000 w-full max-w-full ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} style={{ paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
           <div className="relative inline-block">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-black tracking-normal break-words inline">
-              The Deadline{' '}
-              <span className="text-red-600">Won</span>
+              {textConfig.gameOver.title}{' '}
+              <span className="text-red-600">{textConfig.gameOver.titleHighlight}</span>
             </h1>
           </div>
           <p className="text-gray-700 italic mt-1 sm:mt-1.5 md:mt-2 text-sm sm:text-base md:text-lg">
-            But hey, the holidays still showed up for you!
+            {textConfig.gameOver.subtitle}
           </p>
         </div>
 
@@ -312,7 +313,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
             <div className="relative flex flex-col h-full">
               <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 sm:mb-2">
                 <Navigation className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />
-                <span className="text-[8px] sm:text-[9px] md:text-[10px] tracking-widest text-gray-600 uppercase">YOU ESCAPED</span>
+                <span className="text-[8px] sm:text-[9px] md:text-[10px] tracking-widest text-gray-600 uppercase">{textConfig.gameOver.stats.youEscaped}</span>
               </div>
               <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-black tracking-tight mb-2 sm:mb-3" style={{ fontFamily: '"Urbanist", sans-serif' }}>
                 {formatNumber(distance)}<span className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl text-gray-500">m</span>
@@ -324,7 +325,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                 className="group/btn relative px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2.5 bg-black text-white text-[9px] sm:text-[10px] md:text-xs overflow-hidden transition-all hover:scale-105 active:scale-95 whitespace-nowrap rounded-lg font-medium min-h-[2.25rem] sm:min-h-[2.5rem] flex items-center justify-center mt-auto"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-red-500 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
-                <span className="relative z-10 tracking-wide">Roll One More Time</span>
+                <span className="relative z-10 tracking-wide">{textConfig.gameOver.stats.rollOneMoreTime}</span>
               </button>
             </div>
           </div>
@@ -342,12 +343,12 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
               {isTopScore && (
                 <div className="flex items-center gap-1 sm:gap-1.5 mb-2 sm:mb-2.5">
                   <Trophy className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 flex-shrink-0" style={{ color: accentColor }} />
-                  <span className="text-[8px] sm:text-[9px] md:text-[10px] font-medium leading-tight" style={{ color: accentColor }}>Leaderboard</span>
+                  <span className="text-[8px] sm:text-[9px] md:text-[10px] font-medium leading-tight" style={{ color: accentColor }}>{textConfig.gameOver.stats.leaderboard}</span>
                 </div>
               )}
               {!isTopScore && (
                 <div className="mb-2 sm:mb-2.5">
-                  <span className="text-gray-700 text-[8px] sm:text-[9px] md:text-[10px] font-medium">SAVE YOUR SCORE</span>
+                  <span className="text-gray-700 text-[8px] sm:text-[9px] md:text-[10px] font-medium">{textConfig.gameOver.stats.saveYourScore}</span>
                 </div>
               )}
               <form onSubmit={handleSaveScore} className="space-y-1.5 sm:space-y-2 flex-1 flex flex-col">
@@ -361,7 +362,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                     const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
                     setPlayerName(value);
                   }}
-                  placeholder="Initials"
+                  placeholder={textConfig.gameOver.form.initials.placeholder}
                   maxLength={3}
                   className="w-full px-2 py-1.5 sm:px-2.5 sm:py-2 text-[10px] sm:text-xs md:text-sm bg-white border-2 border-gray-300 text-black placeholder-gray-400 focus:border-black focus:outline-none rounded-lg min-h-[2.25rem] sm:min-h-[2.5rem]"
                   disabled={isSaving}
@@ -375,7 +376,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                   onChange={(e) => {
                     setEmail(e.target.value);
                   }}
-                  placeholder="Email (optional)"
+                  placeholder={textConfig.gameOver.form.email.placeholder}
                   className="w-full px-2 py-1.5 sm:px-2.5 sm:py-2 text-[10px] sm:text-xs md:text-sm bg-white border-2 border-gray-300 text-black placeholder-gray-400 focus:border-black focus:outline-none rounded-lg min-h-[2.25rem] sm:min-h-[2.5rem]"
                   disabled={isSaving}
                 />
@@ -393,13 +394,13 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                   className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-[10px] sm:text-xs md:text-sm text-black hover:opacity-90 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-all rounded-lg font-medium min-h-[2.25rem] sm:min-h-[2.5rem] whitespace-nowrap"
                   style={{ backgroundColor: accentColor }}
                 >
-                  {isSaving ? '...' : 'SAVE'}
+                  {isSaving ? textConfig.gameOver.form.button.saving : textConfig.gameOver.form.button.save}
                 </button>
                 {email.trim() && !isValidEmail(email) && (
-                  <p className="text-red-600 text-[9px] sm:text-[10px]">Invalid email</p>
+                  <p className="text-red-600 text-[9px] sm:text-[10px]">{textConfig.gameOver.form.errors.invalidEmail}</p>
                 )}
                 {email.trim() && playerName.trim().length < 3 && (
-                  <p className="text-red-600 text-[9px] sm:text-[10px]">Need 3 initials</p>
+                  <p className="text-red-600 text-[9px] sm:text-[10px]">{textConfig.gameOver.form.errors.needThreeInitials}</p>
                 )}
               </form>
             </div>
@@ -407,7 +408,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
 
           {scoreSaved && (
             <div className="bg-green-50 border-2 border-green-500 p-2 sm:p-3 md:p-4 animate-in zoom-in duration-300 rounded-lg flex items-center justify-center">
-              <p className="text-green-700 text-center text-xs sm:text-sm md:text-base font-medium">✓ ON THE BOARD!</p>
+              <p className="text-green-700 text-center text-xs sm:text-sm md:text-base font-medium">{textConfig.gameOver.form.success}</p>
             </div>
           )}
         </div>
@@ -428,7 +429,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
         {/* Footer - Made with text */}
         <div className="w-full max-w-6xl text-center">
           <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 pt-1 sm:pt-2">
-            Made with <span className="align-middle">☕</span> and <span className="text-[10px] sm:text-[11px] md:text-xs align-middle">⏰</span> by the Crackwits Squad
+            {textConfig.gameOver.footer}
           </p>
         </div>
       </div>

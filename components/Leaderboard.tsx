@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { scoreService, ScoreEntry } from '../lib/scoreService';
 import { formatNumber } from '../lib/formatNumber';
+import { textConfig } from '../lib/textConfig';
 
 interface LeaderboardProps {
   className?: string;
@@ -47,7 +48,7 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
       setScores(topScores || []); // Ensure we always have an array
       setTotalCount(count);
     } catch (error) {
-      setError('Failed to load leaderboard');
+      setError(textConfig.leaderboard.error);
       setScores([]); // Set empty array on error
     } finally {
       setLoading(false);
@@ -180,8 +181,8 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
   if (loading) {
     return (
       <div className={`${className}`}>
-        <h2 className={`text-center mb-3 text-sm sm:text-base ${textColorClass}`}>🏆 Leaderboard</h2>
-        <p className={`text-center opacity-60 text-xs sm:text-sm ${textColorClass}`}>Loading...</p>
+        <h2 className={`text-center mb-3 text-sm sm:text-base ${textColorClass}`}>{textConfig.leaderboard.title}</h2>
+        <p className={`text-center opacity-60 text-xs sm:text-sm ${textColorClass}`}>{textConfig.leaderboard.loading}</p>
       </div>
     );
   }
@@ -189,7 +190,7 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
   if (error) {
     return (
       <div className={`${className}`}>
-        <h2 className={`text-center mb-4 ${textColorClass}`}>Leaderboard</h2>
+        <h2 className={`text-center mb-4 ${textColorClass}`}>{textConfig.leaderboard.title}</h2>
         <p className="text-center opacity-60 text-red-600">{error}</p>
       </div>
     );
@@ -198,8 +199,8 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
   if (scores.length === 0) {
     return (
       <div className={`${className}`}>
-        <h2 className={`text-center mb-3 text-sm sm:text-base ${textColorClass}`}>🏆 Leaderboard</h2>
-        <p className={`text-center opacity-60 text-xs sm:text-sm ${textColorClass}`}>No scores yet. Be the first!</p>
+        <h2 className={`text-center mb-3 text-sm sm:text-base ${textColorClass}`}>{textConfig.leaderboard.title}</h2>
+        <p className={`text-center opacity-60 text-xs sm:text-sm ${textColorClass}`}>{textConfig.leaderboard.empty}</p>
       </div>
     );
   }
@@ -228,11 +229,11 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
             <tr 
               className={`border-b ${headerBorderClass}`}
               style={{ fontFamily: '"Urbanist", sans-serif' }}>
-              <th className={`text-left ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm pb-2 sm:pb-3 pr-2 sm:pr-3'}`}>#</th>
-              <th className={`text-left ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm pb-2 sm:pb-3 pr-2 sm:pr-3'}`}>Name</th>
-              <th className={`text-right ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm pb-2 sm:pb-3 pr-2 sm:pr-3'}`}>Distance</th>
-              <th className={`text-right ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm pb-2 sm:pb-3 pr-2 sm:pr-3'}`}>Combo</th>
-              <th className={`text-right ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2' : 'text-xs sm:text-sm pb-2 sm:pb-3'}`}>Elf vs Grinch</th>
+              <th className={`text-left ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm pb-2 sm:pb-3 pr-2 sm:pr-3'}`}>{textConfig.leaderboard.table.rank}</th>
+              <th className={`text-left ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm pb-2 sm:pb-3 pr-2 sm:pr-3'}`}>{textConfig.leaderboard.table.name}</th>
+              <th className={`text-right ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm pb-2 sm:pb-3 pr-2 sm:pr-3'}`}>{textConfig.leaderboard.table.distance}</th>
+              <th className={`text-right ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2 pr-1 sm:pr-2' : 'text-xs sm:text-sm pb-2 sm:pb-3 pr-2 sm:pr-3'}`}>{textConfig.leaderboard.table.combo}</th>
+              <th className={`text-right ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs pb-1 sm:pb-2' : 'text-xs sm:text-sm pb-2 sm:pb-3'}`}>{textConfig.leaderboard.table.elfVsGrinch}</th>
             </tr>
           </thead>
           <tbody>
@@ -272,7 +273,7 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
                       <div className="flex items-center justify-end gap-0.5 sm:gap-1">
                         <img 
                           src="/Assets/Combo.svg" 
-                          alt="Combo" 
+                          alt={textConfig.common.altText.combo} 
                           className="w-2 h-2 sm:w-2.5 sm:h-2.5"
                         />
                         <span className={`${isLightMode ? 'text-yellow-600' : 'text-yellow-400'}`}>
@@ -288,13 +289,13 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
                       <div className="flex items-center justify-end gap-1 sm:gap-1.5">
                         {score.elf_score !== undefined && score.elf_score > 0 && (
                           <span className={`flex items-center gap-0.5 ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-sm'}`}>
-                            <img src="/Assets/Characters/Elf.svg" alt="Elf" className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                            <img src="/Assets/Characters/Elf.svg" alt={textConfig.common.altText.elf} className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             {score.elf_score}
                           </span>
                         )}
                         {score.grinch_score !== undefined && score.grinch_score > 0 && (
                           <span className={`flex items-center gap-0.5 ${mutedTextClass} ${compact ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-sm'}`}>
-                            <img src="/Assets/Characters/Grinch.svg" alt="Grinch" className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                            <img src="/Assets/Characters/Grinch.svg" alt={textConfig.common.altText.grinch} className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             {score.grinch_score}
                           </span>
                         )}
@@ -314,7 +315,7 @@ export function Leaderboard({ className = '', refresh = 0, compact = false, high
           <div ref={loadMoreTriggerRef} className="h-4 flex items-center justify-center py-2">
             {loadingMore && (
               <div className={`text-xs ${mutedTextClass}`}>
-                Loading more...
+                {textConfig.leaderboard.loadingMore}
               </div>
             )}
           </div>
