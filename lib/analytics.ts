@@ -348,10 +348,22 @@ export function debugUTMParameters(): void {
   }
 }
 
-// Make debug function available globally in development
+// Make debug function available globally
+// This ensures it's available even if the module is tree-shaken
 if (typeof window !== 'undefined') {
-  // Always expose debug function (can be removed in production if needed)
-  // In production, you can add: && window.location.hostname !== 'crackwits.com'
+  // Expose immediately when module loads
   (window as any).checkUTM = debugUTMParameters;
+  
+  // Also expose on window load as a fallback
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', () => {
+      (window as any).checkUTM = debugUTMParameters;
+    });
+  }
+  
+  // Expose on window load as another fallback
+  window.addEventListener('load', () => {
+    (window as any).checkUTM = debugUTMParameters;
+  });
 }
 

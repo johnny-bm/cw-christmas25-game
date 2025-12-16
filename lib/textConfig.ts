@@ -304,12 +304,12 @@ export const textConfig = {
     keywords: "Christmas challenge, escape challenge, deadline challenge, skateboard challenge, holiday challenge, Crackwits",
     ogTitle: "Escape the Deadline | CRACKWITS Holiday Challenge",
     ogDescription: "Escape the Deadline is a CRACKWITS holiday skill-based challenge where participants skate past obstacles, avoid Grinch sabotage, collect boosts, and improve performance before the final deadline. No chance, no entry fees.",
-    ogImage: "/Assets/CW-Logo.svg",
+    ogImage: "/Assets/og-image.jpg",
     ogType: "website",
     twitterCard: "summary_large_image",
     twitterTitle: "Escape the Deadline | CRACKWITS Holiday Challenge",
     twitterDescription: "Escape the Deadline is a CRACKWITS holiday skill-based challenge where participants skate past obstacles, avoid Grinch sabotage, collect boosts, and improve performance before the final deadline. No chance, no entry fees.",
-    twitterImage: "/Assets/CW-Logo.svg",
+    twitterImage: "/Assets/og-image.jpg",
   },
 
   // ============================================
