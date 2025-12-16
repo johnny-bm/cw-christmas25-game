@@ -3,7 +3,6 @@ import { scoreService } from '../lib/scoreService';
 import { formatNumber } from '../lib/formatNumber';
 import { Confetti } from './Confetti';
 import { getElementColor } from '../game/colorConfig';
-import { Button } from './ui/button';
 
 interface EndingPopupProps {
   distance: number;
@@ -228,7 +227,7 @@ export function EndingPopup({
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-black text-white hover:bg-black/80 transition-colors text-xl font-bold"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors text-gray-700 text-xl font-bold"
           aria-label="Close"
         >
           ×
@@ -448,7 +447,7 @@ export function EndingPopup({
             )}
 
             {/* Submit Button */}
-            <Button
+            <button
               id="submit-score-btn"
               type="submit"
               disabled={
@@ -457,10 +456,11 @@ export function EndingPopup({
                 isSaving ||
                 (isTop3 && (!email.trim() || !isValidEmail(email) || !prizeSelection))
               }
-              className="w-full py-2.5 sm:py-3 md:py-3.5 text-sm sm:text-base md:text-lg rounded-lg font-bold hover:scale-105 active:scale-95 transition-all"
+              className="w-full py-2.5 sm:py-3 md:py-3.5 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-black font-bold text-sm sm:text-base md:text-lg rounded-lg transition-all hover:scale-105 active:scale-95"
+              style={{ backgroundColor: uiRed }}
             >
               {isSaving ? 'Saving...' : isTop3 ? 'Claim My Spot!' : 'Save My Score'}
-            </Button>
+            </button>
           </form>
         </div>
       </div>
