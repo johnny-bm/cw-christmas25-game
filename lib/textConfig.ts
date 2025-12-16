@@ -138,13 +138,13 @@ export const textConfig = {
       button: {
         saving: "Saving...",
         claimSpot: "Confirm My Position",
-        saveScore: "Save My Score",
+        saveScore: "Save My Performance",
       },
       errors: {
         emailRequired: "Email is required for top-ranked participants",
         invalidEmail: "Please enter a valid email address",
         selectPrize: "Please select a benefit option",
-        saveFailed: "Failed to save score. Please try again.",
+        saveFailed: "Failed to save performance. Please try again.",
       },
     },
   },
@@ -174,7 +174,7 @@ export const textConfig = {
         line2: "",
         line3: "The experience will load automatically once you rotate to landscape.",
       },
-      copyright: "CRACKWITS™ 2025 - 2020. All Rights Reserved.",
+      copyright: "CRACKWITS™ 2020 - 2025. All Rights Reserved.",
     },
   },
 
@@ -301,7 +301,7 @@ export const textConfig = {
   seo: {
     title: "Escape the Deadline | CRACKWITS Holiday Challenge",
     description: "Escape the Deadline is a CRACKWITS holiday skill-based challenge where participants skate past obstacles, avoid Grinch sabotage, collect boosts, and improve performance before the final deadline. No chance, no entry fees.",
-    keywords: "Christmas game, escape game, deadline game, skateboard game, holiday game, Crackwits",
+    keywords: "Christmas challenge, escape challenge, deadline challenge, skateboard challenge, holiday challenge, Crackwits",
     ogTitle: "Escape the Deadline | CRACKWITS Holiday Challenge",
     ogDescription: "Escape the Deadline is a CRACKWITS holiday skill-based challenge where participants skate past obstacles, avoid Grinch sabotage, collect boosts, and improve performance before the final deadline. No chance, no entry fees.",
     ogImage: "/Assets/CW-Logo.svg",
