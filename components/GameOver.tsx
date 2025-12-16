@@ -429,7 +429,16 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
         {/* Footer - Made with text */}
         <div className="w-full max-w-6xl text-center">
           <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 pt-1 sm:pt-2">
-            {textConfig.gameOver.footer}
+            Made with ☕ and ⏰ by the{' '}
+            <a 
+              href="https://crackwits.com/?utm_source=Christmas25&utm_medium=Footer&utm_campaign=Christmas25"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-700 hover:text-black underline transition-colors"
+            >
+              Crackwits
+            </a>{' '}
+            Squad
           </p>
         </div>
       </div>

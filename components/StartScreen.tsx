@@ -277,10 +277,26 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
         <div className="pt-2 sm:pt-3 md:pt-4 max-w-2xl mx-auto">
           <LeaderboardWrapper refresh={leaderboardRefresh} />
         </div>
+
+        {/* Footer - Made with text */}
+        <div className="w-full max-w-6xl text-center mt-auto pt-4 sm:pt-6">
+          <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 pt-1 sm:pt-2">
+            Made with ☕ and ⏰ by the{' '}
+            <a 
+              href="https://crackwits.com/?utm_source=Christmas25&utm_medium=Footer&utm_campaign=Christmas25"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-700 hover:text-black underline transition-colors"
+            >
+              Crackwits
+            </a>{' '}
+            Squad
+          </p>
+        </div>
       </div>
 
       {/* Mobile/Tablet Landscape: 2-Column Grid Layout */}
-      <div className="hidden max-md:landscape:grid grid-cols-2 w-full h-full gap-4 py-3" style={{
+      <div className="hidden max-md:landscape:grid grid-cols-2 grid-rows-[1fr_auto] w-full h-full gap-4 py-3" style={{
         paddingTop: isMobileSafari 
           ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
           : 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
@@ -329,6 +345,22 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
           <div className="w-full max-w-md h-full flex items-center min-h-0">
             <LeaderboardWrapper refresh={leaderboardRefresh} compact={true} />
           </div>
+        </div>
+
+        {/* Footer - Made with text */}
+        <div className="col-span-2 w-full text-center pt-4">
+          <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 pt-1 sm:pt-2">
+            Made with ☕ and ⏰ by the{' '}
+            <a 
+              href="https://crackwits.com/?utm_source=Christmas25&utm_medium=Footer&utm_campaign=Christmas25"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-700 hover:text-black underline transition-colors"
+            >
+              Crackwits
+            </a>{' '}
+            Squad
+          </p>
         </div>
       </div>
     </div>

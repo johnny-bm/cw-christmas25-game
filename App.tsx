@@ -119,7 +119,21 @@ function PortraitBlocker({ gameBackgroundColor }: { gameBackgroundColor: string 
             fontSize: '12px'
           }}
         >
-          {textConfig.app.portraitBlocker.copyright}
+          <a 
+            href="https://crackwits.com/?utm_source=Christmas25&utm_medium=Footer&utm_campaign=Christmas25"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ 
+              color: getElementColor('uiText'),
+              textDecoration: 'underline',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+          >
+            CRACKWITS
+          </a>
+          ™ 2025 - 2020. All Rights Reserved.
         </p>
       </div>
     </div>

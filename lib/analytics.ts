@@ -117,16 +117,18 @@ export function getGTMNoscriptHTML(): string {
  * Campaign Structure:
  * - utm_source: Instagram, Facebook, X, LinkedIn, Website, Email, Newsletter, WhatsApp
  * - utm_campaign: CRWxChristmas25
+ * - utm_medium: Instagram, Facebook, X, LinkedIn, Website, Email, Newsletter, WhatsApp, Footer
  * 
  * Example URLs:
- * - Instagram: ?utm_source=Instagram&utm_campaign=CRWxChristmas25
- * - Facebook: ?utm_source=Facebook&utm_campaign=CRWxChristmas25
- * - X: ?utm_source=X&utm_campaign=CRWxChristmas25
- * - LinkedIn: ?utm_source=LinkedIn&utm_campaign=CRWxChristmas25
- * - Website: ?utm_source=Website&utm_campaign=CRWxChristmas25
- * - Email: ?utm_source=Email&utm_campaign=CRWxChristmas25
- * - Newsletter: ?utm_source=Newsletter&utm_campaign=CRWxChristmas25
- * - WhatsApp: ?utm_source=WhatsApp&utm_campaign=CRWxChristmas25
+ * - Instagram: ?utm_source=Instagram&utm_medium=Instagram&utm_campaign=CRWxChristmas25
+ * - Facebook: ?utm_source=Facebook&utm_medium=Facebook&utm_campaign=CRWxChristmas25
+ * - X: ?utm_source=X&utm_medium=X&utm_campaign=CRWxChristmas25
+ * - LinkedIn: ?utm_source=LinkedIn&utm_medium=LinkedIn&utm_campaign=CRWxChristmas25
+ * - Website: ?utm_source=Website&utm_medium=Website&utm_campaign=CRWxChristmas25
+ * - Email: ?utm_source=Email&utm_medium=Email&utm_campaign=CRWxChristmas25
+ * - Newsletter: ?utm_source=Newsletter&utm_medium=Newsletter&utm_campaign=CRWxChristmas25
+ * - WhatsApp: ?utm_source=WhatsApp&utm_medium=WhatsApp&utm_campaign=CRWxChristmas25
+ * - Game Footer: ?utm_source=Christmas25&utm_medium=Footer&utm_campaign=Christmas25
  */
 
 // Standard UTM parameters to track
