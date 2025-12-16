@@ -310,3 +310,48 @@ export function getUTMForTracking(): Record<string, any> {
   };
 }
 
+/**
+ * Debug helper: Check UTM parameters in browser console
+ * Usage: In browser console, type: window.checkUTM()
+ * This will log all UTM data to the console for verification
+ */
+export function debugUTMParameters(): void {
+  if (typeof window === 'undefined') {
+    console.log('UTM Debug: Not available in server environment');
+    return;
+  }
+  
+  const urlParams = extractUTMParameters();
+  const stored = getStoredUTMParameters();
+  const session = getSessionUTMParameters();
+  const tracking = getUTMForTracking();
+  const dataLayer = (window as any).dataLayer || [];
+  
+  console.group('🔍 UTM Parameter Debug');
+  console.log('📋 Current URL Parameters:', urlParams);
+  console.log('💾 Stored (First Touch):', stored);
+  console.log('📱 Session (Last Touch):', session);
+  console.log('📊 Tracking Data (for events):', tracking);
+  console.log('📦 GTM dataLayer:', dataLayer);
+  console.log('🔗 Current URL:', window.location.href);
+  console.groupEnd();
+  
+  // Check if UTM parameters are in dataLayer
+  const utmInDataLayer = dataLayer.some((item: any) => 
+    item.utm_source || item.utm_medium || item.utm_campaign
+  );
+  
+  if (utmInDataLayer) {
+    console.log('✅ UTM parameters found in dataLayer');
+  } else {
+    console.warn('⚠️ UTM parameters not found in dataLayer');
+  }
+}
+
+// Make debug function available globally in development
+if (typeof window !== 'undefined') {
+  // Always expose debug function (can be removed in production if needed)
+  // In production, you can add: && window.location.hostname !== 'crackwits.com'
+  (window as any).checkUTM = debugUTMParameters;
+}
+
