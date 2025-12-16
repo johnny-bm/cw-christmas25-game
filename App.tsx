@@ -4,6 +4,7 @@ import { StartScreen } from './components/StartScreen';
 import { Game } from './components/Game';
 import { GameUI } from './components/GameUI';
 import { GameOver } from './components/GameOver';
+import { SEOHead } from './components/SEOHead';
 import { getElementColor } from './game/colorConfig';
 import { textConfig } from './lib/textConfig';
 import { trackPageView } from './lib/analytics';
@@ -488,11 +489,13 @@ export default function App() {
   }, [sceneName]);
   
   return (
-    <div 
-      id="game-container"
-      data-game-state={gameState}
-      data-scene={sceneName}
-      className="w-full overflow-hidden relative" 
+    <>
+      <SEOHead />
+      <div 
+        id="game-container"
+        data-game-state={gameState}
+        data-scene={sceneName}
+        className="w-full overflow-hidden relative" 
       style={{ 
         margin: 0, 
         padding: 0, 
@@ -655,5 +658,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/landing" replace />} />
       </Routes>
     </div>
+    </>
   );
 }

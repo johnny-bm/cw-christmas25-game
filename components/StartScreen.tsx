@@ -142,9 +142,9 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
   
   return (
     <div className="w-full h-full flex items-center justify-center overflow-hidden relative" style={{ backgroundColor: gameBackgroundColor }}>
-      {/* CW Logo - Top Center - Well below Dynamic Island on Safari mobile */}
+      {/* CW Logo - Top Center - Hidden on mobile landscape to prevent overlap */}
       <div
-        className="absolute z-20 left-1/2 transform -translate-x-1/2"
+        className="absolute z-20 left-1/2 transform -translate-x-1/2 max-md:landscape:hidden"
         style={{
           top: isMobileSafari 
             ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
@@ -158,15 +158,13 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
         />
       </div>
       
-      {/* Mute/Unmute Button - Top Right - Well below Dynamic Island on Safari mobile */}
+      {/* Mute/Unmute Button - Top Right Corner - Always visible */}
       <button
         onClick={handleToggleMute}
-        className="absolute z-20 pointer-events-auto bg-white rounded-lg sm:rounded-xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
+        className="absolute z-30 pointer-events-auto bg-white rounded-lg sm:rounded-xl w-12 h-12 max-md:landscape:w-10 max-md:landscape:h-10 sm:w-16 sm:h-16 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150 shadow-md"
         style={{
-          top: isMobileSafari 
-            ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
-            : 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
-          right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+          top: 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+          right: 'max(0.75rem, calc(env(safe-area-inset-right, 0px) + 0.75rem))',
         }}
         aria-label={isMuted ? textConfig.common.ariaLabels.unmute : textConfig.common.ariaLabels.mute}
       >
@@ -174,13 +172,13 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
           <img 
             src="/Assets/Mute.svg" 
             alt={textConfig.common.altText.muted} 
-            className="w-6 h-6 sm:w-7 sm:h-7"
+            className="w-5 h-5 max-md:landscape:w-4 max-md:landscape:h-4 sm:w-7 sm:h-7"
           />
         ) : (
           <img 
             src="/Assets/Unmute.svg" 
             alt={textConfig.common.altText.unmuted} 
-            className="w-6 h-6 sm:w-7 sm:h-7"
+            className="w-5 h-5 max-md:landscape:w-4 max-md:landscape:h-4 sm:w-7 sm:h-7"
           />
         )}
       </button>
@@ -304,9 +302,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
 
       {/* Mobile/Tablet Landscape: 2-Column Grid Layout */}
       <div className="hidden max-md:landscape:grid grid-cols-2 grid-rows-[1fr_auto] w-full h-full gap-4 py-3" style={{
-        paddingTop: isMobileSafari 
-          ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
-          : 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
+        paddingTop: 'max(3.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem + 2.75rem))',
         paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))',
         paddingLeft: 'max(2rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
         paddingRight: 'max(2rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
