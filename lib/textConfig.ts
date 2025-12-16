@@ -9,7 +9,7 @@ export const textConfig = {
   // ============================================
   startScreen: {
     title: "ESCAPE THE DEADLINE",
-    subtitle: "Skate fast, dodge sabotage, and collect whatever the Grinch didn't manage to destroy. Outrun the final deadline of the year!",
+    subtitle: "Skate fast, dodge sabotage, and collect whatever the Grinch didn’t manage to destroy. Outrun the final deadline of the year.",
     button: {
       ready: "LET'S ROLL",
       loading: "LOADING...",
@@ -29,14 +29,14 @@ export const textConfig = {
   // GAME OVER SCREEN
   // ============================================
   gameOver: {
-    title: "The Deadline",
-    titleHighlight: "Won",
-    subtitle: "But hey, the holidays still showed up for you!",
+    title: "DEADLINE 1 - ",
+    titleHighlight: "0 YOU",
+    subtitle: "But don’t stress, the holidays still showed up anyway.",
     stats: {
-      youEscaped: "YOU ESCAPED",
+      youEscaped: "YOUR RUN",
       rollOneMoreTime: "Roll One More Time",
-      leaderboard: "Leaderboard",
-      saveYourScore: "SAVE YOUR SCORE",
+      leaderboard: "View Rankings",
+      saveYourScore: "SAVE YOUR PERFORMANCE",
     },
     form: {
       initials: {
@@ -53,9 +53,9 @@ export const textConfig = {
       },
       errors: {
         invalidEmail: "Invalid email",
-        needThreeInitials: "Need 3 initials",
+        needThreeInitials: "Please enter 3 initials",
       },
-      success: "✓ ON THE BOARD!",
+      success: "SAVED ON THE BOARD",
     },
     footer: "Made with ☕ and ⏰ by the Crackwits Squad",
   },
@@ -64,10 +64,10 @@ export const textConfig = {
   // LEADERBOARD
   // ============================================
   leaderboard: {
-    title: "🏆 Leaderboard",
+    title: "🏆 Rankings",
     loading: "Loading...",
-    error: "Failed to load leaderboard",
-    empty: "No scores yet. Be the first!",
+    error: "Failed to load rankings",
+    empty: "No entries yet. Set the benchmark",
     loadingMore: "Loading more...",
     table: {
       rank: "#",
@@ -83,18 +83,18 @@ export const textConfig = {
   // ============================================
   endingPopup: {
     titles: {
-      champion: "🥇 Champion! You're #1!",
-      second: "🥈 Amazing! You're #2!",
-      third: "🥉 Excellent! You're #3!",
-      regular: "Great ride!",
+      champion: "🥇 Top Performer",
+      second: "🥈 Strong Performance",
+      third: "🥉 Great Run",
+      regular: "Solid Effort",
     },
     messages: {
       top3: {
-        santaFavorite: "You're Santa's New Favorite!",
+        santaFavorite: "Santa’s taking notes.",
         yourScore: "Your score:",
-        leaderboardCloses: "Leaderboard closes on",
-        stayTop3: "stay",
-        claimWin: "to claim your win! Refresh often... competitors roll in fast.",
+        leaderboardCloses: "Ranking closes on",
+        stayTop3: "maintain",
+        claimWin: "your position by staying in the top ranks. Rankings update frequently.",
       },
       regular: {
         elfOutskated: "Your elf almost out-skated the Deadline, but the Grinch caught up.",
@@ -109,12 +109,12 @@ export const textConfig = {
     },
     top3: {
       rank: "Rank #",
-      timeRemaining: "Time remaining until deadline:",
-      chooseTreat: "Choose your treat below! We'll contact you if you win!",
-      deadlinePassed: "Deadline passed",
+      timeRemaining: "Time remaining until evaluation period ends:",
+      chooseTreat: "Select your professional benefit below. We’ll contact you if your position is maintained.",
+      deadlinePassed: "DEvaluation period ended",
     },
     regular: {
-      leaderboardCloses: "Leaderboard closes on January 5th, 2026",
+      leaderboardCloses: "Rankings close on January 5th, 2026",
     },
     form: {
       initials: {
@@ -129,21 +129,21 @@ export const textConfig = {
         optional: "(optional)",
       },
       prizeSelection: {
-        label: "Prize Selection",
+        label: "Professional Benefit Selection",
         required: "*",
-        consultation: "Free Consultation Session with Crackwits",
-        discount: "Offer on a New Crackwits Service",
-        disclaimer: "Prize awarded if position maintained until 01/05/2026",
+        consultation: "Complimentary Consultation Session with Crackwits",
+        discount: "Service Credit on a New Crackwits Engagement",
+        disclaimer: "Benefit granted if position is maintained until 01/05/2026",
       },
       button: {
         saving: "Saving...",
-        claimSpot: "Claim My Spot!",
+        claimSpot: "Confirm My Position",
         saveScore: "Save My Score",
       },
       errors: {
-        emailRequired: "Email is required for top 3 scores",
+        emailRequired: "Email is required for top-ranked participants",
         invalidEmail: "Please enter a valid email address",
-        selectPrize: "Please select a prize option",
+        selectPrize: "Please select a benefit option",
         saveFailed: "Failed to save score. Please try again.",
       },
     },
@@ -165,14 +165,14 @@ export const textConfig = {
   // ============================================
   app: {
     loading: {
-      title: "Loading game...",
+      title: "Loading experience...",
     },
     portraitBlocker: {
       title: "Please Rotate Your Device",
       description: {
-        line1: "This game is for landscape mode.",
+        line1: "This experience is for landscape mode.",
         line2: "",
-        line3: "The game will load automatically once you rotate to landscape.",
+        line3: "The experience will load automatically once you rotate to landscape.",
       },
       copyright: "CRACKWITS™ 2025 - 2020. All Rights Reserved.",
     },
@@ -299,16 +299,16 @@ export const textConfig = {
   // SEO METADATA
   // ============================================
   seo: {
-    title: "Escape The Deadline - Crackwits Christmas Game",
-    description: "Skate fast, dodge sabotage, and collect whatever the Grinch didn't manage to destroy. Outrun the final deadline of the year!",
+    title: "Escape the Deadline | CRACKWITS Holiday Challenge",
+    description: "Escape the Deadline is a CRACKWITS holiday skill-based challenge where participants skate past obstacles, avoid Grinch sabotage, collect boosts, and improve performance before the final deadline. No chance, no entry fees.",
     keywords: "Christmas game, escape game, deadline game, skateboard game, holiday game, Crackwits",
-    ogTitle: "Escape The Deadline - Crackwits Christmas Game",
-    ogDescription: "Skate fast, dodge sabotage, and collect whatever the Grinch didn't manage to destroy. Outrun the final deadline of the year!",
+    ogTitle: "Escape the Deadline | CRACKWITS Holiday Challenge",
+    ogDescription: "Escape the Deadline is a CRACKWITS holiday skill-based challenge where participants skate past obstacles, avoid Grinch sabotage, collect boosts, and improve performance before the final deadline. No chance, no entry fees.",
     ogImage: "/Assets/CW-Logo.svg",
     ogType: "website",
     twitterCard: "summary_large_image",
-    twitterTitle: "Escape The Deadline - Crackwits Christmas Game",
-    twitterDescription: "Skate fast, dodge sabotage, and collect whatever the Grinch didn't manage to destroy. Outrun the final deadline of the year!",
+    twitterTitle: "Escape the Deadline | CRACKWITS Holiday Challenge",
+    twitterDescription: "Escape the Deadline is a CRACKWITS holiday skill-based challenge where participants skate past obstacles, avoid Grinch sabotage, collect boosts, and improve performance before the final deadline. No chance, no entry fees.",
     twitterImage: "/Assets/CW-Logo.svg",
   },
 
