@@ -2227,11 +2227,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   updateGameData() {
-    const deadlineProximity = 100 - this.energy;
+    // Calculate rounded energy first to ensure sync between energy counter and deadline counter
+    const roundedEnergy = Math.round(this.energy);
+    const deadlineProximity = 100 - roundedEnergy;
     
     this.game.events.emit('updateGameData', {
       distance: Math.floor(this.distance),
-      energy: Math.round(this.energy),
+      energy: roundedEnergy,
       deadlineProximity: deadlineProximity,
       message: '',
       messageTimer: 0,

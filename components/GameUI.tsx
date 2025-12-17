@@ -668,16 +668,17 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         </div>
       )}
 
-      {/* Deadline Indicator - Top Left Corner */}
+      {/* Deadline Indicator - Top Left Corner (Middle for Safari mobile) */}
       <div 
         className="deadline-indicator absolute flex items-center gap-1.5 sm:gap-2 z-20"
         style={{
           left: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
           top: isSafariMobileDevice 
-            ? 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))' // Safari: moved up
+            ? '50%' // Safari: positioned in middle of screen height
             : isMobile
             ? `max(calc(0.5rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + ${viewportOffset}px))` // Chrome mobile: account for browser UI with proper spacing
             : 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))', // Desktop: original position
+          transform: isSafariMobileDevice ? 'translateY(-50%)' : 'none', // Center vertically for Safari
           maxWidth: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
           boxSizing: 'border-box'
         }}
