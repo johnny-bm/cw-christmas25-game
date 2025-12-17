@@ -1,14 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/game/Christmas25",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/game/Christmas25/:path*",
-      "destination": "/index.html"
-    },
-    {
       "source": "/game/christmas25",
       "destination": "/index.html"
     },
@@ -27,6 +19,16 @@
         }
       ],
       "destination": "https://crackwits.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/game/Christmas25",
+      "destination": "https://crackwits.com/game/christmas25",
+      "permanent": true
+    },
+    {
+      "source": "/game/Christmas25/:path*",
+      "destination": "https://crackwits.com/game/christmas25/:path*",
       "permanent": true
     }
   ],
