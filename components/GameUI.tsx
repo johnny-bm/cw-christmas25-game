@@ -129,14 +129,19 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       {/* For Safari mobile: Move below dynamic island */}
       {!isSafariMobileDevice ? (
         <div 
-          className="absolute left-1/2 -translate-x-1/2"
+          className="absolute left-1/2 -translate-x-1/2 z-20"
           style={{
             top: isMobile
               ? 'max(2.5rem, env(safe-area-inset-top, 0.75rem) + 2rem)' // Mobile: moved down to avoid deadline counter
-              : 'max(0.75rem, env(safe-area-inset-top, 0.75rem) + 0.25rem)' // Desktop: original position
+              : 'max(0.75rem, env(safe-area-inset-top, 0.75rem) + 0.25rem)', // Desktop: original position
+            pointerEvents: 'none'
           }}
         >
-          <div className={`text-4xl max-md:landscape:text-3xl sm:text-5xl md:text-7xl text-black opacity-40 font-bold`} style={{ fontFamily: '"Urbanist", sans-serif' }}>
+          <div className={`text-4xl max-md:landscape:text-3xl sm:text-5xl md:text-7xl font-bold`} style={{ 
+            fontFamily: '"Urbanist", sans-serif',
+            color: isMobile ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.4)',
+            textShadow: isMobile ? '0 1px 2px rgba(255, 255, 255, 0.8)' : 'none'
+          }}>
             {formatNumber(distance)}m
           </div>
         </div>
