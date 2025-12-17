@@ -9,8 +9,24 @@ import { textConfig } from '../lib/textConfig';
 export function SEOHead() {
   useEffect(() => {
     const seo = textConfig.seo;
-    // Use the actual deployed path (lowercase) so crawlers see consistent URLs
-    const baseUrl = 'https://www.crackwits.com/game/christmas25';
+    
+    // Dynamically determine base URL based on current hostname
+    // Supports both fun.crackwits.com (subdomain) and crackwits.com/game/christmas25 (path-based)
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    const pathname = window.location.pathname;
+    
+    // Determine the base URL
+    let baseUrl: string;
+    if (hostname === 'fun.crackwits.com' || hostname.includes('fun.')) {
+      // Subdomain route - use root path
+      baseUrl = `${protocol}//${hostname}`;
+    } else {
+      // Path-based route - use the actual path (normalize to lowercase)
+      const normalizedPath = pathname.toLowerCase().replace(/\/$/, '') || '/game/christmas25';
+      baseUrl = `${protocol}//${hostname}${normalizedPath}`;
+    }
+    
     const imageUrl = `${baseUrl}${seo.ogImage}`;
     const logoUrl = `${baseUrl}/Assets/CW-Logo.svg`;
 
@@ -44,6 +60,7 @@ export function SEOHead() {
     updateMetaTag('og:image:type', 'image/jpeg', true);
     updateMetaTag('og:image:width', '1200', true);
     updateMetaTag('og:image:height', '630', true);
+    updateMetaTag('og:image:alt', seo.ogTitle, true);
     updateMetaTag('og:site_name', 'CRACKWITS', true);
     updateMetaTag('og:locale', 'en_US', true);
     updateMetaTag('og:logo', logoUrl, true);
@@ -53,6 +70,7 @@ export function SEOHead() {
     updateMetaTag('twitter:title', seo.twitterTitle);
     updateMetaTag('twitter:description', seo.twitterDescription);
     updateMetaTag('twitter:image', imageUrl);
+    updateMetaTag('twitter:image:alt', seo.twitterTitle);
   }, []);
 
   return null; // This component doesn't render anything

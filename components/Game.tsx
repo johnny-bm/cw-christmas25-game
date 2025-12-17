@@ -24,6 +24,11 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
   const callbacksRef = useRef({ onGameOver, onUpdateGameData, onGameReady, onLoadingProgress });
   const isInitializingRef = useRef(false);
   const hasStartedGameRef = useRef(false); // Track if startGame() has been called
+  const resizeHandlersRef = useRef<{
+    handleVisualViewportResize?: () => void;
+    handleOrientationChange?: () => void;
+    debouncedResize?: () => void;
+  }>({});
   
   // Update callbacks ref when they change
   useEffect(() => {
@@ -40,7 +45,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     }
     
     // Layer 2: Check if game already exists globally
-    if (globalGameInstance && globalGameInstance.scene && !globalGameInstance.scene.isDestroyed) {
+    if (globalGameInstance && globalGameInstance.scene && globalGameInstance.scene.scenes.length > 0) {
       // Game already exists and is valid, just update our ref
       if (!gameRef.current) {
         gameRef.current = globalGameInstance;
@@ -159,7 +164,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
       physics: {
         default: 'arcade',
         arcade: {
-          gravity: { y: 300 },
+          gravity: { x: 0, y: 300 },
           debug: false
         }
       },
@@ -177,16 +182,13 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         antialias: true,
         antialiasGL: true,
         roundPixels: false,
-        // Cap resolution at 3 for performance, but ensure retina displays are supported
-        // Safari mobile can have high DPR values that cause performance issues
-        resolution: Math.min(devicePixelRatio || 1, 3),
         // Ensure crisp rendering on high DPI displays
         powerPreference: 'high-performance'
       }
     };
 
     // CRITICAL: Final check before creating game (React Strict Mode double-invoke protection)
-    if (globalGameInstance && globalGameInstance.scene && !globalGameInstance.scene.isDestroyed) {
+    if (globalGameInstance && globalGameInstance.scene && globalGameInstance.scene.scenes.length > 0) {
       gameRef.current = globalGameInstance;
       isInitializingRef.current = false;
       isInitializing = false; // Reset module-level flag
@@ -334,6 +336,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     // Debounce resize events to prevent excessive recalculations
     // Use shorter debounce for orientation changes to respond faster
     const debouncedResize = debounce(handleResize, 100);
+    resizeHandlersRef.current.debouncedResize = debouncedResize;
 
     // Handle orientation changes specifically - need immediate response
     // CRITICAL FIX: Ensure accurate dimensions after orientation change on iPhone Pro Max
@@ -380,6 +383,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
       // Additional attempt after longer delay for slow devices
       setTimeout(() => attemptResize(1), 300);
     };
+    resizeHandlersRef.current.handleOrientationChange = handleOrientationChange;
 
     // Listen to visual viewport API for mobile browsers (iOS Safari)
     // This is critical for Safari when tabs are open/closed - viewport changes
@@ -409,6 +413,7 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         }
       }
     };
+    resizeHandlersRef.current.handleVisualViewportResize = handleVisualViewportResize;
     
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', handleVisualViewportResize);
@@ -431,19 +436,25 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
 
     return () => {
       // Clean up resize listeners
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleVisualViewportResize);
-        window.visualViewport.removeEventListener('scroll', handleVisualViewportResize);
+      const handlers = resizeHandlersRef.current;
+      if (window.visualViewport && handlers.handleVisualViewportResize) {
+        window.visualViewport.removeEventListener('resize', handlers.handleVisualViewportResize);
+        window.visualViewport.removeEventListener('scroll', handlers.handleVisualViewportResize);
       }
-      window.removeEventListener('orientationchange', handleOrientationChange);
-      window.removeEventListener('resize', debouncedResize);
-      if (screen.orientation) {
-        screen.orientation.removeEventListener('change', handleOrientationChange);
+      if (handlers.handleOrientationChange) {
+        window.removeEventListener('orientationchange', handlers.handleOrientationChange);
+        if (screen.orientation) {
+          screen.orientation.removeEventListener('change', handlers.handleOrientationChange);
+        }
+      }
+      if (handlers.debouncedResize) {
+        window.removeEventListener('resize', handlers.debouncedResize);
       }
       
       // Don't destroy game on cleanup in development (React Strict Mode)
       // The game will be destroyed when the app actually unmounts
-      if (gameRef.current && import.meta.env.DEV) {
+      const isDev = (import.meta as any).env?.DEV ?? false;
+      if (gameRef.current && isDev) {
         // Don't reset flags in dev mode - keep game alive
         return;
       }
@@ -465,6 +476,8 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
         isInitializingRef.current = false;
         isInitializing = false; // Reset module-level flag
       }
+      // Clear resize handlers
+      resizeHandlersRef.current = {};
     };
     // Only initialize once
     // eslint-disable-next-line react-hooks/exhaustive-deps
