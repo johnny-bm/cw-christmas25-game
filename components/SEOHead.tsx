@@ -17,7 +17,7 @@ export function SEOHead() {
     const protocol = window.location.protocol;
     const pathname = window.location.pathname;
     
-    // Determine the base URL
+    // Determine the base URL for the page
     let baseUrl: string;
     if (hostname === 'fun.crackwits.com' || hostname.includes('fun.')) {
       // Subdomain route - use root path
@@ -29,8 +29,11 @@ export function SEOHead() {
       baseUrl = `${protocol}//${canonicalHostname}${normalizedPath}`;
     }
     
-    const imageUrl = `${baseUrl}${seo.ogImage}`;
-    const logoUrl = `${baseUrl}/Assets/CW-Logo.svg`;
+    // Static assets are served from root, not under the game path
+    // Vite serves public folder assets from root by default
+    const canonicalHostname = hostname.replace(/^www\./, '');
+    const imageUrl = `${protocol}//${canonicalHostname}${seo.ogImage}`;
+    const logoUrl = `${protocol}//${canonicalHostname}/Assets/CW-Logo.svg`;
 
     // Update title
     document.title = seo.title;
@@ -60,8 +63,8 @@ export function SEOHead() {
     updateMetaTag('og:image', imageUrl, true);
     updateMetaTag('og:image:secure_url', imageUrl, true);
     updateMetaTag('og:image:type', 'image/jpeg', true);
-    updateMetaTag('og:image:width', '1200', true);
-    updateMetaTag('og:image:height', '630', true);
+    updateMetaTag('og:image:width', '1600', true);
+    updateMetaTag('og:image:height', '840', true);
     updateMetaTag('og:image:alt', seo.ogTitle, true);
     updateMetaTag('og:site_name', 'CRACKWITS', true);
     updateMetaTag('og:locale', 'en_US', true);
