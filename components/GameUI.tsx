@@ -65,7 +65,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
     // Track visualViewport offset for Chrome mobile browser UI
     const updateViewportOffset = () => {
       if (isMobile && !isSafariMobileDevice) {
-        // For Chrome mobile, account for browser UI (address bar)
+        // For Chrome mobile, account for browser UI (address bar + status bar)
         if (window.visualViewport) {
           // Calculate offset: difference between window height and visual viewport height
           // This accounts for browser UI (address bar) on Chrome mobile
@@ -75,13 +75,13 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           // Also account for visualViewport offsetTop (scroll position)
           const scrollOffset = window.visualViewport.offsetTop || 0;
           // Use the maximum to ensure we account for browser UI
-          // Add minimum 56px offset for Chrome mobile address bar
+          // Increased minimum offset to 90px to account for status bar + address bar on Chrome mobile
           const calculatedOffset = Math.max(heightDiff, scrollOffset);
-          const minOffset = 56; // Minimum offset for Chrome mobile browser UI
+          const minOffset = 90; // Minimum offset for Chrome mobile browser UI (status bar + address bar)
           setViewportOffset(Math.max(calculatedOffset, minOffset));
         } else {
           // Fallback: use minimum offset for Chrome mobile
-          setViewportOffset(56);
+          setViewportOffset(90);
         }
       } else {
         setViewportOffset(0);
@@ -172,7 +172,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           className="absolute left-1/2 -translate-x-1/2 z-20"
           style={{
             top: isMobile
-              ? `max(calc(1rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + 0.5rem + ${viewportOffset}px))` // Mobile: account for Chrome browser UI
+              ? `max(calc(0.5rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + ${viewportOffset}px))` // Mobile: account for Chrome browser UI with proper spacing
               : 'max(0.75rem, env(safe-area-inset-top, 0.75rem) + 0.25rem)', // Desktop: original position
             pointerEvents: 'none'
           }}
@@ -212,8 +212,8 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           style={{
             top: isMobile 
               ? isMobileLandscape
-                ? 'max(3.5rem, env(safe-area-inset-top, 0px) + 3rem)' // Mobile landscape: adjusted for new meter position
-                : 'max(4rem, env(safe-area-inset-top, 0px) + 3.5rem)' // Mobile portrait: adjusted for new meter position
+                ? `max(calc(3.5rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + 3rem + ${viewportOffset}px))` // Mobile landscape: account for browser UI
+                : `max(calc(4rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + 3.5rem + ${viewportOffset}px))` // Mobile portrait: account for browser UI
               : 'max(5.5rem, env(safe-area-inset-top, 0.75rem) + 5rem)'
           }}
         >
@@ -266,8 +266,8 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           className="absolute flex flex-col items-center gap-3"
           style={{
             top: isMobileLandscape
-              ? 'max(5.5rem, env(safe-area-inset-top, 0px) + 5rem)' // Landscape: adjusted for new character scores position
-              : 'max(6rem, env(safe-area-inset-top, 0px) + 5.5rem)', // Portrait: adjusted for new character scores position
+              ? `max(calc(5.5rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + 5rem + ${viewportOffset}px))` // Landscape: account for browser UI
+              : `max(calc(6rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + 5.5rem + ${viewportOffset}px))`, // Portrait: account for browser UI
             left: '50%',
             transform: 'translateX(-50%)',
             width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
@@ -655,7 +655,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           top: isSafariMobileDevice 
             ? 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))' // Safari: moved up
             : isMobile
-            ? `max(calc(0.5rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + 0.5rem + ${viewportOffset}px))` // Chrome mobile: account for browser UI
+            ? `max(calc(0.5rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + ${viewportOffset}px))` // Chrome mobile: account for browser UI with proper spacing
             : 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))', // Desktop: original position
           maxWidth: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
           boxSizing: 'border-box'
