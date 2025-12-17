@@ -1,8 +1,20 @@
 {
   "rewrites": [
     {
+      "source": "/game/Christmas25",
+      "destination": "/index.html"
+    },
+    {
       "source": "/game/Christmas25/:path*",
-      "destination": "/game/Christmas25/index.html"
+      "destination": "/index.html"
+    },
+    {
+      "source": "/game/christmas25",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/game/christmas25/:path*",
+      "destination": "/index.html"
     }
   ],
   "headers": [
