@@ -799,7 +799,21 @@ export class GameScene extends Phaser.Scene {
     // Input setup
     this.input.keyboard!.on('keydown-SPACE', () => this.jump());
     this.input.keyboard!.on('keydown-UP', () => this.jump());
-    this.input.on('pointerdown', () => this.jump());
+    
+    // Handle touch/pointer events for jumping
+    // Use pointerdown for both mouse and touch events
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      // Prevent default to avoid any browser zoom/scroll behavior
+      if (this.isMobile()) {
+        pointer.event?.preventDefault();
+      }
+      this.jump();
+    });
+    
+    // Also handle touchstart directly for better mobile support
+    if (this.isMobile() && this.input.activePointer) {
+      this.input.addPointer(1); // Add second pointer for multi-touch if needed
+    }
     
     // Create cursors for jump controls in update()
     this.cursors = this.input.keyboard!.createCursorKeys();

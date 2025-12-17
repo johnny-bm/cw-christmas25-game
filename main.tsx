@@ -42,6 +42,55 @@ if (typeof window !== 'undefined') {
   (window as any).checkUTM = debugUTMParameters;
 }
 
+// Prevent zoom on mobile devices
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  // Prevent double-tap zoom
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', (event) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      event.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, { passive: false });
+
+  // Prevent pinch zoom
+  document.addEventListener('touchmove', (event) => {
+    if (event.touches.length > 1) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+
+  // Prevent gesture zoom (iOS Safari)
+  document.addEventListener('gesturestart', (event) => {
+    event.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('gesturechange', (event) => {
+    event.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('gestureend', (event) => {
+    event.preventDefault();
+  }, { passive: false });
+
+  // Reset zoom if it somehow gets set
+  const resetZoom = () => {
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport) {
+      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content');
+    }
+  };
+
+  // Reset zoom on orientation change
+  window.addEventListener('orientationchange', () => {
+    setTimeout(resetZoom, 100);
+  });
+
+  // Reset zoom periodically to prevent any zoom from being applied
+  setInterval(resetZoom, 1000);
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <BrowserRouter basename={basename}>
     <App />
