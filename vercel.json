@@ -17,6 +17,19 @@
       "destination": "/index.html"
     }
   ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.crackwits.com"
+        }
+      ],
+      "destination": "https://crackwits.com/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/game/Christmas25/(.*)",

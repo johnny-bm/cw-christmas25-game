@@ -12,6 +12,7 @@ export function SEOHead() {
     
     // Dynamically determine base URL based on current hostname
     // Supports both fun.crackwits.com (subdomain) and crackwits.com/game/christmas25 (path-based)
+    // Always use canonical URL without www (www redirects to non-www)
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
     const pathname = window.location.pathname;
@@ -22,9 +23,10 @@ export function SEOHead() {
       // Subdomain route - use root path
       baseUrl = `${protocol}//${hostname}`;
     } else {
-      // Path-based route - use the actual path (normalize to lowercase)
+      // Path-based route - use canonical domain (remove www if present)
+      const canonicalHostname = hostname.replace(/^www\./, ''); // Remove www prefix
       const normalizedPath = pathname.toLowerCase().replace(/\/$/, '') || '/game/christmas25';
-      baseUrl = `${protocol}//${hostname}${normalizedPath}`;
+      baseUrl = `${protocol}//${canonicalHostname}${normalizedPath}`;
     }
     
     const imageUrl = `${baseUrl}${seo.ogImage}`;
