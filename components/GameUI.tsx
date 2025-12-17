@@ -131,7 +131,9 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         <div 
           className="absolute left-1/2 -translate-x-1/2"
           style={{
-            top: 'max(0.75rem, env(safe-area-inset-top, 0.75rem) + 0.25rem)'
+            top: isMobile
+              ? 'max(2.5rem, env(safe-area-inset-top, 0.75rem) + 2rem)' // Mobile: moved down to avoid deadline counter
+              : 'max(0.75rem, env(safe-area-inset-top, 0.75rem) + 0.25rem)' // Desktop: original position
           }}
         >
           <div className={`text-4xl max-md:landscape:text-3xl sm:text-5xl md:text-7xl text-black opacity-40 font-bold`} style={{ fontFamily: '"Urbanist", sans-serif' }}>
@@ -164,8 +166,8 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           style={{
             top: isMobile 
               ? isMobileLandscape
-                ? 'max(2.5rem, env(safe-area-inset-top, 0.75rem) + 2rem)' // Closer on mobile landscape
-                : 'max(3.5rem, env(safe-area-inset-top, 0.75rem) + 3rem)' // Regular mobile portrait
+                ? 'max(5rem, env(safe-area-inset-top, 0.75rem) + 4.5rem)' // Mobile landscape: adjusted for new meter position
+                : 'max(5.5rem, env(safe-area-inset-top, 0.75rem) + 5rem)' // Mobile portrait: adjusted for new meter position
               : 'max(5.5rem, env(safe-area-inset-top, 0.75rem) + 5rem)'
           }}
         >
@@ -218,8 +220,8 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           className="absolute flex flex-col items-center gap-3"
           style={{
             top: isMobileLandscape
-              ? 'max(9rem, env(safe-area-inset-top, 0.75rem) + 8.5rem)' // Landscape positioning - moved down to avoid deadline counter
-              : 'max(10rem, env(safe-area-inset-top, 0.75rem) + 9.5rem)', // Portrait positioning - moved down to avoid deadline counter
+              ? 'max(7rem, env(safe-area-inset-top, 0.75rem) + 6.5rem)' // Landscape: reduced gap from elf/grinch counter
+              : 'max(7.5rem, env(safe-area-inset-top, 0.75rem) + 7rem)', // Portrait: reduced gap from elf/grinch counter
             left: '50%',
             transform: 'translateX(-50%)',
             width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
