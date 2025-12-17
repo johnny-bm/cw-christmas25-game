@@ -28,6 +28,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
     }
     return false;
   });
+  const [viewportOffset, setViewportOffset] = useState(0);
 
   // Detect Safari mobile
   const isSafariMobile = () => {
@@ -61,12 +62,51 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       setIsMobileLandscape(window.innerWidth < 768 && window.innerHeight < window.innerWidth);
     };
     
+    // Track visualViewport offset for Chrome mobile browser UI
+    const updateViewportOffset = () => {
+      if (isMobile && !isSafariMobileDevice) {
+        // For Chrome mobile, account for browser UI (address bar)
+        if (window.visualViewport) {
+          // Calculate offset: difference between window height and visual viewport height
+          // This accounts for browser UI (address bar) on Chrome mobile
+          const windowHeight = window.innerHeight;
+          const visualHeight = window.visualViewport.height;
+          const heightDiff = Math.max(0, windowHeight - visualHeight);
+          // Also account for visualViewport offsetTop (scroll position)
+          const scrollOffset = window.visualViewport.offsetTop || 0;
+          // Use the maximum to ensure we account for browser UI
+          // Add minimum 56px offset for Chrome mobile address bar
+          const calculatedOffset = Math.max(heightDiff, scrollOffset);
+          const minOffset = 56; // Minimum offset for Chrome mobile browser UI
+          setViewportOffset(Math.max(calculatedOffset, minOffset));
+        } else {
+          // Fallback: use minimum offset for Chrome mobile
+          setViewportOffset(56);
+        }
+      } else {
+        setViewportOffset(0);
+      }
+    };
+    
     checkMobile();
+    updateViewportOffset();
+    
     window.addEventListener('resize', checkMobile);
     window.addEventListener('orientationchange', checkMobile);
+    
+    // Listen for visualViewport changes (Chrome mobile browser UI)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('scroll', updateViewportOffset);
+      window.visualViewport.addEventListener('resize', updateViewportOffset);
+    }
+    
     return () => {
       window.removeEventListener('resize', checkMobile);
       window.removeEventListener('orientationchange', checkMobile);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('scroll', updateViewportOffset);
+        window.visualViewport.removeEventListener('resize', updateViewportOffset);
+      }
     };
   }, []);
 
@@ -132,7 +172,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           className="absolute left-1/2 -translate-x-1/2 z-20"
           style={{
             top: isMobile
-              ? 'max(1rem, env(safe-area-inset-top, 0px) + 0.5rem)' // Mobile: higher up, visible on Chrome
+              ? `max(calc(1rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + 0.5rem + ${viewportOffset}px))` // Mobile: account for Chrome browser UI
               : 'max(0.75rem, env(safe-area-inset-top, 0.75rem) + 0.25rem)', // Desktop: original position
             pointerEvents: 'none'
           }}
@@ -580,7 +620,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         <div 
           className="absolute z-30"
           style={{
-            top: 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))', // Moved up to be visible on Chrome
+            top: `max(calc(0.5rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + 0.5rem + ${viewportOffset}px))`, // Account for Chrome browser UI
             right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
             boxSizing: 'border-box'
           }}
@@ -615,7 +655,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           top: isSafariMobileDevice 
             ? 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))' // Safari: moved up
             : isMobile
-            ? 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))' // Chrome mobile: moved up to be visible
+            ? `max(calc(0.5rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + 0.5rem + ${viewportOffset}px))` // Chrome mobile: account for browser UI
             : 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))', // Desktop: original position
           maxWidth: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
           boxSizing: 'border-box'
