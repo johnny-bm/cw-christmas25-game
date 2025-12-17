@@ -218,8 +218,8 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           className="absolute flex flex-col items-center gap-3"
           style={{
             top: isMobileLandscape
-              ? 'max(6rem, env(safe-area-inset-top, 0.75rem) + 5.5rem)' // Landscape positioning
-              : 'max(7rem, env(safe-area-inset-top, 0.75rem) + 6.5rem)', // Portrait positioning
+              ? 'max(9rem, env(safe-area-inset-top, 0.75rem) + 8.5rem)' // Landscape positioning - moved down to avoid deadline counter
+              : 'max(10rem, env(safe-area-inset-top, 0.75rem) + 9.5rem)', // Portrait positioning - moved down to avoid deadline counter
             left: '50%',
             transform: 'translateX(-50%)',
             width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
