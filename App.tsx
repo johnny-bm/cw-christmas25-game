@@ -8,7 +8,8 @@ import { SEOHead } from './components/SEOHead';
 import { getElementColor } from './game/colorConfig';
 import { textConfig } from './lib/textConfig';
 import { trackPageView } from './lib/analytics';
-import { LegalPopup } from './components/LegalPopup';
+import { TermsPopup } from './components/TermsPopup';
+import { LegalNoticePopup } from './components/LegalNoticePopup';
 
 export type GameState = 'start' | 'playing' | 'gameover';
 
@@ -35,10 +36,12 @@ function isMobileDevice(): boolean {
 // Portrait blocker component
 function PortraitBlocker({ 
   gameBackgroundColor, 
-  onLegalLinkClick 
+  onTermsClick,
+  onLegalNoticeClick
 }: { 
   gameBackgroundColor: string;
-  onLegalLinkClick: (type: 'terms' | 'legal') => void;
+  onTermsClick: () => void;
+  onLegalNoticeClick: () => void;
 }) {
   const uiTextColor = getElementColor('uiText');
   
@@ -147,7 +150,7 @@ function PortraitBlocker({
         </p>
         <div className="flex items-center justify-center gap-3 mt-2">
           <button
-            onClick={() => onLegalLinkClick('terms')}
+            onClick={onTermsClick}
             style={{ 
               color: uiTextColor,
               fontSize: '10px',
@@ -162,7 +165,7 @@ function PortraitBlocker({
           </button>
           <span style={{ color: uiTextColor, opacity: 0.5 }}>|</span>
           <button
-            onClick={() => onLegalLinkClick('legal')}
+            onClick={onLegalNoticeClick}
             style={{ 
               color: uiTextColor,
               fontSize: '10px',
@@ -211,7 +214,8 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(false);
   const [showStartScreen, setShowStartScreen] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [legalPopupType, setLegalPopupType] = useState<'terms' | 'legal' | null>(null);
+  const [showTermsPopup, setShowTermsPopup] = useState(false);
+  const [showLegalNoticePopup, setShowLegalNoticePopup] = useState(false);
 
   // On initial mount, redirect to landing if not already there
   // BUT: Allow debug mode to bypass redirect
@@ -560,20 +564,20 @@ export default function App() {
       {showPortraitBlocker && (
         <PortraitBlocker 
           gameBackgroundColor={gameBackgroundColor}
-          onLegalLinkClick={(type) => setLegalPopupType(type)}
+          onTermsClick={() => setShowTermsPopup(true)}
+          onLegalNoticeClick={() => setShowLegalNoticePopup(true)}
         />
       )}
       
       {/* Legal Popups */}
-      {legalPopupType && (
-        <LegalPopup
-          type={legalPopupType}
-          open={legalPopupType !== null}
-          onOpenChange={(open) => {
-            if (!open) setLegalPopupType(null);
-          }}
-        />
-      )}
+      <TermsPopup
+        open={showTermsPopup}
+        onOpenChange={setShowTermsPopup}
+      />
+      <LegalNoticePopup
+        open={showLegalNoticePopup}
+        onOpenChange={setShowLegalNoticePopup}
+      />
       
       {/* Game canvas - always rendered so it can initialize, but hidden when not playing */}
       {/* Keep it visible during loading so it can initialize properly */}

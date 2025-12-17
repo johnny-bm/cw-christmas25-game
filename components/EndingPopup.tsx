@@ -4,7 +4,8 @@ import { formatNumber } from '../lib/formatNumber';
 import { Confetti } from './Confetti';
 import { getElementColor } from '../game/colorConfig';
 import { textConfig } from '../lib/textConfig';
-import { LegalPopup } from './LegalPopup';
+import { TermsPopup } from './TermsPopup';
+import { LegalNoticePopup } from './LegalNoticePopup';
 
 interface EndingPopupProps {
   distance: number;
@@ -36,7 +37,8 @@ export function EndingPopup({
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [emailError, setEmailError] = useState('');
   const [isMobile, setIsMobile] = useState(false);
-  const [legalPopupType, setLegalPopupType] = useState<'terms' | 'legal' | null>(null);
+  const [showTermsPopup, setShowTermsPopup] = useState(false);
+  const [showLegalNoticePopup, setShowLegalNoticePopup] = useState(false);
   const uiRed = getElementColor('uiRed');
   const uiRedSoft = `${uiRed}1A`; // subtle translucent background based on UI red
 
@@ -474,14 +476,14 @@ export function EndingPopup({
           {/* Footer - Terms and Legal Notice */}
           <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-gray-200">
             <button
-              onClick={() => setLegalPopupType('terms')}
+              onClick={() => setShowTermsPopup(true)}
               className="text-[10px] sm:text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
             >
               Terms
             </button>
             <span className="text-gray-400">|</span>
             <button
-              onClick={() => setLegalPopupType('legal')}
+              onClick={() => setShowLegalNoticePopup(true)}
               className="text-[10px] sm:text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
             >
               Legal Notice
@@ -491,15 +493,14 @@ export function EndingPopup({
       </div>
 
       {/* Legal Popups */}
-      {legalPopupType && (
-        <LegalPopup
-          type={legalPopupType}
-          open={legalPopupType !== null}
-          onOpenChange={(open) => {
-            if (!open) setLegalPopupType(null);
-          }}
-        />
-      )}
+      <TermsPopup
+        open={showTermsPopup}
+        onOpenChange={setShowTermsPopup}
+      />
+      <LegalNoticePopup
+        open={showLegalNoticePopup}
+        onOpenChange={setShowLegalNoticePopup}
+      />
     </div>
   );
 }
