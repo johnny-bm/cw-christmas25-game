@@ -28,7 +28,18 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
     }
     return false;
   });
-  const [viewportOffset, setViewportOffset] = useState(0);
+  const [viewportOffset, setViewportOffset] = useState(() => {
+    // Initialize with a reasonable default for Chrome mobile
+    if (typeof window !== 'undefined') {
+      const isMobile = window.innerWidth < 640;
+      const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent) && !/CriOS/.test(navigator.userAgent);
+      const isSafariMobile = isSafari && /iPhone|iPad|iPod/.test(navigator.userAgent);
+      if (isMobile && !isSafariMobile) {
+        return 60; // Default offset for Chrome mobile
+      }
+    }
+    return 0;
+  });
 
   // Detect Safari mobile
   const isSafariMobile = () => {
@@ -64,7 +75,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
     
     // Track visualViewport offset for Chrome mobile browser UI
     const updateViewportOffset = () => {
-      if (isMobile && !isSafariMobileDevice) {
+      const checkIsMobile = window.innerWidth < 640;
+      const checkIsSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent) && !/CriOS/.test(navigator.userAgent);
+      const checkIsSafariMobile = checkIsSafari && /iPhone|iPad|iPod/.test(navigator.userAgent);
+      
+      if (checkIsMobile && !checkIsSafariMobile) {
         // For Chrome mobile, account for browser UI (address bar + status bar)
         if (window.visualViewport) {
           // Calculate offset: difference between window height and visual viewport height
@@ -74,14 +89,16 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           const heightDiff = Math.max(0, windowHeight - visualHeight);
           // Also account for visualViewport offsetTop (scroll position)
           const scrollOffset = window.visualViewport.offsetTop || 0;
-          // Use the maximum to ensure we account for browser UI
-          // Increased minimum offset to 90px to account for status bar + address bar on Chrome mobile
+          // Use a more reasonable offset - don't force 90px minimum as it might be too much
+          // Calculate based on actual browser UI height, with a reasonable minimum
           const calculatedOffset = Math.max(heightDiff, scrollOffset);
-          const minOffset = 90; // Minimum offset for Chrome mobile browser UI (status bar + address bar)
-          setViewportOffset(Math.max(calculatedOffset, minOffset));
+          // Use 60px as minimum for Chrome mobile (status bar ~24px + address bar ~36px)
+          const minOffset = 60;
+          const maxOffset = 100; // Cap at 100px to prevent pushing content too far
+          setViewportOffset(Math.min(Math.max(calculatedOffset, minOffset), maxOffset));
         } else {
-          // Fallback: use minimum offset for Chrome mobile
-          setViewportOffset(90);
+          // Fallback: use reasonable offset for Chrome mobile
+          setViewportOffset(60);
         }
       } else {
         setViewportOffset(0);
@@ -172,15 +189,19 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           className="absolute left-1/2 -translate-x-1/2 z-20"
           style={{
             top: isMobile
-              ? `max(calc(0.5rem + ${viewportOffset}px), calc(env(safe-area-inset-top, 0px) + ${viewportOffset}px))` // Mobile: account for Chrome browser UI with proper spacing
+              ? viewportOffset > 0
+                ? `${viewportOffset + 8}px` // Mobile Chrome: offset + small padding for visibility
+                : 'max(1rem, env(safe-area-inset-top, 0px) + 0.5rem)' // Fallback if offset not calculated
               : 'max(0.75rem, env(safe-area-inset-top, 0.75rem) + 0.25rem)', // Desktop: original position
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            width: '100%',
+            textAlign: 'center'
           }}
         >
           <div className={`text-4xl max-md:landscape:text-3xl sm:text-5xl md:text-7xl font-bold`} style={{ 
             fontFamily: '"Urbanist", sans-serif',
-            color: isMobile ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.4)',
-            textShadow: isMobile ? '0 1px 2px rgba(255, 255, 255, 0.8)' : 'none'
+            color: isMobile ? 'rgba(0, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.4)', // Increased opacity for better visibility
+            textShadow: isMobile ? '0 2px 4px rgba(255, 255, 255, 0.9), 0 1px 2px rgba(0, 0, 0, 0.1)' : 'none' // Better shadow for visibility
           }}>
             {formatNumber(distance)}m
           </div>

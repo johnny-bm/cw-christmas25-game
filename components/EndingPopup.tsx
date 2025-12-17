@@ -226,7 +226,10 @@ export function EndingPopup({
       e.stopPropagation();
       return;
     }
-    onClose();
+    // Only close if clicking directly on the overlay (not on the popup content)
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
   };
 
   return (
@@ -241,7 +244,9 @@ export function EndingPopup({
         paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
         overflowY: 'auto',
         WebkitOverflowScrolling: 'touch',
-        overscrollBehavior: 'contain'
+        overscrollBehavior: 'contain',
+        touchAction: 'pan-y pinch-zoom', // Enable vertical scrolling
+        pointerEvents: 'auto' // Ensure overlay is clickable
       }}
       onClick={handleOverlayClick}
     >
@@ -252,7 +257,13 @@ export function EndingPopup({
         className="relative bg-white rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl max-w-lg w-full my-2 sm:my-0 max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto overscroll-contain animate-in zoom-in-95 duration-300"
         style={{
           WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'contain'
+          overscrollBehavior: 'contain',
+          touchAction: 'pan-y pinch-zoom', // Enable vertical scrolling and pinch zoom
+          paddingLeft: '1rem',
+          paddingRight: '1rem',
+          paddingTop: '0.5rem',
+          paddingBottom: '0.5rem',
+          pointerEvents: 'auto' // Ensure popup is interactive
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -261,18 +272,24 @@ export function EndingPopup({
         
         {/* Close button */}
         <button
-          onClick={onClose}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors text-gray-700 text-xl font-bold"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 z-30 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 active:bg-gray-400 transition-colors text-gray-700 text-xl font-bold pointer-events-auto touch-manipulation"
+          style={{
+            touchAction: 'manipulation' // Ensure button is clickable on mobile
+          }}
           aria-label={textConfig.common.ariaLabels.close}
         >
           ×
         </button>
 
         <div className="p-4 sm:p-6 md:p-8" style={{
-          paddingLeft: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 0.5rem))',
-          paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 0.5rem))',
-          paddingTop: 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.25rem))',
-          paddingBottom: 'max(0.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.25rem))'
+          paddingLeft: '1rem',
+          paddingRight: '1rem',
+          paddingTop: '2rem', // Extra top padding for close button
+          paddingBottom: '1rem'
         }}>
           {/* Character Image */}
           <div className="flex justify-center mb-4 sm:mb-6">
