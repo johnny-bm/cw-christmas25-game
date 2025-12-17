@@ -9,8 +9,10 @@ import { textConfig } from '../lib/textConfig';
 export function SEOHead() {
   useEffect(() => {
     const seo = textConfig.seo;
-    const baseUrl = 'https://www.crackwits.com/game/Christmas25';
+    // Use the actual deployed path (lowercase) so crawlers see consistent URLs
+    const baseUrl = 'https://www.crackwits.com/game/christmas25';
     const imageUrl = `${baseUrl}${seo.ogImage}`;
+    const logoUrl = `${baseUrl}/Assets/CW-Logo.svg`;
 
     // Update title
     document.title = seo.title;
@@ -44,6 +46,7 @@ export function SEOHead() {
     updateMetaTag('og:image:height', '630', true);
     updateMetaTag('og:site_name', 'CRACKWITS', true);
     updateMetaTag('og:locale', 'en_US', true);
+    updateMetaTag('og:logo', logoUrl, true);
 
     // Twitter tags
     updateMetaTag('twitter:card', seo.twitterCard);
