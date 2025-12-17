@@ -212,6 +212,92 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         </div>
       )}
 
+      {/* Mobile (non-Safari): Energy, Combo, and Combo Rush counters below meter counter, centered */}
+      {!isSafariMobileDevice && isMobile && (
+        <div 
+          className="absolute flex flex-col items-center gap-3"
+          style={{
+            top: isMobileLandscape
+              ? 'max(6rem, env(safe-area-inset-top, 0.75rem) + 5.5rem)' // Landscape positioning
+              : 'max(7rem, env(safe-area-inset-top, 0.75rem) + 6.5rem)', // Portrait positioning
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
+            maxWidth: '320px',
+            boxSizing: 'border-box',
+            paddingLeft: '0.5rem',
+            paddingRight: '0.5rem'
+          }}
+        >
+          {/* Energy Counter */}
+          <div className="bg-white rounded-lg p-3 w-full flex flex-col justify-between border border-gray-200" style={{ boxSizing: 'border-box', maxWidth: '100%' }}>
+            <div className="flex items-center justify-between w-full mb-2">
+              <div className="flex items-center gap-1.5">
+                <img 
+                  src="/Assets/Energy.svg" 
+                  alt={textConfig.common.altText.energy} 
+                  className="w-4 h-4"
+                />
+                <span className="text-[#312f31] text-xs font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  {textConfig.gameUI.energy}
+                </span>
+              </div>
+              <span className="text-[#312f31] text-xs font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                {Math.round(energy)}%
+              </span>
+            </div>
+            <div className="relative h-2.5 w-full rounded-full border border-[#00a994] bg-gray-100">
+              <div 
+                className="absolute h-full bg-[#00a994] rounded-full transition-all duration-200"
+                style={{ width: `${energy}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Combo Counter - Only show when combo >= 2 */}
+          {combo >= 2 && (
+            <div id="combo-display" className="bg-[#645290] rounded-lg p-3 w-full flex items-center justify-between" style={{ boxSizing: 'border-box', maxWidth: '100%' }}>
+              <div className="flex items-center gap-2">
+                <img 
+                  src="/Assets/Combo.svg" 
+                  alt={textConfig.common.altText.combo} 
+                  className="w-5 h-5"
+                />
+                <span className="text-white text-sm font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  {textConfig.gameUI.combo}
+                </span>
+              </div>
+              <span className="text-white text-4xl font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                {combo}x
+              </span>
+            </div>
+          )}
+
+          {/* Combo Rush - Only show when active */}
+          {sprintMode && sprintTimer !== undefined && sprintTimer > 0 && (
+            <div className="bg-[#F6A288] rounded-lg p-3 w-full flex flex-col justify-between" style={{ boxSizing: 'border-box', maxWidth: '100%' }}>
+              <div className="flex items-center justify-between w-full">
+                <span className="text-white text-sm font-bold uppercase" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  {textConfig.gameUI.combo} RUSH
+                </span>
+                <span className="text-white text-sm font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
+                  {Math.ceil(sprintTimer / 1000)}s
+                </span>
+              </div>
+              <div className="relative h-4 w-full rounded-full border-2 border-white bg-white/20 overflow-hidden mt-2">
+                <div 
+                  key={`progress-${Math.floor(sprintTimer)}`}
+                  className="absolute h-full bg-white rounded-full"
+                  style={{ 
+                    width: `${Math.max(0, Math.min(100, (sprintTimer / GameConfig.sprint.duration) * 100))}%`
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Safari mobile: Energy and Combo counters below dynamic island - Proper viewport constraints */}
       {isSafariMobileDevice && (
         <div 
@@ -341,10 +427,11 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
       )}
 
       {/* Top HUD - Figma Design - Safe area support */}
+      {/* For mobile (non-Safari): Hide counters here, they're shown below meter counter */}
       {/* For Safari mobile: Move meters to bottom center in ground area */}
       {!isSafariMobileDevice ? (
         <div 
-          className="absolute top-0 right-0 flex flex-col gap-2 sm:gap-3"
+          className={`absolute top-0 right-0 flex flex-col gap-2 sm:gap-3 ${isMobile ? 'hidden' : ''}`}
           style={{
             paddingTop: 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
             paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
@@ -478,6 +565,38 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           </div>
 
         </>
+      )}
+
+      {/* Mute Button for Mobile (non-Safari) - Top Right Corner */}
+      {!isSafariMobileDevice && isMobile && (
+        <div 
+          className="absolute z-30"
+          style={{
+            top: 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+            right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+            boxSizing: 'border-box'
+          }}
+        >
+          <button
+            onClick={handleToggleMute}
+            className="pointer-events-auto bg-white rounded-lg w-12 h-12 flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150 shadow-md"
+            aria-label={isMuted ? textConfig.common.ariaLabels.unmute : textConfig.common.ariaLabels.mute}
+          >
+            {isMuted ? (
+              <img 
+                src="/Assets/Mute.svg" 
+                alt={textConfig.common.altText.muted} 
+                className="w-5 h-5"
+              />
+            ) : (
+              <img 
+                src="/Assets/Unmute.svg" 
+                alt={textConfig.common.altText.unmuted} 
+                className="w-5 h-5"
+              />
+            )}
+          </button>
+        </div>
       )}
 
       {/* Deadline Indicator - Top Left Corner */}
