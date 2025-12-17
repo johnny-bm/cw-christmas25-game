@@ -30,8 +30,8 @@ const EASTER_EGG_MESSAGES = [...textConfig.game.easterEggMessages];
 const COMBO_MESSAGES = [...textConfig.game.comboMessages];
 
 export class GameScene extends Phaser.Scene {
-  private readonly SAFARI_FIXED_WIDTH = 400; // Portrait width for Safari mobile
-  private readonly SAFARI_FIXED_HEIGHT = 700; // Portrait height for Safari mobile
+  private readonly MOBILE_FIXED_WIDTH = 400; // Portrait width for mobile
+  private readonly MOBILE_FIXED_HEIGHT = 700; // Portrait height for mobile
   private lastJumpTime: number = 0;
   private jumpCooldown: number = 300; // 300ms cooldown between jumps
   private player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
@@ -216,33 +216,33 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' });
   }
 
-  private isSafariMobile(): boolean {
+  private isMobile(): boolean {
     const ua = navigator.userAgent;
-    const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
-    const isMobile = /iPhone|iPad|iPod/.test(ua);
-    return isSafari && isMobile;
+    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const { width, height } = this.scale;
+    const isMobileSize = width <= 768 || height <= 768;
+    return isMobileUA || isMobileSize || ('ontouchstart' in window && (width <= 768 || height <= 768));
   }
 
   init() {
-    // Only attach resize handling for non-Safari mobile
-    if (!this.isSafariMobile()) {
+    // Attach resize handling for desktop; mobile uses FIT mode
+    if (!this.isMobile()) {
       this.scale.on('resize', this.handleResize, this);
-      
-      // CRITICAL FIX for Safari Mobile: Listen for visual viewport changes
-      // This handles Safari UI (address bar, tab bar) changes when multiple tabs are open
-      if (window.visualViewport) {
-        // Store the handler so we can remove it later
-        this.visualViewportResizeHandler = () => {
-          // Debounce resize to prevent excessive updates
-          if (this.visualViewportResizeTimer) {
-            clearTimeout(this.visualViewportResizeTimer);
-          }
-          this.visualViewportResizeTimer = setTimeout(() => {
-            this.handleVisualViewportResize();
-          }, 100);
-        };
-        window.visualViewport.addEventListener('resize', this.visualViewportResizeHandler);
-      }
+    }
+    
+    // Listen for visual viewport changes on mobile (handles browser UI changes)
+    if (window.visualViewport && this.isMobile()) {
+      // Store the handler so we can remove it later
+      this.visualViewportResizeHandler = () => {
+        // Debounce resize to prevent excessive updates
+        if (this.visualViewportResizeTimer) {
+          clearTimeout(this.visualViewportResizeTimer);
+        }
+        this.visualViewportResizeTimer = setTimeout(() => {
+          this.handleVisualViewportResize();
+        }, 100);
+      };
+      window.visualViewport.addEventListener('resize', this.visualViewportResizeHandler);
     }
   }
   
@@ -414,26 +414,31 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    // EMERGENCY FIX: Absolute basics for Safari mobile
-    const isSafariMobile = this.isSafariMobile();
+    // Portrait mode for all mobile devices
+    const isMobile = this.isMobile();
     let { width, height } = this.scale;
     
-    // For Safari mobile: use portrait dimensions
-    if (isSafariMobile) {
-      width = 400;  // Portrait width
-      height = 700; // Portrait height
+    // For mobile: use portrait dimensions
+    if (isMobile) {
+      // Ensure portrait orientation (height > width)
+      if (height > width) {
+        width = Math.min(width, 400);  // Portrait width
+        height = Math.min(height, 700); // Portrait height
+      } else {
+        // If landscape, swap to force portrait
+        const temp = width;
+        width = Math.min(height, 400);
+        height = Math.min(temp, 700);
+      }
       // Don't call resize - let Phaser handle it with FIT mode
     } else {
-      // Desktop/other mobile: keep existing dynamic logic
+      // Desktop: keep existing dynamic logic
       this.isInitializing = true;
       const reliableHeight = this.getReliableViewportHeight();
       if (reliableHeight !== height) {
         height = reliableHeight;
         this.scale.resize(width, height);
       }
-      
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      const isMobile = width <= 768 || height <= 768;
       
       if (width <= 0 || height <= 0 || !isFinite(width) || !isFinite(height)) {
         if (window.visualViewport && window.visualViewport.width > 0 && window.visualViewport.height > 0) {
@@ -445,33 +450,17 @@ export class GameScene extends Phaser.Scene {
         }
         this.scale.resize(width, height);
       }
-      
-      if (isSafari && isMobile) {
-        const minWidth = 300;
-        const minHeight = 400;
-        const maxWidth = 2000;
-        const maxHeight = 2000;
-        
-        if (width < minWidth || width > maxWidth) {
-          width = Math.max(minWidth, Math.min(maxWidth, width || window.innerWidth || 750));
-          this.scale.resize(width, height);
-        }
-        if (height < minHeight || height > maxHeight) {
-          height = Math.max(minHeight, Math.min(maxHeight, height || window.innerHeight || 402));
-          this.scale.resize(width, height);
-        }
-      }
     }
 
     // Set camera bounds to match actual canvas size
     // With RESIZE mode, the camera automatically shows the full game world (0, 0, width, height)
     // The camera viewport is automatically managed by Phaser's scale manager in RESIZE mode
-    if (isSafariMobile) {
-      // Safari mobile: portrait orientation - fixed dimensions
-      const safariWidth = 400;
-      const safariHeight = 700;
-      this.physics.world.setBounds(0, 0, safariWidth, safariHeight);
-      this.cameras.main.setBounds(0, 0, safariWidth, safariHeight);
+    if (isMobile) {
+      // Mobile: portrait orientation - fixed dimensions
+      const mobileWidth = 400;
+      const mobileHeight = 700;
+      this.physics.world.setBounds(0, 0, mobileWidth, mobileHeight);
+      this.cameras.main.setBounds(0, 0, mobileWidth, mobileHeight);
       this.cameras.main.setBackgroundColor(getElementColorPhaser('background'));
       // Safari mobile: FIXED camera, no scrolling, no following
       this.cameras.main.setScroll(0, 0);
@@ -496,8 +485,8 @@ export class GameScene extends Phaser.Scene {
     
     // Scale gravity relative to screen height for responsive jump physics
     // Reduced gravity for lighter, more responsive feel
-    const isMobile = width <= 768 || height <= 768;
-    const mobileGravityMultiplier = isMobile ? GameConfig.physics.mobileGravityMultiplier : 1.0;
+    const isMobileSize = width <= 768 || height <= 768;
+    const mobileGravityMultiplier = isMobileSize ? GameConfig.physics.mobileGravityMultiplier : 1.0;
     // Use slightly lower base gravity (2200 instead of 2000) for better jump feel
     const baseGravity = 2200;
     const scaledGravity = baseGravity * (height / GameConfig.physics.baseGravityHeight) * mobileGravityMultiplier;
@@ -517,8 +506,8 @@ export class GameScene extends Phaser.Scene {
     let groundHeight: number;
     let groundWidth: number;
     
-    if (isSafariMobile) {
-      // Safari mobile: portrait orientation
+    if (isMobile) {
+      // Mobile: portrait orientation
       groundHeight = 100;
       // Position ground at the actual bottom of the viewport
       this.groundY = height - groundHeight; // Use actual height, not fixed
@@ -555,8 +544,8 @@ export class GameScene extends Phaser.Scene {
     this.ground = this.physics.add.staticGroup();
     const groundColor = getElementColorPhaser('ground');
     
-    if (isSafariMobile) {
-      // Safari mobile: position ground at bottom with top-left origin
+    if (isMobile) {
+      // Mobile: position ground at bottom with top-left origin
       const groundRect = this.add.rectangle(
         0,  // Start at left edge
         this.groundY,  // Top edge at groundY
@@ -597,9 +586,9 @@ export class GameScene extends Phaser.Scene {
       this.ground.add(groundRect);
     }
 
-    // PLAYER SETUP - Portrait orientation for Safari mobile
-    if (isSafariMobile) {
-      // Safari mobile: portrait orientation - smaller and left-aligned
+    // PLAYER SETUP - Portrait orientation for mobile
+    if (isMobile) {
+      // Mobile: portrait orientation - smaller and left-aligned
       const PLAYER_SIZE = 60; // Smaller for better visibility (reduced from 80)
       const PLAYER_START_X = FIXED_GAME_WIDTH * 0.28; // Nudge right for clearer deadline runway
       const PLAYER_Y = this.groundY; // Position feet on ground (with bottom-center origin)
@@ -675,9 +664,9 @@ export class GameScene extends Phaser.Scene {
       this.player.setPosition(playerX, this.groundY);
     }
     
-    // EMERGENCY FIX: Absolute basics for Safari mobile - simple physics
-    if (isSafariMobile) {
-      // Safari mobile: absolute basics
+    // EMERGENCY FIX: Absolute basics for mobile - simple physics
+    if (isMobile) {
+      // Mobile: absolute basics
       this.player.body.setCollideWorldBounds(true);
       this.player.body.setBounce(0.2);
     } else {
@@ -741,7 +730,7 @@ export class GameScene extends Phaser.Scene {
       // Try to set a fallback texture or create a placeholder
       if (!this.textures.exists('character-pushing-01')) {
         // Create a simple colored rectangle as placeholder
-        const placeholderX = isSafariMobile ? 100 : (width * 0.25);
+        const placeholderX = isMobile ? 100 : (width * 0.25);
         this.add.graphics()
           .fillStyle(0xff0000, 1)
           .fillRect(placeholderX - 20, this.groundY - 40, 40, 40)
@@ -751,7 +740,7 @@ export class GameScene extends Phaser.Scene {
     
 
     // Sprint glow effect
-    if (isSafariMobile) {
+    if (isMobile) {
       this.sprintGlow = this.add.rectangle(
         this.player.x, 
         this.player.y, 
@@ -1000,11 +989,11 @@ export class GameScene extends Phaser.Scene {
     const baseJumpVelocity = isMobileJump ? -1100 : -1300; // Desktop: -1300 for snappier feel, Mobile: -1100 for balance
     jumpVelocity = baseJumpVelocity * (height / GameConfig.physics.baseGravityHeight) * mobileJumpMultiplier;
     
-    // Safari mobile: use proper scaling for 700px height screen
-    if (this.isSafariMobile()) {
-      // Safari mobile has fixed 700px height, so calculate jump properly
-      // Reduced jump height for better balance on Safari mobile
-      jumpVelocity = -450; // Lower jump height for Safari mobile (reduced from -600)
+    // Mobile: use proper scaling for 700px height screen
+    if (this.isMobile()) {
+      // Mobile has fixed 700px height in portrait mode, so calculate jump properly
+      // Reduced jump height for better balance on mobile
+      jumpVelocity = -450; // Lower jump height for mobile (reduced from -600)
     }
     
     // CRITICAL: Allow jumping immediately when on ground, regardless of jumpsRemaining
@@ -1113,19 +1102,14 @@ export class GameScene extends Phaser.Scene {
     ).join('-');
     
     // Scale obstacle size relative to screen height
-    const isMobile = width <= 768 || height <= 768;
-    // Safari mobile: smaller obstacles (400x700 viewport needs smaller obstacles)
-    const isSafariMobile = this.isSafariMobile();
+    const isMobileDevice = this.isMobile();
     let baseObstacleSize: number;
     let maxObstacleSize: number;
     
-    if (isSafariMobile) {
-      // Safari mobile: much smaller obstacles for 700px height
+    if (isMobileDevice) {
+      // Mobile: smaller obstacles for 700px height portrait mode
       baseObstacleSize = height * 0.035; // 3.5% of height = 24.5px
-      maxObstacleSize = 35; // Cap at 35px for Safari (reduced from 50px)
-    } else if (isMobile) {
-      baseObstacleSize = height * 0.0735; // 7.35% on mobile (5% bigger), 6% on desktop
-      maxObstacleSize = 105; // Proportional cap on mobile (105px, 5% bigger) vs desktop (80px)
+      maxObstacleSize = 35; // Cap at 35px for mobile
     } else {
       baseObstacleSize = height * 0.06; // 6% on desktop
       maxObstacleSize = 80; // Desktop cap
@@ -1144,8 +1128,8 @@ export class GameScene extends Phaser.Scene {
     }
     
     // CRITICAL FIX: Set origin based on platform
-    if (this.isSafariMobile()) {
-      // Safari mobile: use center origin to match player
+    if (this.isMobile()) {
+      // Mobile: use center origin to match player
       obstacle.setOrigin(0.5, 0.5);
       // Position obstacle center on ground surface
       const obstacleHeight = obstacle.displayHeight || 100;
@@ -1265,18 +1249,14 @@ export class GameScene extends Phaser.Scene {
     }
     
     // Scale obstacle size relative to screen height
-    const isMobile = width <= 768 || height <= 768;
-    const isSafariMobile = this.isSafariMobile();
+    const isMobileDevice = this.isMobile();
     let baseObstacleSize: number;
     let maxObstacleSize: number;
     
-    if (isSafariMobile) {
-      // Safari mobile: smaller floating obstacles
+    if (isMobileDevice) {
+      // Mobile: smaller floating obstacles for portrait mode
       baseObstacleSize = height * 0.04; // 4% of height = 28px
-      maxObstacleSize = 40; // Cap at 40px for Safari (reduced from 55px)
-    } else if (isMobile) {
-      baseObstacleSize = height * 0.0847; // 8.47% on mobile (10% bigger than before), 6.6% on desktop (10% bigger)
-      maxObstacleSize = 121; // Proportional cap on mobile (121px, 10% bigger) vs desktop (88px, 10% bigger)
+      maxObstacleSize = 40; // Cap at 40px for mobile
     } else {
       baseObstacleSize = height * 0.066; // 6.6% on desktop
       maxObstacleSize = 88; // Desktop cap
@@ -1423,19 +1403,15 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     
-    // Scale projectile size relative to screen height - 10% bigger on mobile
-    const isMobile = width <= 768 || height <= 768;
-    const isSafariMobile = this.isSafariMobile();
+    // Scale projectile size relative to screen height
+    const isMobileDevice = this.isMobile();
     let baseObstacleSize: number;
     let maxObstacleSize: number;
     
-    if (isSafariMobile) {
-      // Safari mobile: smaller projectile obstacles
+    if (isMobileDevice) {
+      // Mobile: smaller projectile obstacles for portrait mode
       baseObstacleSize = height * 0.035; // 3.5% of height = 24.5px
-      maxObstacleSize = 35; // Cap at 35px for Safari (reduced from 50px)
-    } else if (isMobile) {
-      baseObstacleSize = height * 0.077; // 7.7% on mobile (10% bigger), 6% on desktop
-      maxObstacleSize = 110; // Proportional cap on mobile (110px, 10% bigger) vs desktop (80px)
+      maxObstacleSize = 35; // Cap at 35px for mobile
     } else {
       baseObstacleSize = height * 0.06; // 6% on desktop
       maxObstacleSize = 80; // Desktop cap
@@ -1504,19 +1480,14 @@ export class GameScene extends Phaser.Scene {
     const isMobileSpeedCollectible = width <= 768 || height <= 768;
     const baseSpeed = isMobileSpeedCollectible ? Math.max(width / 1920, 0.5) : width / 1920;
     // Detect mobile - use appropriate size on mobile devices
-    const isMobile = width <= 768 || height <= 768;
-    // Desktop: larger size for better visibility, Mobile: smaller for Safari
-    const isSafariMobile = this.isSafariMobile();
+    const isMobileDevice = this.isMobile();
     let baseCollectibleSize: number;
     let maxCollectibleSize: number;
     
-    if (isSafariMobile) {
-      // Safari mobile: smaller collectibles
+    if (isMobileDevice) {
+      // Mobile: smaller collectibles for portrait mode
       baseCollectibleSize = height * 0.025; // 2.5% of height = 17.5px
-      maxCollectibleSize = 20; // Cap at 20px for Safari (reduced from 30px)
-    } else if (isMobile) {
-      baseCollectibleSize = height * 0.0088; // 0.88% on mobile (10% bigger), 2.5% on desktop (larger)
-      maxCollectibleSize = 27; // Mobile: 27px (10% bigger), Desktop: 60px (larger)
+      maxCollectibleSize = 20; // Cap at 20px for mobile
     } else {
       baseCollectibleSize = height * 0.025; // 2.5% on desktop
       maxCollectibleSize = 60; // Desktop cap
@@ -1548,10 +1519,10 @@ export class GameScene extends Phaser.Scene {
     );
     const isSpecial = matchingName ? GameConfig.collectibles.types.special.includes(matchingName) : false;
     
-    // CRITICAL FIX: Position collectible above ground for Safari mobile
+    // CRITICAL FIX: Position collectible above ground for mobile
     let collectibleY = y;
-    if (this.isSafariMobile()) {
-      // Safari mobile: keep within reach but allow higher placements for double jump
+    if (this.isMobile()) {
+      // Mobile: keep within reach but allow higher placements for double jump
       const minLift = height * 0.12;
       const maxLift = height * 0.35;
       const desiredLift = this.groundY - y;
@@ -2315,8 +2286,8 @@ export class GameScene extends Phaser.Scene {
   public update(time: number, delta: number) {
     // Note: Visual debugging moved after ground state calculation
     
-    // CRITICAL: Lock camera for Safari mobile - prevent any scrolling
-    if (this.isSafariMobile()) {
+    // CRITICAL: Lock camera for mobile - prevent any scrolling
+    if (this.isMobile()) {
       this.cameras.main.scrollX = 0;
       this.cameras.main.scrollY = 0;
     }
@@ -2422,8 +2393,8 @@ export class GameScene extends Phaser.Scene {
       // (debug logging removed, just apply correction)
       
       // Character is below ground - correct it immediately
-      if (this.isSafariMobile()) {
-        // Safari mobile: with bottom-center origin, player.y should be at groundY
+      if (this.isMobile()) {
+        // Mobile: with bottom-center origin, player.y should be at groundY
         this.player.y = this.groundY;
         // Ensure body bottom aligns with ground
         const bodyBottom = this.player.body.y + this.player.body.height;
@@ -2826,7 +2797,7 @@ export class GameScene extends Phaser.Scene {
       this.deadline.x = this.deadlineX;
     } else {
       // Normal interpolation when energy > 0
-      const deadlineLerpSpeed = this.isSafariMobile() ? GameConfig.deadline.movementSpeed * 0.65 : GameConfig.deadline.movementSpeed;
+      const deadlineLerpSpeed = this.isMobile() ? GameConfig.deadline.movementSpeed * 0.65 : GameConfig.deadline.movementSpeed;
       this.deadlineX = this.deadlineX + (deadlineTargetX - this.deadlineX) * deltaSeconds * deadlineLerpSpeed;
       this.deadline.x = this.deadlineX;
     }
@@ -2951,8 +2922,8 @@ export class GameScene extends Phaser.Scene {
     
     // Ensure camera shows full world
     this.cameras.main.setBounds(0, 0, width, height);
-    // CRITICAL: Only set scroll for desktop, Safari mobile camera is locked
-    if (!this.isSafariMobile()) {
+    // CRITICAL: Only set scroll for desktop, mobile camera is locked
+    if (!this.isMobile()) {
       this.cameras.main.setScroll(0, 0);
     }
     
@@ -3141,8 +3112,8 @@ export class GameScene extends Phaser.Scene {
     // Reset player position - simple and correct
     // With origin (0.5, 1), sprite.y is the bottom/feet position
     // Position sprite.y = groundY to place feet at ground level
-    // CRITICAL FIX: Only apply this for desktop, not Safari mobile (which uses center origin)
-    if (this.player?.body && !this.isSafariMobile()) {
+    // CRITICAL FIX: Only apply this for desktop, not mobile (which uses center origin)
+    if (this.player?.body && !this.isMobile()) {
       const { width: screenWidth } = this.cameras.main;
       // Test with default body first - uncomment if you need custom body size
       // this.setupCharacterBody();
@@ -3630,10 +3601,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleResize() {
-    // Safari mobile uses fixed dimensions; skip resize adjustments
-    if (this.isSafariMobile()) {
-      const width = this.SAFARI_FIXED_WIDTH;
-      const height = this.SAFARI_FIXED_HEIGHT;
+    // Mobile uses fixed portrait dimensions; skip resize adjustments
+    if (this.isMobile()) {
+      const width = 400; // Portrait width
+      const height = 700; // Portrait height
       this.scale.resize(width, height);
       this.physics.world.setBounds(0, 0, width, height);
       if (this.cameras && this.cameras.main) {
@@ -3673,8 +3644,8 @@ export class GameScene extends Phaser.Scene {
     if (this.cameras && this.cameras.main) {
       this.cameras.main.setBounds(0, 0, width, height);
       this.cameras.main.setBackgroundColor(getElementColorPhaser('background'));
-      // CRITICAL: Only set scroll for desktop, Safari mobile camera is locked
-      if (!this.isSafariMobile()) {
+      // CRITICAL: Only set scroll for desktop, mobile camera is locked
+      if (!this.isMobile()) {
         // Reset camera scroll to origin to ensure full world is visible (ground at bottom)
         this.cameras.main.setScroll(0, 0);
       }

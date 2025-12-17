@@ -68,23 +68,33 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     // Get device pixel ratio for high DPI displays
     const devicePixelRatio = window.devicePixelRatio || 1;
     
-    // Safari mobile detection
-    const isSafariMobile = () => {
-      const ua = navigator.userAgent;
-      const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
-      const isMobile = /iPhone|iPad|iPod/.test(ua);
-      return isSafari && isMobile;
+    // Mobile device detection (all mobile devices now use portrait mode)
+    const isMobileDevice = () => {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        (window.innerWidth <= 768 && 'ontouchstart' in window);
     };
 
-    // Conditional sizing: fixed for Safari mobile, dynamic for others
+    // Conditional sizing: portrait mode for all mobile, dynamic for desktop
     let initialWidth: number;
     let initialHeight: number;
-    const useFitMode = isSafariMobile();
+    const isMobile = isMobileDevice();
+    const useFitMode = isMobile; // All mobile devices use FIT mode with portrait dimensions
 
     if (useFitMode) {
-      // Fixed dimensions to avoid Safari visualViewport shrink issues
-      initialWidth = 800;
-      initialHeight = 600;
+      // Portrait dimensions for all mobile devices
+      // Use actual viewport dimensions but ensure portrait orientation
+      const viewportWidth = window.innerWidth || window.screen.width || 400;
+      const viewportHeight = window.innerHeight || window.screen.height || 700;
+      
+      // Ensure portrait orientation (height > width)
+      if (viewportHeight > viewportWidth) {
+        initialWidth = Math.min(viewportWidth, 400);
+        initialHeight = Math.min(viewportHeight, 700);
+      } else {
+        // If landscape, swap to force portrait
+        initialWidth = Math.min(viewportHeight, 400);
+        initialHeight = Math.min(viewportWidth, 700);
+      }
       initializeGame();
       return;
     }
@@ -141,14 +151,14 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     return;
     
     function initializeGame() {
-      // NEW APPROACH: Portrait orientation for Safari mobile
-      const SAFARI_WIDTH = Math.min(window.innerWidth, 400); // Portrait width
-      const SAFARI_HEIGHT = Math.min(window.innerHeight, 700); // Portrait height
+      // Portrait orientation for all mobile devices
+      const MOBILE_WIDTH = isMobile ? Math.min(window.innerWidth, 400) : initialWidth; // Portrait width for mobile
+      const MOBILE_HEIGHT = isMobile ? Math.min(window.innerHeight, 700) : initialHeight; // Portrait height for mobile
       
       const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
-      width: useFitMode ? SAFARI_WIDTH : initialWidth,
-      height: useFitMode ? SAFARI_HEIGHT : initialHeight,
+      width: useFitMode ? MOBILE_WIDTH : initialWidth,
+      height: useFitMode ? MOBILE_HEIGHT : initialHeight,
       parent: container,
       backgroundColor: getElementColor('background'), // White background
       audio: {

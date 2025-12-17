@@ -161,20 +161,11 @@ export const textConfig = {
   },
 
   // ============================================
-  // APP (Loading, Portrait Blocker)
+  // APP (Loading)
   // ============================================
   app: {
     loading: {
       title: "Loading experience...",
-    },
-    portraitBlocker: {
-      title: "Please Rotate Your Device",
-      description: {
-        line1: "This experience is for landscape mode.",
-        line2: "",
-        line3: "The experience will load automatically once you rotate to landscape.",
-      },
-      copyright: "CRACKWITS™ 2020 - 2025. All Rights Reserved.",
     },
   },
 

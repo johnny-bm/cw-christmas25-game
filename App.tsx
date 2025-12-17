@@ -33,167 +33,14 @@ function isMobileDevice(): boolean {
     (window.innerWidth <= 768 && 'ontouchstart' in window);
 }
 
-// Portrait blocker component
-function PortraitBlocker({ 
-  gameBackgroundColor, 
-  onTermsClick,
-  onLegalNoticeClick
-}: { 
-  gameBackgroundColor: string;
-  onTermsClick: () => void;
-  onLegalNoticeClick: () => void;
-}) {
-  const uiTextColor = getElementColor('uiText');
-  
-  return (
-    <div 
-      className="absolute inset-0 z-[9999] flex flex-col"
-      style={{ backgroundColor: gameBackgroundColor }}
-    >
-      {/* Header - Logo at top */}
-      <div 
-        className="flex flex-col items-center justify-center w-full shrink-0"
-        style={{ 
-          paddingTop: '24px',
-          paddingBottom: '24px',
-          paddingLeft: '16px',
-          paddingRight: '16px'
-        }}
-      >
-        <div className="h-10 w-[209px] max-w-full flex items-center justify-center mb-6 sm:mb-8">
-          <img 
-            src="/Assets/CW-Logo.svg" 
-            alt={textConfig.common.altText.crackwitsLogo} 
-            className="h-full w-auto max-w-full"
-          />
-        </div>
-      </div>
-      
-      {/* Content - Phone and text in the middle */}
-      <div 
-        className="flex flex-col items-center justify-center w-full flex-1 px-4"
-        style={{ 
-          paddingTop: '32px',
-          paddingBottom: '32px',
-          gap: '48px',
-          color: getElementColor('uiText'),
-          minHeight: 0
-        }}
-      >
-        {/* Phone icon with rotation animation */}
-        <div 
-          className="animate-phone-rotate shrink-0"
-          style={{
-            width: '60px',
-            height: '100px',
-            border: `3px solid ${getElementColor('uiText')}`,
-            borderRadius: '8px',
-          }}
-        />
-        
-        {/* Text content */}
-        <div 
-          className="flex flex-col items-center w-full max-w-md text-center"
-          style={{ gap: '16px' }}
-        >
-          <h2 
-            className="text-3xl sm:text-4xl font-bold leading-[1.1] w-full" 
-            style={{ fontFamily: '"Urbanist", sans-serif' }}
-          >
-            {textConfig.app.portraitBlocker.title}
-          </h2>
-          <div 
-            className="text-base sm:text-lg leading-[1.1] w-full" 
-            style={{ fontFamily: '"Urbanist", sans-serif' }}
-          >
-            <p className="mb-0">{textConfig.app.portraitBlocker.description.line1}</p>
-            <p className="mb-0">&nbsp;</p>
-            <p className="mb-0">{textConfig.app.portraitBlocker.description.line3}</p>
-          </div>
-        </div>
-      </div>
-      
-      {/* Footer - Copyright at bottom */}
-      <div 
-        className="flex flex-col items-center justify-center w-full shrink-0"
-        style={{ 
-          padding: '8px',
-          paddingLeft: '16px',
-          paddingRight: '16px',
-          paddingBottom: 'max(8px, calc(env(safe-area-inset-bottom, 0px) + 8px))'
-        }}
-      >
-        <p 
-          className="text-center opacity-50"
-          style={{ 
-            color: uiTextColor,
-            fontFamily: '"Urbanist", sans-serif',
-            lineHeight: '1.1',
-            fontSize: '12px'
-          }}
-        >
-          <a 
-            href="https://crackwits.com/?utm_source=Christmas25&utm_medium=Footer&utm_campaign=Christmas25"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ 
-              color: uiTextColor,
-              textDecoration: 'underline',
-              cursor: 'pointer'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-          >
-            CRACKWITS
-          </a>
-          ™ 2025 - 2020. All Rights Reserved.
-        </p>
-        <div className="flex items-center justify-center gap-3 mt-2">
-          <button
-            onClick={onTermsClick}
-            style={{ 
-              color: uiTextColor,
-              fontSize: '10px',
-              textDecoration: 'underline',
-              cursor: 'pointer',
-              opacity: 0.5
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-            onMouseLeave={(e) => e.currentTarget.style.opacity = '0.5'}
-          >
-            Terms
-          </button>
-          <span style={{ color: uiTextColor, opacity: 0.5 }}>|</span>
-          <button
-            onClick={onLegalNoticeClick}
-            style={{ 
-              color: uiTextColor,
-              fontSize: '10px',
-              textDecoration: 'underline',
-              cursor: 'pointer',
-              opacity: 0.5
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-            onMouseLeave={(e) => e.currentTarget.style.opacity = '0.5'}
-          >
-            Legal Notice
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Helper function to detect Safari mobile
-  const isSafariMobile = () => {
-    const ua = navigator.userAgent;
-    const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
-    const isMobile = /iPhone|iPad|iPod/.test(ua);
-    return isSafari && isMobile;
+  // Helper function to detect mobile devices (all mobile devices now use portrait mode)
+  const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      (window.innerWidth <= 768 && 'ontouchstart' in window);
   };
   const [gameState, setGameState] = useState<GameState>('start');
   const [gameReady, setGameReady] = useState(false); // Track if game is loaded
@@ -401,10 +248,7 @@ export default function App() {
       return;
     }
     
-    // Block game start if on mobile and in portrait mode (except Safari mobile which runs in portrait)
-    if (isMobile && isPortrait && !isSafariMobile()) {
-      return;
-    }
+    // All mobile devices now support portrait mode, so no blocking needed
     
     setGameState('playing');
     setGameData({
@@ -514,9 +358,6 @@ export default function App() {
     setLeaderboardRefresh(prev => prev + 1);
   };
 
-  // Check if we should show portrait blocker
-  // CRITICAL: Don't show portrait blocker for Safari mobile (game runs in portrait mode)
-  const showPortraitBlocker = isMobile && isPortrait && !isSafariMobile();
 
   const gameBackgroundColor = getElementColor('background');
   
@@ -560,15 +401,6 @@ export default function App() {
         // The game canvas should fill the entire container to ensure proper scaling
       }}
     >
-      {/* Portrait orientation blocker - shared across all routes */}
-      {showPortraitBlocker && (
-        <PortraitBlocker 
-          gameBackgroundColor={gameBackgroundColor}
-          onTermsClick={() => setShowTermsPopup(true)}
-          onLegalNoticeClick={() => setShowLegalNoticePopup(true)}
-        />
-      )}
-      
       {/* Legal Popups */}
       <TermsPopup
         open={showTermsPopup}
@@ -600,12 +432,12 @@ export default function App() {
           onUpdateGameData={handleUpdateGameData}
           onGameReady={() => setGameReady(true)}
           onLoadingProgress={(progress) => setLoadingProgress(progress)}
-          isActive={gameState === 'playing' && !showPortraitBlocker}
+          isActive={gameState === 'playing'}
         />
       </div>
       
       {/* Loading screen - show until all assets are loaded */}
-      {!gameReady && !showPortraitBlocker && (
+      {!gameReady && (
         <div 
           className="absolute inset-0 z-[100] flex flex-col items-center"
           style={{ backgroundColor: gameBackgroundColor }}
@@ -675,7 +507,7 @@ export default function App() {
         
         {/* Landing route */}
         <Route path="/landing" element={
-          !showPortraitBlocker && showStartScreen ? (
+          showStartScreen ? (
             <div className="absolute inset-0 z-50" style={{ backgroundColor: gameBackgroundColor }}>
               <StartScreen 
                 onStart={handleStartGame} 
@@ -689,30 +521,26 @@ export default function App() {
         
         {/* Game route */}
         <Route path="/game" element={
-          !showPortraitBlocker ? (
-            <div className="absolute inset-0 z-10 pointer-events-none">
-              <GameUI 
-                gameData={gameData} 
-                bestDistance={bestDistance}
-              />
-            </div>
-          ) : null
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <GameUI 
+              gameData={gameData} 
+              bestDistance={bestDistance}
+            />
+          </div>
         } />
         
         {/* Ending route */}
         <Route path="/ending" element={
-          !showPortraitBlocker ? (
-            <div className="absolute inset-0 z-50" style={{ backgroundColor: gameBackgroundColor }}>
-              <GameOver
-                distance={finalDistance}
-                bestDistance={bestDistance}
-                maxCombo={finalMaxCombo}
-                grinchScore={(window as any).__finalGrinchScore}
-                elfScore={(window as any).__finalElfScore}
-                onRestart={handleRestart}
-              />
-            </div>
-          ) : null
+          <div className="absolute inset-0 z-50" style={{ backgroundColor: gameBackgroundColor }}>
+            <GameOver
+              distance={finalDistance}
+              bestDistance={bestDistance}
+              maxCombo={finalMaxCombo}
+              grinchScore={(window as any).__finalGrinchScore}
+              elfScore={(window as any).__finalElfScore}
+              onRestart={handleRestart}
+            />
+          </div>
         } />
         
         {/* Catch-all route - redirect any unknown routes to landing */}
