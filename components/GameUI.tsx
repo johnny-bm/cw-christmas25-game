@@ -132,7 +132,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           className="absolute left-1/2 -translate-x-1/2 z-20"
           style={{
             top: isMobile
-              ? 'max(2.5rem, env(safe-area-inset-top, 0.75rem) + 2rem)' // Mobile: moved down to avoid deadline counter
+              ? 'max(1rem, env(safe-area-inset-top, 0px) + 0.5rem)' // Mobile: higher up, visible on Chrome
               : 'max(0.75rem, env(safe-area-inset-top, 0.75rem) + 0.25rem)', // Desktop: original position
             pointerEvents: 'none'
           }}
@@ -146,16 +146,17 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           </div>
         </div>
       ) : (
-        /* Safari mobile: Meter counter below dynamic island - More space from top */
+        /* Safari mobile: Meter counter below dynamic island - Moved up */
         <div 
-          className="absolute"
+          className="absolute z-20"
           style={{
-            top: 'max(6rem, calc(env(safe-area-inset-top, 0px) + 1rem + 5rem))',
+            top: 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))', // Moved up from 6rem to 4.5rem
             left: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
             right: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
             width: 'calc(100% - max(3rem, calc(env(safe-area-inset-left, 0px) + 1.5rem) * 2))',
             textAlign: 'center',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            pointerEvents: 'none'
           }}
         >
           <div className="text-5xl sm:text-6xl text-black opacity-70 font-bold" style={{ fontFamily: '"Urbanist", sans-serif' }}>
@@ -171,8 +172,8 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           style={{
             top: isMobile 
               ? isMobileLandscape
-                ? 'max(5rem, env(safe-area-inset-top, 0.75rem) + 4.5rem)' // Mobile landscape: adjusted for new meter position
-                : 'max(5.5rem, env(safe-area-inset-top, 0.75rem) + 5rem)' // Mobile portrait: adjusted for new meter position
+                ? 'max(3.5rem, env(safe-area-inset-top, 0px) + 3rem)' // Mobile landscape: adjusted for new meter position
+                : 'max(4rem, env(safe-area-inset-top, 0px) + 3.5rem)' // Mobile portrait: adjusted for new meter position
               : 'max(5.5rem, env(safe-area-inset-top, 0.75rem) + 5rem)'
           }}
         >
@@ -225,8 +226,8 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           className="absolute flex flex-col items-center gap-3"
           style={{
             top: isMobileLandscape
-              ? 'max(7rem, env(safe-area-inset-top, 0.75rem) + 6.5rem)' // Landscape: reduced gap from elf/grinch counter
-              : 'max(7.5rem, env(safe-area-inset-top, 0.75rem) + 7rem)', // Portrait: reduced gap from elf/grinch counter
+              ? 'max(5.5rem, env(safe-area-inset-top, 0px) + 5rem)' // Landscape: adjusted for new character scores position
+              : 'max(6rem, env(safe-area-inset-top, 0px) + 5.5rem)', // Portrait: adjusted for new character scores position
             left: '50%',
             transform: 'translateX(-50%)',
             width: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
@@ -310,7 +311,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         <div 
           className="absolute flex flex-col items-center gap-3"
           style={{
-            top: 'max(8.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 7.5rem))',
+            top: 'max(7rem, calc(env(safe-area-inset-top, 0px) + 1rem + 6rem))', // Moved up from 8.5rem to 7rem
             left: '50%',
             transform: 'translateX(-50%)',
             width: 'calc(100% - max(4rem, calc(env(safe-area-inset-left, 0px) + 2rem) * 2))',
@@ -545,7 +546,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
           <div 
             className="absolute z-30"
             style={{
-              top: 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
+              top: 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))', // Moved up from 1rem
               right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
               boxSizing: 'border-box'
             }}
@@ -579,7 +580,7 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
         <div 
           className="absolute z-30"
           style={{
-            top: 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+            top: 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))', // Moved up to be visible on Chrome
             right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
             boxSizing: 'border-box'
           }}
@@ -608,12 +609,14 @@ export function GameUI({ gameData, bestDistance }: GameUIProps) {
 
       {/* Deadline Indicator - Top Left Corner */}
       <div 
-        className="deadline-indicator absolute flex items-center gap-1.5 sm:gap-2"
+        className="deadline-indicator absolute flex items-center gap-1.5 sm:gap-2 z-20"
         style={{
           left: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
           top: isSafariMobileDevice 
-            ? 'max(1rem, calc(env(safe-area-inset-top, 0px) + 1rem))'
-            : 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+            ? 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))' // Safari: moved up
+            : isMobile
+            ? 'max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))' // Chrome mobile: moved up to be visible
+            : 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))', // Desktop: original position
           maxWidth: 'calc(100% - max(2rem, calc(env(safe-area-inset-left, 0px) + 1rem) * 2))',
           boxSizing: 'border-box'
         }}
