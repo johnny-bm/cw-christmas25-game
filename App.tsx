@@ -60,7 +60,7 @@ function PortraitBlocker({
           paddingRight: '16px'
         }}
       >
-        <div className="h-10 w-[209px] max-w-full flex items-center justify-center">
+        <div className="h-10 w-[209px] max-w-full flex items-center justify-center mb-6 sm:mb-8">
           <img 
             src="/Assets/CW-Logo.svg" 
             alt={textConfig.common.altText.crackwitsLogo} 
@@ -620,7 +620,7 @@ export default function App() {
           <img 
             src="/Assets/CW-Logo.svg" 
             alt={textConfig.common.altText.crackwitsLogo} 
-            className="h-6 sm:h-8 md:h-10"
+            className="h-6 sm:h-8 md:h-10 mb-4 sm:mb-6 md:mb-8"
           />
           </div>
           
@@ -629,7 +629,7 @@ export default function App() {
             className="text-center px-4 max-w-md w-full flex flex-col items-center justify-center flex-1"
             style={{ 
               color: getElementColor('uiText'),
-              marginTop: 'max(4rem, calc(env(safe-area-inset-top, 0.5rem) + 0.5rem + 3rem))'
+              marginTop: 'max(5rem, calc(env(safe-area-inset-top, 0.5rem) + 0.5rem + 4rem))'
             }}
           >
             <div className="mb-6 sm:mb-8 flex justify-center">

@@ -253,7 +253,7 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
         <img 
           src="/Assets/CW-Logo.svg" 
           alt={textConfig.common.altText.crackwitsLogo} 
-          className="h-8 sm:h-10 md:h-12 lg:h-14"
+          className="h-8 sm:h-10 md:h-12 lg:h-14 mb-4 sm:mb-6 md:mb-8"
         />
       </div>
       
@@ -288,8 +288,8 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
         className="relative min-h-full flex flex-col items-center justify-start py-3 sm:py-4 md:py-6 gap-4 sm:gap-5 md:gap-6" 
         style={{ 
           paddingTop: isMobileSafari 
-            ? 'max(8rem, calc(env(safe-area-inset-top, 0px) + 1rem + 7rem))'
-            : 'max(7rem, calc(env(safe-area-inset-top, 0px) + 1rem + 5rem + 1rem))',
+            ? 'max(9rem, calc(env(safe-area-inset-top, 0px) + 1rem + 8rem))'
+            : 'max(8rem, calc(env(safe-area-inset-top, 0px) + 1rem + 6rem + 1rem))',
           paddingLeft: 'max(2rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
           paddingRight: 'max(2rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
           paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))'

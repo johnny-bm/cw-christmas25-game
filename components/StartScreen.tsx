@@ -158,7 +158,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
         <img 
           src="/Assets/CW-Logo.svg" 
           alt={textConfig.common.altText.crackwitsLogo} 
-          className="h-6 max-md:landscape:h-5 sm:h-8 md:h-10 max-md:landscape:ml-4"
+          className="h-6 max-md:landscape:h-5 sm:h-8 md:h-10 max-md:landscape:ml-4 mb-4 sm:mb-6 md:mb-8"
         />
       </div>
       
@@ -237,8 +237,8 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
       {/* RESPONSIVE: Use viewport-relative padding-top instead of fixed rem values for better mobile support */}
       <div className="max-md:landscape:hidden text-center space-y-2 sm:space-y-4 md:space-y-6 py-3 sm:py-4 w-full max-w-4xl overflow-y-auto max-h-full" style={{ 
         paddingTop: isMobileSafari 
-          ? 'max(6rem, calc(env(safe-area-inset-top, 0px) + 1rem + 5rem))'
-          : 'max(4rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3rem))',
+          ? 'max(7rem, calc(env(safe-area-inset-top, 0px) + 1rem + 6rem))'
+          : 'max(5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 4rem))',
         paddingLeft: 'max(2rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
         paddingRight: 'max(2rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
         paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))',
@@ -321,7 +321,7 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
 
       {/* Mobile/Tablet Landscape: 2-Column Grid Layout */}
       <div className="hidden max-md:landscape:grid grid-cols-2 grid-rows-[1fr_auto] w-full h-full gap-4 py-3" style={{
-        paddingTop: 'max(3rem, calc(env(safe-area-inset-top, 0px) + 0.75rem + 2.25rem))',
+        paddingTop: 'max(4rem, calc(env(safe-area-inset-top, 0px) + 0.75rem + 3.25rem))',
         paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))',
         paddingLeft: 'max(2rem, calc(env(safe-area-inset-left, 0px) + 1.5rem))',
         paddingRight: 'max(2rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))',
