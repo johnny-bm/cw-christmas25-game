@@ -206,6 +206,15 @@ export function EndingPopup({
     ? "/Assets/Characters/Elf-Happy-Color.svg"
     : "/Assets/Characters/Grinch-Happy.svg";
 
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    // Don't close EndingPopup if Terms or Legal Notice popups are open
+    if (showTermsPopup || showLegalNoticePopup) {
+      e.stopPropagation();
+      return;
+    }
+    onClose();
+  };
+
   return (
     <div 
       className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto"
@@ -217,7 +226,7 @@ export function EndingPopup({
         paddingLeft: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
         paddingRight: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1rem))'
       }}
-      onClick={onClose}
+      onClick={handleOverlayClick}
     >
       <div 
         id="ending-popup"
@@ -467,7 +476,14 @@ export function EndingPopup({
                 (isTop3 && (!email.trim() || !isValidEmail(email) || !prizeSelection))
               }
               className="w-full py-2.5 sm:py-3 md:py-3.5 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-bold text-sm sm:text-base md:text-lg rounded-lg transition-all hover:scale-105 active:scale-95"
-              style={{ backgroundColor: '#000000' }}
+              style={{ 
+                backgroundColor: (!playerName.trim() || 
+                  playerName.trim().length < 3 ||
+                  isSaving ||
+                  (isTop3 && (!email.trim() || !isValidEmail(email) || !prizeSelection)))
+                  ? '#9CA3AF' // gray-300
+                  : '#000000'
+              }}
             >
               {isSaving ? textConfig.endingPopup.form.button.saving : isTop3 ? textConfig.endingPopup.form.button.claimSpot : textConfig.endingPopup.form.button.saveScore}
             </button>

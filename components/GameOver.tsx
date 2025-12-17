@@ -396,7 +396,15 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
                     (email.trim() && playerName.trim().length < 3)
                   }
                   className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-[10px] sm:text-xs md:text-sm text-black hover:opacity-90 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-all rounded-lg font-medium min-h-[2.25rem] sm:min-h-[2.5rem] whitespace-nowrap"
-                  style={{ backgroundColor: accentColor }}
+                  style={{ 
+                    backgroundColor: (!playerName.trim() || 
+                      isSaving || 
+                      playerName.length < 1 ||
+                      (email.trim() && !isValidEmail(email)) ||
+                      (email.trim() && playerName.trim().length < 3))
+                      ? '#D1D5DB' // gray-300
+                      : accentColor
+                  }}
                 >
                   {isSaving ? textConfig.gameOver.form.button.saving : textConfig.gameOver.form.button.save}
                 </button>
