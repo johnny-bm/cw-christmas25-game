@@ -3,6 +3,8 @@ import { Leaderboard } from './Leaderboard';
 import { formatNumber } from '../lib/formatNumber';
 import { getElementColor } from '../game/colorConfig';
 import { textConfig } from '../lib/textConfig';
+import { TermsPopup } from './TermsPopup';
+import { LegalNoticePopup } from './LegalNoticePopup';
 
 interface StartScreenProps {
   onStart: () => void;
@@ -19,6 +21,8 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
   const [fullscreenSupported, setFullscreenSupported] = useState(false);
+  const [showTermsPopup, setShowTermsPopup] = useState(false);
+  const [showLegalNoticePopup, setShowLegalNoticePopup] = useState(false);
   
   // Detect if we're on mobile Safari
   const isMobileSafari = /iPhone|iPad|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -297,6 +301,21 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
             </a>{' '}
             Squad
           </p>
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <button
+              onClick={() => setShowTermsPopup(true)}
+              className="text-[10px] sm:text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
+            >
+              Terms
+            </button>
+            <span className="text-gray-400">|</span>
+            <button
+              onClick={() => setShowLegalNoticePopup(true)}
+              className="text-[10px] sm:text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
+            >
+              Legal Notice
+            </button>
+          </div>
         </div>
       </div>
 
@@ -371,8 +390,33 @@ export function StartScreen({ onStart, bestDistance, leaderboardRefresh = 0, gam
             </a>{' '}
             Squad
           </p>
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <button
+              onClick={() => setShowTermsPopup(true)}
+              className="text-[10px] sm:text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
+            >
+              Terms
+            </button>
+            <span className="text-gray-400">|</span>
+            <button
+              onClick={() => setShowLegalNoticePopup(true)}
+              className="text-[10px] sm:text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
+            >
+              Legal Notice
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Legal Popups */}
+      <TermsPopup
+        open={showTermsPopup}
+        onOpenChange={setShowTermsPopup}
+      />
+      <LegalNoticePopup
+        open={showLegalNoticePopup}
+        onOpenChange={setShowLegalNoticePopup}
+      />
     </div>
   );
 }

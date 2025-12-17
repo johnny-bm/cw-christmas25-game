@@ -8,6 +8,7 @@ import { SEOHead } from './components/SEOHead';
 import { getElementColor } from './game/colorConfig';
 import { textConfig } from './lib/textConfig';
 import { trackPageView } from './lib/analytics';
+import { LegalPopup } from './components/LegalPopup';
 
 export type GameState = 'start' | 'playing' | 'gameover';
 
@@ -32,7 +33,15 @@ function isMobileDevice(): boolean {
 }
 
 // Portrait blocker component
-function PortraitBlocker({ gameBackgroundColor }: { gameBackgroundColor: string }) {
+function PortraitBlocker({ 
+  gameBackgroundColor, 
+  onLegalLinkClick 
+}: { 
+  gameBackgroundColor: string;
+  onLegalLinkClick: (type: 'terms' | 'legal') => void;
+}) {
+  const uiTextColor = getElementColor('uiText');
+  
   return (
     <div 
       className="absolute inset-0 z-[9999] flex flex-col"
@@ -103,7 +112,7 @@ function PortraitBlocker({ gameBackgroundColor }: { gameBackgroundColor: string 
       
       {/* Footer - Copyright at bottom */}
       <div 
-        className="flex items-center justify-center w-full shrink-0"
+        className="flex flex-col items-center justify-center w-full shrink-0"
         style={{ 
           padding: '8px',
           paddingLeft: '16px',
@@ -114,7 +123,7 @@ function PortraitBlocker({ gameBackgroundColor }: { gameBackgroundColor: string 
         <p 
           className="text-center opacity-50"
           style={{ 
-            color: getElementColor('uiText'),
+            color: uiTextColor,
             fontFamily: '"Urbanist", sans-serif',
             lineHeight: '1.1',
             fontSize: '12px'
@@ -125,7 +134,7 @@ function PortraitBlocker({ gameBackgroundColor }: { gameBackgroundColor: string 
             target="_blank"
             rel="noopener noreferrer"
             style={{ 
-              color: getElementColor('uiText'),
+              color: uiTextColor,
               textDecoration: 'underline',
               cursor: 'pointer'
             }}
@@ -136,6 +145,37 @@ function PortraitBlocker({ gameBackgroundColor }: { gameBackgroundColor: string 
           </a>
           ™ 2025 - 2020. All Rights Reserved.
         </p>
+        <div className="flex items-center justify-center gap-3 mt-2">
+          <button
+            onClick={() => onLegalLinkClick('terms')}
+            style={{ 
+              color: uiTextColor,
+              fontSize: '10px',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              opacity: 0.5
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = '0.5'}
+          >
+            Terms
+          </button>
+          <span style={{ color: uiTextColor, opacity: 0.5 }}>|</span>
+          <button
+            onClick={() => onLegalLinkClick('legal')}
+            style={{ 
+              color: uiTextColor,
+              fontSize: '10px',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              opacity: 0.5
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = '0.5'}
+          >
+            Legal Notice
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -171,6 +211,7 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(false);
   const [showStartScreen, setShowStartScreen] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [legalPopupType, setLegalPopupType] = useState<'terms' | 'legal' | null>(null);
 
   // On initial mount, redirect to landing if not already there
   // BUT: Allow debug mode to bypass redirect
@@ -516,7 +557,23 @@ export default function App() {
       }}
     >
       {/* Portrait orientation blocker - shared across all routes */}
-      {showPortraitBlocker && <PortraitBlocker gameBackgroundColor={gameBackgroundColor} />}
+      {showPortraitBlocker && (
+        <PortraitBlocker 
+          gameBackgroundColor={gameBackgroundColor}
+          onLegalLinkClick={(type) => setLegalPopupType(type)}
+        />
+      )}
+      
+      {/* Legal Popups */}
+      {legalPopupType && (
+        <LegalPopup
+          type={legalPopupType}
+          open={legalPopupType !== null}
+          onOpenChange={(open) => {
+            if (!open) setLegalPopupType(null);
+          }}
+        />
+      )}
       
       {/* Game canvas - always rendered so it can initialize, but hidden when not playing */}
       {/* Keep it visible during loading so it can initialize properly */}
