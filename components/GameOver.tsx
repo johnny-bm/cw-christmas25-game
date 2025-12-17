@@ -157,6 +157,17 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
     setIsTop3(top3);
     setTop3Position(position);
     
+    // GTM Tracking: Top 3 Rank Achieved
+    if (top3 && position && typeof window !== 'undefined') {
+      if (!(window as any).dataLayer) {
+        (window as any).dataLayer = [];
+      }
+      (window as any).dataLayer.push({
+        'event': 'top3_achieved',
+        'position': position
+      });
+    }
+    
     // Also get the overall position for all scores
     const overallPosition = await scoreService.getScorePosition(distance);
     setScorePosition(overallPosition);
@@ -202,6 +213,21 @@ export function GameOver({ distance, bestDistance, maxCombo, grinchScore = 0, el
         email || undefined,
         prizeSelection
       );
+      
+      // GTM Tracking: Form Submitted
+      if (typeof window !== 'undefined') {
+        if (!(window as any).dataLayer) {
+          (window as any).dataLayer = [];
+        }
+        (window as any).dataLayer.push({
+          'event': 'form_submitted',
+          'player_type': isTop3 ? 'top3' : 'regular',
+          'leaderboard_position': top3Position || null,
+          'email_provided': email && email.trim() ? 'yes' : 'no',
+          'prize_choice': prizeSelection || null
+        });
+      }
+      
       setSavedScoreId(savedScore.id);
       setScoreSaved(true);
       setShowPopup(false);

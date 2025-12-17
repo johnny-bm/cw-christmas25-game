@@ -418,18 +418,11 @@ export class GameScene extends Phaser.Scene {
     const isMobile = this.isMobile();
     let { width, height } = this.scale;
     
-    // For mobile: use portrait dimensions
+    // For mobile: use fixed portrait dimensions (same as Safari mobile had)
     if (isMobile) {
-      // Ensure portrait orientation (height > width)
-      if (height > width) {
-        width = Math.min(width, 400);  // Portrait width
-        height = Math.min(height, 700); // Portrait height
-      } else {
-        // If landscape, swap to force portrait
-        const temp = width;
-        width = Math.min(height, 400);
-        height = Math.min(temp, 700);
-      }
+      // Fixed dimensions for consistent layout across all mobile browsers
+      width = 400;  // Fixed portrait width
+      height = 700; // Fixed portrait height
       // Don't call resize - let Phaser handle it with FIT mode
     } else {
       // Desktop: keep existing dynamic logic
@@ -456,9 +449,9 @@ export class GameScene extends Phaser.Scene {
     // With RESIZE mode, the camera automatically shows the full game world (0, 0, width, height)
     // The camera viewport is automatically managed by Phaser's scale manager in RESIZE mode
     if (isMobile) {
-      // Mobile: portrait orientation - fixed dimensions
-      const mobileWidth = 400;
-      const mobileHeight = 700;
+      // Mobile: portrait orientation - fixed dimensions (same as Safari mobile had)
+      const mobileWidth = this.MOBILE_FIXED_WIDTH;
+      const mobileHeight = this.MOBILE_FIXED_HEIGHT;
       this.physics.world.setBounds(0, 0, mobileWidth, mobileHeight);
       this.cameras.main.setBounds(0, 0, mobileWidth, mobileHeight);
       this.cameras.main.setBackgroundColor(getElementColorPhaser('background'));
@@ -2279,6 +2272,20 @@ export class GameScene extends Phaser.Scene {
     });
     
     this.time.delayedCall(1000, () => {
+      // GTM Tracking: Game Completed
+      if (typeof window !== 'undefined') {
+        if (!(window as any).dataLayer) {
+          (window as any).dataLayer = [];
+        }
+        (window as any).dataLayer.push({
+          'event': 'game_completed',
+          'final_score': Math.floor(this.distance),
+          'elf_score': this.elfScore,
+          'grinch_score': this.grinchScore,
+          'max_combo': this.maxCombo
+        });
+      }
+      
       this.game.events.emit('gameOver', Math.floor(this.distance), this.maxCombo, this.grinchScore, this.elfScore);
     });
   }
@@ -3486,25 +3493,29 @@ export class GameScene extends Phaser.Scene {
   private createParallaxBackground() {
     const { width, height } = this.scale;
     
-    // Detect mobile horizontal orientation
-    const isMobile = width <= 768 || height <= 768;
-    const isMobileHorizontal = isMobile && width > height;
+    // Detect mobile device (all mobile now uses portrait mode)
+    const isMobile = this.isMobile();
+    const isMobilePortrait = isMobile && height > width;
     
     // Track recently used building images to avoid repetition
     const recentlyUsedBuildings: string[] = [];
     const maxRecentHistory = 2; // Avoid repeating the last 2 buildings
     
     // Scale building sizes relative to screen
-    // On mobile horizontal, use larger percentages since height is small
+    // On mobile portrait, use appropriate percentages for 400x700 viewport
     for (let i = 0; i < 8; i++) {
-      const buildingWidth = Phaser.Math.Between(width * 0.031, width * 0.063); // ~3.1% to 6.3% of screen width
-      // Mobile horizontal: use larger height percentage since screen height is small
-      const heightMultiplier = isMobileHorizontal ? 0.25 : 0.093; // 25% on mobile horizontal vs 9.3% normal
-      const heightMaxMultiplier = isMobileHorizontal ? 0.40 : 0.185; // 40% on mobile horizontal vs 18.5% normal
+      // Building width: slightly larger on mobile portrait for better visibility
+      const buildingWidth = isMobilePortrait 
+        ? Phaser.Math.Between(width * 0.05, width * 0.12) // 5% to 12% on mobile portrait (20-48px)
+        : Phaser.Math.Between(width * 0.031, width * 0.063); // ~3.1% to 6.3% on desktop
+      
+      // Building height: use appropriate multipliers for mobile portrait
+      const heightMultiplier = isMobilePortrait ? 0.15 : 0.093; // 15% on mobile portrait vs 9.3% normal
+      const heightMaxMultiplier = isMobilePortrait ? 0.30 : 0.185; // 30% on mobile portrait vs 18.5% normal
       let buildingHeight = Phaser.Math.Between(height * heightMultiplier, height * heightMaxMultiplier);
       
-      // Ensure minimum building height for visibility (especially on mobile horizontal)
-      const minBuildingHeight = isMobileHorizontal ? 60 : 40; // Minimum 60px on mobile horizontal, 40px otherwise
+      // Ensure minimum building height for visibility on mobile portrait
+      const minBuildingHeight = isMobilePortrait ? 80 : 40; // Minimum 80px on mobile portrait, 40px otherwise
       if (buildingHeight < minBuildingHeight) {
         buildingHeight = minBuildingHeight;
       }
@@ -3520,9 +3531,9 @@ export class GameScene extends Phaser.Scene {
       if (recentlyUsedBuildings.length > maxRecentHistory) {
         recentlyUsedBuildings.shift(); // Remove oldest entry
       }
-      // Position buildings slightly below ground to move them down visually
-      // Add a small offset (about 2-3% of screen height) to push buildings down
-      const buildingYOffset = height * 0.025; // 2.5% of screen height
+      // Position buildings at ground level
+      // On mobile portrait, position them slightly above ground for better visibility
+      const buildingYOffset = isMobilePortrait ? height * 0.01 : height * 0.025; // Smaller offset on mobile portrait
       const building = this.add.image(
         Phaser.Math.Between(0, width * 2),
         this.groundY + buildingYOffset,
@@ -3538,12 +3549,18 @@ export class GameScene extends Phaser.Scene {
       const scaleY = buildingHeight / building.height;
       // Use uniform scaling to maintain aspect ratio, based on the smaller scale
       // Add random size variation (0.70 to 1.30 = ±30% variation)
+      // On mobile portrait, make buildings slightly larger for better visibility
+      const sizeMultiplier = isMobilePortrait ? 1.5 : 1.38; // 50% bigger on mobile portrait vs 38% on desktop
       const randomSizeMultiplier = Phaser.Math.FloatBetween(0.70, 1.30);
-      const scale = Math.min(scaleX, scaleY) * 1.38 * randomSizeMultiplier; // 38% bigger base + random variation
+      const scale = Math.min(scaleX, scaleY) * sizeMultiplier * randomSizeMultiplier;
       building.setScale(scale);
       
-      building.setDepth(-100);
+      // Ensure buildings are visible and behind everything (but in front of background)
+      // Background is at -100, so buildings should be slightly higher
+      building.setDepth(-99);
       building.setAlpha(1.0);
+      building.setVisible(true);
+      building.setActive(true);
       this.backgroundBuildings.push(building);
     }
     
@@ -3601,10 +3618,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleResize() {
-    // Mobile uses fixed portrait dimensions; skip resize adjustments
+    // Mobile uses fixed portrait dimensions (same as Safari mobile had); skip resize adjustments
     if (this.isMobile()) {
-      const width = 400; // Portrait width
-      const height = 700; // Portrait height
+      const width = this.MOBILE_FIXED_WIDTH; // Fixed portrait width for all mobile
+      const height = this.MOBILE_FIXED_HEIGHT; // Fixed portrait height for all mobile
       this.scale.resize(width, height);
       this.physics.world.setBounds(0, 0, width, height);
       if (this.cameras && this.cameras.main) {

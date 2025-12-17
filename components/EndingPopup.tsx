@@ -158,6 +158,20 @@ export function EndingPopup({
         email.trim(),
         isTop3 &&         prizeSelection ? prizeSelection as 'consultation' | 'discount' : undefined
       );
+      
+      // GTM Tracking: Form Submitted
+      if (typeof window !== 'undefined') {
+        if (!(window as any).dataLayer) {
+          (window as any).dataLayer = [];
+        }
+        (window as any).dataLayer.push({
+          'event': 'form_submitted',
+          'player_type': isTop3 ? 'top3' : 'regular',
+          'leaderboard_position': position || null,
+          'email_provided': email.trim() ? 'yes' : 'no',
+          'prize_choice': (isTop3 && prizeSelection) ? prizeSelection : null
+        });
+      }
     } catch (error) {
       alert(textConfig.endingPopup.form.errors.saveFailed);
     } finally {
@@ -217,14 +231,17 @@ export function EndingPopup({
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto"
+      className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
       style={{
         paddingTop: isMobileSafari 
           ? 'max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem + 3.5rem))'
           : 'max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
         paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
-        paddingLeft: 'max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
-        paddingRight: 'max(1.5rem, calc(env(safe-area-inset-right, 0px) + 1rem))'
+        paddingLeft: 'max(1rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
+        paddingRight: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        overscrollBehavior: 'contain'
       }}
       onClick={handleOverlayClick}
     >
@@ -232,7 +249,11 @@ export function EndingPopup({
         id="ending-popup"
         data-popup-type={isTop3 ? 'top3' : 'regular'}
         data-position={position || null}
-        className="relative bg-white rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl max-w-lg w-full my-2 sm:my-0 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300"
+        className="relative bg-white rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl max-w-lg w-full my-2 sm:my-0 max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto overscroll-contain animate-in zoom-in-95 duration-300"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Confetti for top 3 */}
@@ -425,7 +446,19 @@ export function EndingPopup({
                       name="prize-selection"
                       value="consultation"
                       checked={prizeSelection === 'consultation'}
-                      onChange={(e) => setPrizeSelection(e.target.value as 'consultation' | 'discount')}
+                      onChange={(e) => {
+                        setPrizeSelection(e.target.value as 'consultation' | 'discount');
+                        // GTM Tracking: Prize Selected
+                        if (typeof window !== 'undefined') {
+                          if (!(window as any).dataLayer) {
+                            (window as any).dataLayer = [];
+                          }
+                          (window as any).dataLayer.push({
+                            'event': 'prize_selected',
+                            'prize_type': e.target.value
+                          });
+                        }
+                      }}
                       className="mr-3 w-4 h-4 sm:w-5 sm:h-5"
                       disabled={isSaving}
                       required
@@ -440,7 +473,19 @@ export function EndingPopup({
                       name="prize-selection"
                       value="discount"
                       checked={prizeSelection === 'discount'}
-                      onChange={(e) => setPrizeSelection(e.target.value as 'discount' | 'consultation')}
+                      onChange={(e) => {
+                        setPrizeSelection(e.target.value as 'discount' | 'consultation');
+                        // GTM Tracking: Prize Selected
+                        if (typeof window !== 'undefined') {
+                          if (!(window as any).dataLayer) {
+                            (window as any).dataLayer = [];
+                          }
+                          (window as any).dataLayer.push({
+                            'event': 'prize_selected',
+                            'prize_type': e.target.value
+                          });
+                        }
+                      }}
                       className="mr-3 w-4 h-4 sm:w-5 sm:h-5"
                       disabled={isSaving}
                       required

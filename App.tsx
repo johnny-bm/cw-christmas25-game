@@ -248,6 +248,16 @@ export default function App() {
       return;
     }
     
+    // GTM Tracking: Game Started
+    if (typeof window !== 'undefined') {
+      if (!(window as any).dataLayer) {
+        (window as any).dataLayer = [];
+      }
+      (window as any).dataLayer.push({
+        'event': 'game_started'
+      });
+    }
+    
     // All mobile devices now support portrait mode, so no blocking needed
     
     setGameState('playing');

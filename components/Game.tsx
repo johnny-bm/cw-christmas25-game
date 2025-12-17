@@ -81,20 +81,10 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     const useFitMode = isMobile; // All mobile devices use FIT mode with portrait dimensions
 
     if (useFitMode) {
-      // Portrait dimensions for all mobile devices
-      // Use actual viewport dimensions but ensure portrait orientation
-      const viewportWidth = window.innerWidth || window.screen.width || 400;
-      const viewportHeight = window.innerHeight || window.screen.height || 700;
-      
-      // Ensure portrait orientation (height > width)
-      if (viewportHeight > viewportWidth) {
-        initialWidth = Math.min(viewportWidth, 400);
-        initialHeight = Math.min(viewportHeight, 700);
-      } else {
-        // If landscape, swap to force portrait
-        initialWidth = Math.min(viewportHeight, 400);
-        initialHeight = Math.min(viewportWidth, 700);
-      }
+      // Fixed portrait dimensions for all mobile devices (same as Safari mobile had)
+      // This ensures consistent layout across all mobile browsers
+      initialWidth = 400;  // Fixed portrait width
+      initialHeight = 700; // Fixed portrait height
       initializeGame();
       return;
     }
@@ -151,9 +141,9 @@ function GameComponent({ onGameOver, onUpdateGameData, onGameReady, onLoadingPro
     return;
     
     function initializeGame() {
-      // Portrait orientation for all mobile devices
-      const MOBILE_WIDTH = isMobile ? Math.min(window.innerWidth, 400) : initialWidth; // Portrait width for mobile
-      const MOBILE_HEIGHT = isMobile ? Math.min(window.innerHeight, 700) : initialHeight; // Portrait height for mobile
+      // Fixed portrait dimensions for all mobile devices (same as Safari mobile had)
+      const MOBILE_WIDTH = 400;  // Fixed portrait width for all mobile
+      const MOBILE_HEIGHT = 700;  // Fixed portrait height for all mobile
       
       const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
