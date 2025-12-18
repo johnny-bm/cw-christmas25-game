@@ -29,11 +29,16 @@ export function SEOHead() {
       baseUrl = `${protocol}//${canonicalHostname}${normalizedPath}`;
     }
     
-    // Static assets are served from root, not under the game path
-    // Vite serves public folder assets from root by default
+    // Static assets are served from the game path
     const canonicalHostname = hostname.replace(/^www\./, '');
-    const imageUrl = `${protocol}//${canonicalHostname}${seo.ogImage}`;
-    const logoUrl = `${protocol}//${canonicalHostname}/Assets/CW-Logo.svg`;
+    // Determine the game path for assets
+    let gamePath = '';
+    if (hostname !== 'fun.crackwits.com' && !hostname.includes('fun.')) {
+      // Path-based route - assets are under /game/Christmas25
+      gamePath = '/game/Christmas25';
+    }
+    const imageUrl = `${protocol}//${canonicalHostname}${gamePath}${seo.ogImage}`;
+    const logoUrl = `${protocol}//${canonicalHostname}${gamePath}/Assets/CW-Logo.svg`;
 
     // Update title
     document.title = seo.title;
