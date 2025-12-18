@@ -55,10 +55,10 @@ export function EndingPopup({
   // Detect Safari mobile for proper spacing
   const isMobileSafari = /iPhone|iPad|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
 
-  // Countdown timer to January 5th, 2026
+  // Countdown timer to 05.01.2026
   useEffect(() => {
     const updateTimer = () => {
-      // Create deadline date explicitly: January 5, 2026 at 23:59:59 in local timezone
+      // Create deadline date explicitly: 05.01.2026 at 23:59:59 in local timezone
       // Month is 0-indexed (0 = January)
       const deadline = new Date(2026, 0, 5, 23, 59, 59, 999);
       const now = new Date();
@@ -199,7 +199,7 @@ export function EndingPopup({
             {textConfig.endingPopup.messages.top3.yourScore} <strong>{formatNumber(distance)}m</strong>
           </p>
           <p className="mb-2 sm:mb-3 text-sm sm:text-base">
-            {textConfig.endingPopup.messages.top3.leaderboardCloses} <strong>January 5th, 2026</strong> {textConfig.endingPopup.messages.top3.stayTop3} <strong>TOP 3</strong> {textConfig.endingPopup.messages.top3.claimWin}
+            {textConfig.endingPopup.messages.top3.leaderboardCloses} <strong>05.01.2026</strong> {textConfig.endingPopup.messages.top3.stayTop3} <strong>TOP 3</strong> {textConfig.endingPopup.messages.top3.claimWin}
           </p>
         </>
       );

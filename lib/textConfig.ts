@@ -114,7 +114,7 @@ export const textConfig = {
       deadlinePassed: "DEvaluation period ended",
     },
     regular: {
-      leaderboardCloses: "Rankings close on January 5th, 2026",
+      leaderboardCloses: "Rankings close on 05.01.2026",
     },
     form: {
       initials: {
@@ -133,7 +133,7 @@ export const textConfig = {
         required: "*",
         consultation: "Complimentary Consultation Session with Crackwits",
         discount: "Service Credit on a New Crackwits Engagement",
-        disclaimer: "Benefit granted if position is maintained until 01/05/2026",
+        disclaimer: "Benefit granted if position is maintained until 05.01.2026",
       },
       button: {
         saving: "Saving...",
@@ -325,7 +325,7 @@ export const textConfig = {
       happyGrinch: "Happy Grinch",
       errorLoadingImage: "Error loading image",
     },
-    disclaimer: "By participating, you agree to the terms and conditions. Prizes are subject to eligibility and availability. Benefit granted if position is maintained until 01/05/2026.",
+    disclaimer: "By participating, you agree to the terms and conditions. Prizes are subject to eligibility and availability. Benefit granted if position is maintained until 05.01.2026.",
   },
 } as const;
 
