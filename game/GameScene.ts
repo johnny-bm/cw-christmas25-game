@@ -58,7 +58,6 @@ export class GameScene extends Phaser.Scene {
   private sprintMode: boolean = false;
   private sprintTimer: number = 0;
   private sprintGlow!: Phaser.GameObjects.Rectangle;
-  private vignette!: Phaser.GameObjects.Image;
   
   private jumpsRemaining: number = 2;
   
@@ -308,9 +307,6 @@ export class GameScene extends Phaser.Scene {
     
     // Load deadline image
     this.load.image('deadline', '/Assets/Obstacles/Deadline.png');
-    
-    // Load vignette image
-    this.load.image('vignette', '/Assets/Vignet.png');
     
     // Load parallax background images
     const parallaxFiles = [
@@ -776,19 +772,6 @@ export class GameScene extends Phaser.Scene {
       this.deadlineX = this.deadline.x;
     }
     
-
-    // Create vignette effect using PNG image (starts invisible, will be shown when energy is low)
-    if (this.textures.exists('vignette')) {
-      this.vignette = this.add.image(width / 2, height / 2, 'vignette');
-      // Scale to cover entire screen (use larger dimension to ensure full coverage)
-      const maxDimension = Math.max(width, height);
-      this.vignette.setDisplaySize(maxDimension, maxDimension); // Scale to cover screen
-      this.vignette.setOrigin(0.5, 0.5);
-      this.vignette.setDepth(9999); // Maximum depth to ensure it's above all game elements (UI is rendered separately in React)
-      this.vignette.setAlpha(0); // Start invisible
-      // Use NORMAL blend mode (MULTIPLY was making it too dark/invisible)
-      this.vignette.setBlendMode(Phaser.BlendModes.NORMAL);
-    }
 
     // Initialize groups
     this.obstacles = this.add.group();
@@ -2757,9 +2740,6 @@ export class GameScene extends Phaser.Scene {
         }
       }
     }
-    
-    // Update vignette intensity based on energy
-    this.updateVignette();
 
     // Low energy warnings
     this.lowEnergyMessageTimer += delta;
@@ -3610,28 +3590,6 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private updateVignette() {
-    if (!this.vignette) return;
-    
-    // Calculate vignette intensity based on energy
-    let vignetteAlpha = 0;
-    if (this.energy < GameConfig.effects.vignetteStartEnergy) {
-      // Calculate progress: 0 to 1 as energy goes from startEnergy to 0
-      const progress = 1 - (this.energy / GameConfig.effects.vignetteStartEnergy); // 0 to 1
-      // Use exponential curve (ease-in) for more dramatic darkening at low energy
-      const curvedProgress = Math.pow(progress, GameConfig.effects.vignetteCurve); // Exponential curve
-      vignetteAlpha = curvedProgress * GameConfig.effects.vignetteMaxAlpha;
-    }
-    
-    // Update vignette alpha (the PNG already has the vignette effect built in)
-    this.vignette.setAlpha(vignetteAlpha);
-    
-    // Update vignette size on screen resize (ensure full coverage)
-    const { width, height } = this.scale;
-    this.vignette.setPosition(width / 2, height / 2);
-    const maxDimension = Math.max(width, height);
-    this.vignette.setDisplaySize(maxDimension, maxDimension); // Scale to cover screen
-  }
 
   private handleResize() {
     // Mobile uses fixed portrait dimensions (same as Safari mobile had); skip resize adjustments
@@ -3859,14 +3817,6 @@ export class GameScene extends Phaser.Scene {
       } else {
         this.deadline.setPosition(this.deadlineX, 0);
       }
-    }
-    
-    
-    // Update vignette on resize
-    if (this.vignette) {
-      this.vignette.setPosition(width / 2, height / 2);
-      const maxDimension = Math.max(width, height);
-      this.vignette.setDisplaySize(maxDimension, maxDimension); // Scale to cover screen
     }
     
     // Update parallax buildings if needed
