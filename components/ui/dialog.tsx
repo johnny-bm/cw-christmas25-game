@@ -41,6 +41,12 @@ function DialogOverlay({
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-[110] bg-black/50",
         className,
       )}
+      style={{
+        touchAction: 'pan-y pinch-zoom', // Enable scrolling on mobile
+        WebkitOverflowScrolling: 'touch',
+        overscrollBehavior: 'contain',
+        ...props.style,
+      }}
       {...props}
     />
   );
@@ -68,12 +74,20 @@ function DialogContent({
           marginRight: 'max(1rem, env(safe-area-inset-right, 1rem))',
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
+          touchAction: 'pan-y pinch-zoom', // Enable scrolling on mobile
           ...style,
         }}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
+        <DialogPrimitive.Close 
+          className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+          style={{
+            touchAction: 'manipulation', // Ensure button is clickable on mobile
+            pointerEvents: 'auto',
+            zIndex: 120, // Ensure close button is above content
+          }}
+        >
           <XIcon />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

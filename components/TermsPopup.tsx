@@ -14,7 +14,13 @@ export function TermsPopup({ open, onOpenChange }: TermsPopupProps) {
             Holiday Challenge – Terms & Conditions
           </DialogTitle>
         </DialogHeader>
-        <div className="mt-6 space-y-6 text-sm sm:text-base leading-relaxed text-gray-700">
+        <div 
+          className="mt-6 space-y-6 text-sm sm:text-base leading-relaxed text-gray-700"
+          style={{
+            touchAction: 'pan-y pinch-zoom',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
           {/* Section 1 */}
           <section>
             <h2 className="text-lg sm:text-xl font-bold text-black mb-3">1. Organizer</h2>

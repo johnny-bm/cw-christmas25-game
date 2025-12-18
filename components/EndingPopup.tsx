@@ -246,7 +246,8 @@ export function EndingPopup({
         WebkitOverflowScrolling: 'touch',
         overscrollBehavior: 'contain',
         touchAction: 'pan-y pinch-zoom', // Enable vertical scrolling
-        pointerEvents: 'auto' // Ensure overlay is clickable
+        // Disable pointer events when nested dialogs are open to prevent blocking interactions
+        pointerEvents: (showTermsPopup || showLegalNoticePopup) ? 'none' : 'auto'
       }}
       onClick={handleOverlayClick}
     >
@@ -263,7 +264,8 @@ export function EndingPopup({
           paddingRight: '1rem',
           paddingTop: '0.5rem',
           paddingBottom: '0.5rem',
-          pointerEvents: 'auto' // Ensure popup is interactive
+          // Disable pointer events when nested dialogs are open to prevent blocking interactions
+          pointerEvents: (showTermsPopup || showLegalNoticePopup) ? 'none' : 'auto'
         }}
         onClick={(e) => e.stopPropagation()}
       >

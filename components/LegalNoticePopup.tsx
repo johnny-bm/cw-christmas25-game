@@ -26,6 +26,10 @@ export function LegalNoticePopup({ open, onOpenChange }: LegalNoticePopupProps) 
         </DialogHeader>
         <div 
           className="mt-4 whitespace-pre-line text-sm sm:text-base leading-relaxed text-gray-700"
+          style={{
+            touchAction: 'pan-y pinch-zoom',
+            WebkitOverflowScrolling: 'touch',
+          }}
         >
           {legalContent}
         </div>
