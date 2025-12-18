@@ -73,6 +73,7 @@ export function SEOHead() {
     // Twitter tags
     updateMetaTag('twitter:card', seo.twitterCard);
     updateMetaTag('twitter:title', seo.twitterTitle);
+    updateMetaTag('twitter:text:title', seo.twitterTitle);
     updateMetaTag('twitter:description', seo.twitterDescription);
     updateMetaTag('twitter:image', imageUrl);
     updateMetaTag('twitter:image:alt', seo.twitterTitle);
