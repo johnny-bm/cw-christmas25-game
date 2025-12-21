@@ -2,12 +2,12 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyArYZSVQdexBaE3mKNSOBC3M7ldD19LESo",
-  authDomain: "cw-game-a42eb.firebaseapp.com",
-  projectId: "cw-game-a42eb",
-  storageBucket: "cw-game-a42eb.firebasestorage.app",
-  messagingSenderId: "767941381110",
-  appId: "1:767941381110:web:d06274637ddd92226c95d7"
+  apiKey: "AIzaSyBA_862UUG17V6-fjLafN5WwuLQqrjTewE",
+  authDomain: "cw-internal-game.firebaseapp.com",
+  projectId: "cw-internal-game",
+  storageBucket: "cw-internal-game.firebasestorage.app",
+  messagingSenderId: "206902423956",
+  appId: "1:206902423956:web:ac7217d6c797f77e3edf81"
 };
 
 const app = initializeApp(firebaseConfig);
