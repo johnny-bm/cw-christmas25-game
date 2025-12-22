@@ -1,0 +1,4 @@
+AuthType Basic
+AuthName "Admin Area"
+AuthUserFile /www/wwwroot/fun.crackwits.com/secure/.htpasswd
+Require valid-user
