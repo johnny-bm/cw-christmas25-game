@@ -1,172 +1,240 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Game Scores</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8" />
+<title>Crackwits – Leaderboards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <style>
-    body {
-      margin: 0;
-      padding: 24px;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #f4f6f8;
-      color: #222;
-    }
+<style>
+  :root {
+    --bg: #f4f4f4;
+    --card: #ffffff;
+    --border: #e3e6ea;
+    --text: #111;
+    --muted: #6b7280;
+    --accent: #f59e0b;
+  }
 
-    h1 {
-      margin-bottom: 16px;
-    }
+  body {
+    margin: 0;
+    padding: 40px 16px 80px;
+    background: var(--bg);
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    color: var(--text);
+  }
 
-    .card {
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.08);
-      overflow-x: auto;
-    }
+  h1 {
+    text-align: center;
+    font-size: 36px;
+    letter-spacing: .08em;
+    margin-bottom: 8px;
+  }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 900px;
-    }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    margin-bottom: 40px;
+  }
 
-    thead {
-      background: #111827;
-      color: #fff;
-      position: sticky;
-      top: 0;
-    }
+  .leaderboard {
+    max-width: 980px;
+    margin: 0 auto 48px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
 
-    th, td {
-      padding: 10px 12px;
-      text-align: left;
-      white-space: nowrap;
-    }
+  .leaderboard h2 {
+    margin: 0;
+    padding: 16px 20px;
+    font-size: 18px;
+    border-bottom: 1px solid var(--border);
+    background: #fafafa;
+  }
 
-    th {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
 
-    tbody tr {
-      border-bottom: 1px solid #eee;
-    }
+  th, td {
+    padding: 14px 16px;
+    text-align: left;
+    white-space: nowrap;
+  }
 
-    tbody tr:hover {
-      background: #f9fafb;
-    }
+  th {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
 
-    .num {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
+  tr {
+    border-bottom: 1px solid var(--border);
+  }
 
-    .muted {
-      color: #888;
-    }
+  tr:last-child {
+    border-bottom: none;
+  }
 
-    .badge {
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      background: #e5e7eb;
-      display: inline-block;
-    }
+  tbody tr:hover {
+    background: #fafafa;
+  }
 
-    .badge.discount {
-      background: #dbeafe;
-      color: #1e40af;
-    }
+  .rank {
+    width: 40px;
+    font-weight: 600;
+  }
 
-    .badge.consultation {
-      background: #dcfce7;
-      color: #166534;
-    }
-  </style>
+  .name {
+    font-weight: 600;
+  }
+
+  .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .combo {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .muted {
+    color: var(--muted);
+  }
+
+  .medal {
+    font-size: 18px;
+  }
+
+  @media (max-width: 700px) {
+    body { padding: 24px 8px; }
+    th, td { padding: 10px 8px; }
+  }
+</style>
 </head>
 <body>
 
-<h1>🎄 Game Scores</h1>
+<h1>ESCAPE THE DEADLINE</h1>
+<div class="subtitle">Internal Leaderboards</div>
 
-<div class="card">
+<!-- TOP DISTANCE -->
+<div class="leaderboard">
+  <h2>🏆 Top Distance</h2>
   <table>
     <thead>
       <tr>
         <th>#</th>
-        <th>Player</th>
+        <th>Name</th>
         <th class="num">Distance</th>
-        <th class="num">Max Combo</th>
-        <th class="num">Grinch</th>
-        <th class="num">Elf</th>
-        <th>Email</th>
-        <th>Prize</th>
-        <th>Created</th>
+        <th class="num">Combo</th>
+        <th class="num">Elf vs Grinch</th>
       </tr>
     </thead>
-    <tbody id="rows">
-      <tr><td colspan="9" class="muted">Loading…</td></tr>
-    </tbody>
+    <tbody id="distanceRows"></tbody>
+  </table>
+</div>
+
+<!-- TOP COMBO -->
+<div class="leaderboard">
+  <h2>🔥 Top Combos</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th class="num">Max Combo</th>
+        <th class="num">Distance</th>
+      </tr>
+    </thead>
+    <tbody id="comboRows"></tbody>
+  </table>
+</div>
+
+<!-- ALL ENTRIES -->
+<div class="leaderboard">
+  <h2>📋 All Runs</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th class="num">Distance</th>
+        <th class="num">Combo</th>
+        <th class="num">Elf</th>
+        <th class="num">Grinch</th>
+        <th class="muted">Created</th>
+      </tr>
+    </thead>
+    <tbody id="allRows"></tbody>
   </table>
 </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import {
-    getFirestore,
-    collection,
-    getDocs,
-    orderBy,
-    query
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyArYZSVQdexBaE3mKNSOBC3M7ldD19LESo",
     authDomain: "cw-game-a42eb.firebaseapp.com",
     projectId: "cw-game-a42eb",
-    storageBucket: "cw-game-a42eb.appspot.com",
-    messagingSenderId: "767941381110",
-    appId: "1:767941381110:web:46e8d3d816ac6c6d6c95d7"
   };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  const tbody = document.getElementById("rows");
-  tbody.innerHTML = "";
+  const snap = await getDocs(collection(db, "scores"));
+  const data = snap.docs.map(d => d.data());
 
-  const q = query(
-    collection(db, "scores"),
-    orderBy("created_at", "desc")
-  );
+  const medal = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1;
 
-  const snap = await getDocs(q);
+  // Top distance
+  data
+    .slice()
+    .sort((a,b) => (b.distance ?? 0) - (a.distance ?? 0))
+    .slice(0, 10)
+    .forEach((d,i) => {
+      distanceRows.innerHTML += `
+        <tr>
+          <td class="rank">${medal(i)}</td>
+          <td class="name">${d.player_name ?? "—"}</td>
+          <td class="num">${d.distance ?? 0}m</td>
+          <td class="num combo">${d.max_combo ?? "—"}x</td>
+          <td class="num">🎄 ${d.elf_score ?? 0} &nbsp; 😈 ${d.grinch_score ?? 0}</td>
+        </tr>`;
+    });
 
-  snap.forEach((doc, i) => {
-    const d = doc.data();
+  // Top combos
+  data
+    .slice()
+    .sort((a,b) => (b.max_combo ?? 0) - (a.max_combo ?? 0))
+    .slice(0, 10)
+    .forEach((d,i) => {
+      comboRows.innerHTML += `
+        <tr>
+          <td class="rank">${medal(i)}</td>
+          <td class="name">${d.player_name ?? "—"}</td>
+          <td class="num combo">${d.max_combo ?? "—"}x</td>
+          <td class="num">${d.distance ?? 0}m</td>
+        </tr>`;
+    });
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="muted">${i + 1}</td>
-      <td>${d.player_name ?? "—"}</td>
-      <td class="num">${d.distance ?? 0}</td>
-      <td class="num">${d.max_combo ?? "—"}</td>
-      <td class="num">${d.grinch_score ?? "—"}</td>
-      <td class="num">${d.elf_score ?? "—"}</td>
-      <td class="muted">${d.email ?? "—"}</td>
-      <td>
-        ${
-          d.prize_selection
-            ? `<span class="badge ${d.prize_selection}">${d.prize_selection}</span>`
-            : "—"
-        }
-      </td>
-      <td class="muted">
-        ${d.created_at?.toDate?.().toLocaleString?.() ?? "—"}
-      </td>
-    `;
-    tbody.appendChild(tr);
+  // All runs
+  data.forEach((d,i) => {
+    allRows.innerHTML += `
+      <tr>
+        <td class="rank">${i + 1}</td>
+        <td class="name">${d.player_name ?? "—"}</td>
+        <td class="num">${d.distance ?? 0}m</td>
+        <td class="num combo">${d.max_combo ?? "—"}x</td>
+        <td class="num">${d.elf_score ?? 0}</td>
+        <td class="num">${d.grinch_score ?? 0}</td>
+        <td class="muted">${d.created_at?.toDate?.().toLocaleString?.() ?? ""}</td>
+      </tr>`;
   });
 </script>
 
