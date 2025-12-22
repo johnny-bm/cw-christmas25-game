@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Crackwits – Leaderboards</title>
+<title>Escape the Deadline – Scores</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
   :root {
-    --bg: #f4f4f4;
+    --bg: #f3f3f3;
     --card: #ffffff;
-    --border: #e3e6ea;
+    --border: #e1e5ea;
     --text: #111;
     --muted: #6b7280;
     --accent: #f59e0b;
@@ -23,43 +23,51 @@
     color: var(--text);
   }
 
-  h1 {
+  .header {
     text-align: center;
-    font-size: 36px;
-    letter-spacing: .08em;
-    margin-bottom: 8px;
-  }
-
-  .subtitle {
-    text-align: center;
-    color: var(--muted);
     margin-bottom: 40px;
   }
 
-  .leaderboard {
-    max-width: 980px;
-    margin: 0 auto 48px;
+  .brand {
+    font-weight: 700;
+    letter-spacing: .25em;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-size: 40px;
+    margin: 0;
+    letter-spacing: .06em;
+  }
+
+  .subtitle {
+    margin-top: 10px;
+    color: var(--muted);
+  }
+
+  .card {
+    max-width: 1100px;
+    margin: 0 auto;
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 12px;
-    overflow: hidden;
-  }
-
-  .leaderboard h2 {
-    margin: 0;
-    padding: 16px 20px;
-    font-size: 18px;
-    border-bottom: 1px solid var(--border);
-    background: #fafafa;
+    overflow-x: auto;
   }
 
   table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 1000px;
+  }
+
+  thead {
+    background: #fafafa;
   }
 
   th, td {
     padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
     text-align: left;
     white-space: nowrap;
   }
@@ -69,15 +77,6 @@
     text-transform: uppercase;
     letter-spacing: .05em;
     color: var(--muted);
-    border-bottom: 1px solid var(--border);
-  }
-
-  tr {
-    border-bottom: 1px solid var(--border);
-  }
-
-  tr:last-child {
-    border-bottom: none;
   }
 
   tbody tr:hover {
@@ -107,57 +106,39 @@
     color: var(--muted);
   }
 
-  .medal {
-    font-size: 18px;
+  .badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    background: #e5e7eb;
+  }
+
+  .badge.discount {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .badge.consultation {
+    background: #dcfce7;
+    color: #166534;
   }
 
   @media (max-width: 700px) {
-    body { padding: 24px 8px; }
+    h1 { font-size: 28px; }
     th, td { padding: 10px 8px; }
   }
 </style>
 </head>
 <body>
 
-<h1>ESCAPE THE DEADLINE</h1>
-<div class="subtitle">Internal Leaderboards</div>
-
-<!-- TOP DISTANCE -->
-<div class="leaderboard">
-  <h2>🏆 Top Distance</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Name</th>
-        <th class="num">Distance</th>
-        <th class="num">Combo</th>
-        <th class="num">Elf vs Grinch</th>
-      </tr>
-    </thead>
-    <tbody id="distanceRows"></tbody>
-  </table>
+<div class="header">
+  <div class="brand">CRACKWITS</div>
+  <h1>ESCAPE THE DEADLINE</h1>
+  <div class="subtitle">Leaderboard & Entries</div>
 </div>
 
-<!-- TOP COMBO -->
-<div class="leaderboard">
-  <h2>🔥 Top Combos</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Name</th>
-        <th class="num">Max Combo</th>
-        <th class="num">Distance</th>
-      </tr>
-    </thead>
-    <tbody id="comboRows"></tbody>
-  </table>
-</div>
-
-<!-- ALL ENTRIES -->
-<div class="leaderboard">
-  <h2>📋 All Runs</h2>
+<div class="card">
   <table>
     <thead>
       <tr>
@@ -167,16 +148,28 @@
         <th class="num">Combo</th>
         <th class="num">Elf</th>
         <th class="num">Grinch</th>
+        <th>Email</th>
+        <th>Prize</th>
         <th class="muted">Created</th>
       </tr>
     </thead>
-    <tbody id="allRows"></tbody>
+    <tbody id="rows">
+      <tr>
+        <td colspan="9" class="muted">Loading…</td>
+      </tr>
+    </tbody>
   </table>
 </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import {
+    getFirestore,
+    collection,
+    getDocs,
+    orderBy,
+    query
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyArYZSVQdexBaE3mKNSOBC3M7ldD19LESo",
@@ -187,54 +180,38 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  const snap = await getDocs(collection(db, "scores"));
-  const data = snap.docs.map(d => d.data());
+  const tbody = document.getElementById("rows");
+  tbody.innerHTML = "";
 
-  const medal = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1;
+  const q = query(
+    collection(db, "scores"),
+    orderBy("created_at", "desc")
+  );
 
-  // Top distance
-  data
-    .slice()
-    .sort((a,b) => (b.distance ?? 0) - (a.distance ?? 0))
-    .slice(0, 10)
-    .forEach((d,i) => {
-      distanceRows.innerHTML += `
-        <tr>
-          <td class="rank">${medal(i)}</td>
-          <td class="name">${d.player_name ?? "—"}</td>
-          <td class="num">${d.distance ?? 0}m</td>
-          <td class="num combo">${d.max_combo ?? "—"}x</td>
-          <td class="num">🎄 ${d.elf_score ?? 0} &nbsp; 😈 ${d.grinch_score ?? 0}</td>
-        </tr>`;
-    });
+  const snap = await getDocs(q);
 
-  // Top combos
-  data
-    .slice()
-    .sort((a,b) => (b.max_combo ?? 0) - (a.max_combo ?? 0))
-    .slice(0, 10)
-    .forEach((d,i) => {
-      comboRows.innerHTML += `
-        <tr>
-          <td class="rank">${medal(i)}</td>
-          <td class="name">${d.player_name ?? "—"}</td>
-          <td class="num combo">${d.max_combo ?? "—"}x</td>
-          <td class="num">${d.distance ?? 0}m</td>
-        </tr>`;
-    });
+  snap.forEach((doc, i) => {
+    const d = doc.data();
 
-  // All runs
-  data.forEach((d,i) => {
-    allRows.innerHTML += `
-      <tr>
-        <td class="rank">${i + 1}</td>
-        <td class="name">${d.player_name ?? "—"}</td>
-        <td class="num">${d.distance ?? 0}m</td>
-        <td class="num combo">${d.max_combo ?? "—"}x</td>
-        <td class="num">${d.elf_score ?? 0}</td>
-        <td class="num">${d.grinch_score ?? 0}</td>
-        <td class="muted">${d.created_at?.toDate?.().toLocaleString?.() ?? ""}</td>
-      </tr>`;
+    const prize = d.prize_selection
+      ? `<span class="badge ${d.prize_selection}">${d.prize_selection}</span>`
+      : "—";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="rank">${i + 1}</td>
+      <td class="name">${d.player_name ?? "—"}</td>
+      <td class="num">${d.distance ?? 0}m</td>
+      <td class="num combo">${d.max_combo ?? "—"}x</td>
+      <td class="num">🎄 ${d.elf_score ?? 0}</td>
+      <td class="num">😈 ${d.grinch_score ?? 0}</td>
+      <td class="muted">${d.email ?? "—"}</td>
+      <td>${prize}</td>
+      <td class="muted">
+        ${d.created_at?.toDate?.().toLocaleString?.() ?? "—"}
+      </td>
+    `;
+    tbody.appendChild(tr);
   });
 </script>
 
