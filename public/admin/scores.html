@@ -314,10 +314,15 @@
 
   const snap = await getDocs(q);
 
-  let rank = 1;
+// Convert docs to array
+const rows = snap.docs.map(doc => doc.data());
 
-  snap.forEach(doc => {
-    const d = doc.data();
+// SORT BY SCORE (distance) DESC
+rows.sort((a, b) => (b.distance ?? 0) - (a.distance ?? 0));
+
+let rank = 1;
+
+rows.forEach(d => {
 
     // Handle all timestamp formats safely
     let created = "—";
