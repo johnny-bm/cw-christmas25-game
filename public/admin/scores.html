@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Scores</title>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 6px; }
+    th { background: #eee; }
+  </style>
+</head>
+<body>
+
+<h2>Game Scores</h2>
+
+<table id="scores">
+  <thead>
+    <tr>
+      <th>Player</th>
+      <th>Distance</th>
+      <th>Email</th>
+      <th>Created</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyArYZSVQdexBaE3mKNSOBC3M7ldD19LESo",
+    authDomain: "cw-game-a42eb.firebaseapp.com",
+    projectId: "cw-game-a42eb",
+    storageBucket: "cw-game-a42eb.appspot.com",
+    messagingSenderId: "767941381110",
+    appId: "1:767941381110:web:46e8d3d816ac6c6d6c95d7"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const tbody = document.querySelector("#scores tbody");
+
+  const q = query(
+    collection(db, "scores"),
+    orderBy("created_at", "desc")
+  );
+
+  const snap = await getDocs(q);
+
+  snap.forEach(doc => {
+    const d = doc.data();
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${d.player_name ?? ""}</td>
+      <td>${d.distance ?? 0}</td>
+      <td>${d.email ?? ""}</td>
+      <td>${d.created_at?.toDate?.().toLocaleString() ?? ""}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+</script>
+
+</body>
+</html>
