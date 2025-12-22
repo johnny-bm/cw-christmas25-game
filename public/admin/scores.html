@@ -137,9 +137,86 @@
     h1 { font-size: 28px; }
     th, td { padding: 10px 8px; }
   }
+
+  /* === PASSWORD OVERLAY === */
+#pw-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+#pw-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,.1);
+}
+
+#pw-card img {
+  height: 40px;
+  margin-bottom: 16px;
+}
+
+#pw-card h3 {
+  margin: 0 0 16px;
+  font-weight: 500;
+}
+
+#pw-card input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-family: inherit;
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+#pw-card button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: #111;
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+#pw-error {
+  display: none;
+  margin-top: 10px;
+  color: #dc2626;
+  font-size: 14px;
+}
+
 </style>
 </head>
 <body>
+  <!-- PASSWORD OVERLAY -->
+<div id="pw-overlay">
+  <div id="pw-card">
+    <img src="https://fun.crackwits.com/Assets/CW-Logo.svg" alt="Crackwits" />
+    <h3>Admin Access</h3>
+    <input
+      type="password"
+      id="pw-input"
+      placeholder="Enter password"
+      autocomplete="off"
+    />
+    <button onclick="unlockPage()">Enter</button>
+    <div id="pw-error">Incorrect password</div>
+  </div>
+</div>
+<!-- END PASSWORD -->
 
 <div class="header">
   <div class="brand">
@@ -174,6 +251,33 @@
     </tbody>
   </table>
 </div>
+
+<script>
+  /* SHA-256 hash of your password */
+  const PW_HASH =
+    "5c8c52c9bcecb8edc7c6f1f69e3a7c16c2c7e58a63b1615d6a8b7f1c3c8b6c91";
+
+  async function sha256(text) {
+    const buf = new TextEncoder().encode(text);
+    const hash = await crypto.subtle.digest("SHA-256", buf);
+    return Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  async function unlockPage() {
+    const input = document.getElementById("pw-input");
+    const error = document.getElementById("pw-error");
+    const hash = await sha256(input.value);
+
+    if (hash === PW_HASH) {
+      document.getElementById("pw-overlay").style.display = "none";
+    } else {
+      error.style.display = "block";
+      input.value = "";
+    }
+  }
+</script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
