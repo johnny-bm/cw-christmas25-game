@@ -1,33 +1,125 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Scores</title>
+  <title>Game Scores</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 6px; }
-    th { background: #eee; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f4f6f8;
+      color: #222;
+    }
+
+    h1 {
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+    }
+
+    thead {
+      background: #111827;
+      color: #fff;
+      position: sticky;
+      top: 0;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #eee;
+    }
+
+    tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .muted {
+      color: #888;
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #e5e7eb;
+      display: inline-block;
+    }
+
+    .badge.discount {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .badge.consultation {
+      background: #dcfce7;
+      color: #166534;
+    }
   </style>
 </head>
 <body>
 
-<h2>Game Scores</h2>
+<h1>🎄 Game Scores</h1>
 
-<table id="scores">
-  <thead>
-    <tr>
-      <th>Player</th>
-      <th>Distance</th>
-      <th>Email</th>
-      <th>Created</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Player</th>
+        <th class="num">Distance</th>
+        <th class="num">Max Combo</th>
+        <th class="num">Grinch</th>
+        <th class="num">Elf</th>
+        <th>Email</th>
+        <th>Prize</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody id="rows">
+      <tr><td colspan="9" class="muted">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import {
+    getFirestore,
+    collection,
+    getDocs,
+    orderBy,
+    query
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyArYZSVQdexBaE3mKNSOBC3M7ldD19LESo",
@@ -41,7 +133,8 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  const tbody = document.querySelector("#scores tbody");
+  const tbody = document.getElementById("rows");
+  tbody.innerHTML = "";
 
   const q = query(
     collection(db, "scores"),
@@ -50,15 +143,28 @@
 
   const snap = await getDocs(q);
 
-  snap.forEach(doc => {
+  snap.forEach((doc, i) => {
     const d = doc.data();
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${d.player_name ?? ""}</td>
-      <td>${d.distance ?? 0}</td>
-      <td>${d.email ?? ""}</td>
-      <td>${d.created_at?.toDate?.().toLocaleString() ?? ""}</td>
+      <td class="muted">${i + 1}</td>
+      <td>${d.player_name ?? "—"}</td>
+      <td class="num">${d.distance ?? 0}</td>
+      <td class="num">${d.max_combo ?? "—"}</td>
+      <td class="num">${d.grinch_score ?? "—"}</td>
+      <td class="num">${d.elf_score ?? "—"}</td>
+      <td class="muted">${d.email ?? "—"}</td>
+      <td>
+        ${
+          d.prize_selection
+            ? `<span class="badge ${d.prize_selection}">${d.prize_selection}</span>`
+            : "—"
+        }
+      </td>
+      <td class="muted">
+        ${d.created_at?.toDate?.().toLocaleString?.() ?? "—"}
+      </td>
     `;
     tbody.appendChild(tr);
   });
